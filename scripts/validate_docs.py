@@ -510,11 +510,12 @@ def check_conventions(files: list[Path]) -> list[str]:
         backtick_values(risk_status_match.group(1)) if risk_status_match else []
     )
     risk_table_start = risk_guide.find("| 状態 | 意味・更新条件 |")
-    risk_table_lines = (
-        risk_guide[risk_table_start:].splitlines()[2:]
-        if risk_table_start >= 0
-        else []
-    )
+    risk_table_lines = []
+    if risk_table_start >= 0:
+        for line in risk_guide[risk_table_start:].splitlines()[2:]:
+            if not line.startswith("|"):
+                break
+            risk_table_lines.append(line)
     table_risk_statuses = [
         line.split("|", maxsplit=2)[1].strip()
         for line in risk_table_lines

@@ -242,6 +242,15 @@ class ConventionValidationTests(unittest.TestCase):
         errors = self.conventions()
         self.assertTrue(any("risk lifecycle states" in error for error in errors))
 
+    def test_unrelated_table_after_risk_states_is_ignored(self) -> None:
+        guide = self.root / "docs/work-management/risk-management.md"
+        text = guide.read_text(encoding="utf-8")
+        text += "\n## 補足資料\n\n| 項目 | 値 |\n|---|---|\n| 例 | 任意 |\n"
+        guide.write_text(text, encoding="utf-8")
+
+        errors = self.conventions()
+        self.assertFalse(any("risk lifecycle states" in error for error in errors))
+
     def test_sds_axes_and_weights_must_match_the_rules(self) -> None:
         template = self.root / "docs/work-management/templates/issue-register.md"
         text = template.read_text(encoding="utf-8").replace(
