@@ -1,0 +1,15 @@
+{
+  "config": {
+    "default": true,
+    // Japanese prose and links in this reference guide exceed conventional line widths.
+    "MD013": false,
+    // The UI/UX guide uses explicit HTML anchors for stable table-of-contents links.
+    "MD033": {
+      "allowed_elements": ["a"]
+    },
+    // scripts/validate_docs.py validates fragments that reference those explicit anchors.
+    "MD051": false,
+    // Japanese table cells make character-count-based column alignment misleading.
+    "MD060": false
+  }
+}
