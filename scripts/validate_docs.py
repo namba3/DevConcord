@@ -487,11 +487,13 @@ def check_conventions(files: list[Path]) -> list[str]:
     requirement_status_line = next(
         (line for line in requirements_template.splitlines() if "状態は要求単位で管理" in line), ""
     )
-    requirement_statuses = [
-        value for value in backtick_values(requirement_status_line)
-        if value in REQUIREMENT_STATUSES
-    ]
-    if list(dict.fromkeys(requirement_statuses)) != REQUIREMENT_STATUSES:
+    requirement_status_match = re.search(r"状態は要求単位で管理し、(.*?)を使います", requirement_status_line)
+    requirement_statuses = (
+        backtick_values(requirement_status_match.group(1))
+        if requirement_status_match
+        else []
+    )
+    if requirement_statuses != REQUIREMENT_STATUSES:
         errors.append("requirement lifecycle states must use the canonical ordered set")
     for expected_header in (
         "| ID | 要求 | 優先度 | 状態 | 受け入れ条件 | 検証方法・証跡 | 設計・実装・課題 |",
@@ -500,12 +502,25 @@ def check_conventions(files: list[Path]) -> list[str]:
         if expected_header not in requirements_template:
             errors.append("requirements.md: requirement rows must connect state, acceptance, evidence, and references")
 
-    risk_statuses = [
-        match.group(1).strip()
-        for match in re.finditer(r"^\|\s*([^|]+?)\s*\|[^\n]+\|$", risk_guide, flags=re.MULTILINE)
-        if match.group(1).strip() in RISK_STATUSES
+    risk_status_line = next(
+        (line for line in risk_guide.splitlines() if line.startswith("状態は `")), ""
+    )
+    risk_status_match = re.search(r"状態は (.*?) を使う", risk_status_line)
+    declared_risk_statuses = (
+        backtick_values(risk_status_match.group(1)) if risk_status_match else []
+    )
+    risk_table_start = risk_guide.find("| 状態 | 意味・更新条件 |")
+    risk_table_lines = (
+        risk_guide[risk_table_start:].splitlines()[2:]
+        if risk_table_start >= 0
+        else []
+    )
+    table_risk_statuses = [
+        line.split("|", maxsplit=2)[1].strip()
+        for line in risk_table_lines
+        if line.startswith("|") and line.count("|") >= 3
     ]
-    if risk_statuses != RISK_STATUSES:
+    if declared_risk_statuses != RISK_STATUSES or table_risk_statuses != RISK_STATUSES:
         errors.append("risk-management.md: risk lifecycle states must use the canonical ordered set")
     for required in ("RISK-####", "発生可能性", "影響度", "根拠・不確実性", "残余リスク"):
         if required not in risk_guide:

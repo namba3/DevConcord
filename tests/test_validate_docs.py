@@ -212,9 +212,31 @@ class ConventionValidationTests(unittest.TestCase):
         errors = self.conventions()
         self.assertTrue(any("requirement rows must connect state" in error for error in errors))
 
+    def test_unrecognized_requirement_state_is_reported(self) -> None:
+        template = self.root / "docs/application-design/templates/requirements.md"
+        text = template.read_text(encoding="utf-8").replace(
+            "`廃止` を使います", "`廃止` / `試験中` を使います", 1
+        )
+        template.write_text(text, encoding="utf-8")
+
+        errors = self.conventions()
+        self.assertTrue(any("requirement lifecycle states" in error for error in errors))
+
     def test_risk_lifecycle_state_drift_is_reported(self) -> None:
         guide = self.root / "docs/work-management/risk-management.md"
         text = guide.read_text(encoding="utf-8").replace("| 顕在化 |", "| 発生済み |", 1)
+        guide.write_text(text, encoding="utf-8")
+
+        errors = self.conventions()
+        self.assertTrue(any("risk lifecycle states" in error for error in errors))
+
+    def test_unrecognized_risk_state_is_reported(self) -> None:
+        guide = self.root / "docs/work-management/risk-management.md"
+        text = guide.read_text(encoding="utf-8")
+        marker = "| 解消 |"
+        index = text.index(marker)
+        end = text.index("\n", index)
+        text = text[:end] + "\n| 発生済み | 不正な状態 |" + text[end:]
         guide.write_text(text, encoding="utf-8")
 
         errors = self.conventions()

@@ -9,17 +9,17 @@
 ```sh
 mkdir -p ~/projects
 cd ~/projects
-git clone https://github.com/namba3/zzz.git zzz
+git clone https://github.com/namba3/DevConcord.git devconcord
 git clone <対象プロジェクトの Git URL> my-app
 ```
 
-`namba3/zzz` へのアクセス権があることを確認してください。HTTPS認証やSSH鍵の設定に応じて、リポジトリの **Code** メニューに表示されるURLを使えます。すでに clone 済みの場合は、この手順を飛ばしてください。`<...>` は対象プロジェクトで利用できるHTTPSまたはSSHのURLに置き換えます。資料集の作業ツリーに変更がある場合は、更新前にコミットまたは退避し、他の作業を失わないようにしてください。
+`namba3/DevConcord` へのアクセス権があることを確認してください。HTTPS認証やSSH鍵の設定に応じて、リポジトリの **Code** メニューに表示されるURLを使えます。すでに clone 済みの場合は、この手順を飛ばしてください。`<...>` は対象プロジェクトで利用できるHTTPSまたはSSHのURLに置き換えます。資料集の作業ツリーに変更がある場合は、更新前にコミットまたは退避し、他の作業を失わないようにしてください。
 
 例の配置では次のようになります。
 
 ```text
 ~/projects/
-├── zzz/
+├── devconcord/
 └── my-app/
 ```
 
@@ -34,12 +34,12 @@ cd ~/projects/my-app
 codex
 ```
 
-`zzz/prompts/adopt-guidance.md` の全文をCodexに渡し、入力欄を次のように設定します。
+`devconcord/prompts/adopt-guidance.md` の全文をCodexに渡し、入力欄を次のように設定します。
 
-プロンプト本文は別のターミナルで `cat ~/projects/zzz/prompts/adopt-guidance.md` を実行して表示し、コピーできます。本文を貼り付けた後、冒頭の入力欄に実際のパスと希望する運用を記入してください。
+プロンプト本文は別のターミナルで `cat ~/projects/devconcord/prompts/adopt-guidance.md` を実行して表示し、コピーできます。本文を貼り付けた後、冒頭の入力欄に実際のパスと希望する運用を記入してください。
 
 ```text
-資料集の場所: ~/projects/zzz
+資料集の場所: ~/projects/devconcord
 導入対象: ~/projects/my-app
 利用者・希望する運用: 既存の構成・設計・課題管理を尊重する
 ```
@@ -51,7 +51,7 @@ codex
 3. Codexアイコンを選ぶか、コマンドパレットから `Codex: Open Codex Sidebar` を実行します。
 4. `adopt-guidance.md` の全文をCodexに渡し、資料集と対象のパスを指定します。
 
-プロンプト全文はVS Codeで `zzz/prompts/adopt-guidance.md` を開いてコピーするか、別ターミナルで `cat` を使って表示できます。貼り付け後、入力欄を実際のパスに置き換えます。
+プロンプト全文はVS Codeで `devconcord/prompts/adopt-guidance.md` を開いてコピーするか、別ターミナルで `cat` を使って表示できます。貼り付け後、入力欄を実際のパスに置き換えます。
 
 資料集のファイルをエージェントが読めない場合は、ワークスペースへのアクセス設定を確認するか、必要なガイド・テンプレートを対象リポジトリ内へコピーしてから実行してください。作業対象は `my-app` と明示し、資料集側のファイルは変更しないよう指示します。
 
