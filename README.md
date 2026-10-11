@@ -18,3 +18,7 @@
 資料は初期値です。対象プロジェクトに既存のルールや管理方法がある場合は、それを確認してから適用してください。プロンプトの選択や導入手順は[prompts/README.md](prompts/README.md)と[導入ガイド](docs/getting-started.md)を参照してください。
 
 共通開発原則では、DDDで概念と責務の正しさを、Self-documenting Codeで理解可能性を、Performance by Designで処理構造の効率性を重視します。個人・秘密・環境情報を保護し、契約や要求への適合と重要な性能特性は独立した検証で確認します。詳しくは[資料一覧](docs/README.md)からAI支援開発ガイドと課題管理規約を参照してください。
+
+## ライセンス
+
+個別に異なるライセンスが明記されていない限り、このリポジトリの資料・テンプレート・プロンプトはMITまたはApache License 2.0のいずれかを選択して利用できます。詳細は[MIT License](LICENSE-MIT)と[Apache License 2.0](LICENSE-APACHE)を参照してください。
