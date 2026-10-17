@@ -26,7 +26,7 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 
 ## Agent Skillsの決定的な配布・検証テスト
 
-[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、相対リンク、権限frontmatter、複数探索先の名前衝突を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリに対してdry-run、Codex/CopilotとClaude Codeの配置先、選択インストール、出典manifest、冪等な再実行、更新、ローカル編集・同名衝突の保護、失敗時ロールバック、正本の不変性を確認します。
+[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、相対リンク、権限frontmatter、複数探索先の名前衝突を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリに対してdry-run、7通りのagent組み合わせと配置パッケージの共有、schema 1移行、選択インストール、出典manifest、冪等な再実行、前進/巻き戻し/異なる履歴、dirty source、ローカル編集・同名衝突の保護、manifest破損保護、失敗時rollbackと中断journal recovery、正本の不変性を確認します。
 
 ```sh
 python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
@@ -41,7 +41,11 @@ python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 | OpenAI Codex | 一時リポジトリへ `.agents/skills/` を導入し、Skillを発見・選択できるか確認 | 対象Codexの版と実行記録を残す。静的チェックだけでは実機確認済みとしない |
 | Claude Code | `.claude/skills/` の選択導入後、Skillと同梱参照を発見・利用できるか確認 | symlinkではなく生成コピーを使う。Claude Codeの版と結果を残す |
 | GitHub Copilot | 対応する `.agents/skills/` からSkillを発見・参照できるか確認 | 対象Copilot環境と版を記録。未実行環境は未検証とする |
-| 複数探索先 | `.agents/skills/` / `.claude/skills/` / `.github/skills/` に同名Skillがある場合、警告・衝突挙動を確認 | ホストにより重複発見動作が異なるため、可能なら一つの探索先に整理する |
+| Codex + Copilot | `.agents/skills/` の同一ファイルから両agentがSkillを発見・参照できるか確認 | 静的配置テストはあるが、実agentの発見は各環境で確認する |
+| Claude Code + Copilot | `.claude/skills/` の同一ファイルから両agentがSkillを発見・参照できるか確認 | Copilotの当該探索パス対応を使う版/環境ごとに確認する |
+| Codex + Claude Code | `.agents/skills/` と `.claude/skills/` の生成コピーが内容一致し、各agentが一箇所だけから発見するか確認 | CodexはClaudeの配置を探索しない前提の範囲を対象版で確認する |
+| 3エージェント併用 | 両探索先に同名Skillがある時のCopilot重複表示と実行選択を記録 | 重複解決を静的テストから推定しない。通常は避け、利用者の明示確認後だけ構成する |
+| 重複・競合 | 異なる内容の同名Skillを複数探索先に置き、警告・選択・表示を確認 | Claude Codeの挙動を他agentへ一般化しない。`.github/skills/`等の手動配置も含める |
 
 実機シナリオでは入力、エージェント/版、導入Skillと出典revision、生成・変更ファイル、実行した検証、未実施の検証を記録してください。AIが必要なBootstrapや設計品質の評価は、下記の設計書fixtureを用いる手動シナリオと同様に、決定的な静的テストの結果から切り離して報告します。
 
@@ -72,6 +76,8 @@ python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 ### Design-to-Repository Bootstrapの手動シナリオ
 
 [`bootstrap-from-design.md`](../../prompts/bootstrap-from-design.md) を対象エージェントへ実行し、開始前後のファイルスナップショット、Git HEAD/状態、対象範囲、実行したコマンドと結果を記録します。次の設計書fixtureを入力として利用できます。
+
+Bootstrap対象へ先に`bootstrap-from-design` Skillを導入する場合は、manifestがschema 2であること、両Skill探索先の全Skillがmanifestのtree hashと一致すること、探索先に余計なSkill/ファイルがないこと、他の成果物やGit履歴が存在しないことを確認します。いずれか不明なら新規対象として扱わず、既存内容を保護して停止します。比較試験では「空の対象でBootstrap後にSkillを導入」と「Skill導入後にBootstrap」の両順序を一時リポジトリで実施し、既存ファイル・履歴が保護されることを確認します。
 
 | ケース | Fixture | 評価内容 |
 |---|---|---|

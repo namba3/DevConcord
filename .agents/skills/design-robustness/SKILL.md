@@ -17,3 +17,10 @@ description: "Design contracts and recovery for failures, partial success, cance
 ## Completion
 
 For each critical operation, state the normal contract, important failure outcomes, preserved invariants, recovery/retry semantics, observable diagnostics and concrete verification evidence.
+
+## References
+
+- [DevConcord AI-assisted development guide](https://github.com/namba3/DevConcord/blob/main/docs/common/ai-assisted-development.md)
+- [Issue tracking and quality rules](https://github.com/namba3/DevConcord/blob/main/docs/work-management/issue-tracking.md)
+
+These optional deeper references do not replace the workflow above and may require network access. When installed with `manage_skills.py`, use the recorded `source_commit` in `.devconcord/skills-manifest.json` in place of `main` in these URLs to pin the references to the installed source revision.

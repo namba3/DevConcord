@@ -17,3 +17,10 @@ description: "Assess boundaries for replaceable UI frameworks, storage, network,
 ## Completion
 
 Document the dependency, reason to isolate it, boundary/semantic contract, allowed migration scope, abstraction costs and verification evidence. Do not promise zero-change replacement.
+
+## References
+
+- [DevConcord AI-assisted development guide](https://github.com/namba3/DevConcord/blob/main/docs/common/ai-assisted-development.md)
+- [Architecture decision record template](https://github.com/namba3/DevConcord/blob/main/docs/application-design/templates/adr.md)
+
+These optional deeper references do not replace the workflow above and may require network access. When installed with `manage_skills.py`, use the recorded `source_commit` in `.devconcord/skills-manifest.json` in place of `main` in these URLs to pin the references to the installed source revision.

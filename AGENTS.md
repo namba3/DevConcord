@@ -9,6 +9,6 @@
 - 外部の導入先リポジトリを編集せず、このリポジトリの資料・検証コードだけを対象にしてください。
 - 資料・検証コードを変更した場合は、`python3 scripts/validate_docs.py`、`python3 -B -m unittest discover -s tests -v`、`npx --yes markdownlint-cli2@0.23.3 "**/*.md"` を実行し、未実施の検証を成功として報告しないでください。
 - Python検証器の依存は [`requirements-dev.txt`](requirements-dev.txt) に固定しています。必要な場合は [`docs/README.md`](docs/README.md) の手順で隔離環境へ導入してください。
-- Agent Skillsの正本は `.agents/skills/` です。外部リポジトリへの配布・同期は [`scripts/manage_skills.py`](scripts/manage_skills.py) をdry-runして差分を確認し、適用時だけ `--apply` を指定してください。同名Skill、リンク切れ、エージェント固有の権限設定、導入先のローカル編集を上書きしないでください。
-- Skillsを変更した場合は標準メタデータ、Skill内リンク、配布可能なファイル構成、重複探索先を検証します。`.agents/skills/`・`.claude/skills/`・`.github/skills/` の複数箇所に同名Skillを作らず、実機確認していないエージェント互換性は未検証と報告してください。
+- Agent Skillsの正本は `.agents/skills/` です。外部リポジトリへの配布・同期は [`scripts/manage_skills.py`](scripts/manage_skills.py) をdry-runして差分を確認し、適用時だけ `--apply` を指定してください。通常同期では同じGit履歴の前進と導入先ハッシュを検証し、出典変更は `rebind-source`、異常終了後の回復は `recover` の明示操作として扱います。
+- Skillsを変更した場合は標準メタデータ、Skill内リンク、配布可能なファイル構成、agentごとの探索先・重複可能性を検証します。同名Skillは探索範囲を持つagentと内容一致/競合を区別し、Copilotが複数パスから発見し得る構成は実機未検証と報告してください。導入先のローカル編集や未知manifestを上書きせず、同名Skill追加を一律許可・禁止しません。
 - 初回導入・同期の手順変更は [`tests/integration/README.md`](tests/integration/README.md) の受け入れシナリオに照らして確認し、実際のAIエージェント実行と文書ユニットテストの証拠を区別してください。

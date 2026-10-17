@@ -17,3 +17,10 @@ description: "Derive functional requirements and application behavior from user 
 ## Quality check
 
 The output must explain why a user need implies a function or behavior, how success/failure is observable, and how the acceptance condition can be verified. Naming usability theories without a resulting design decision is insufficient.
+
+## References
+
+- [DevConcord UI/UX design guide](https://github.com/namba3/DevConcord/blob/main/docs/application-design/ui-ux-guide.md)
+- [Requirements template](https://github.com/namba3/DevConcord/blob/main/docs/application-design/templates/requirements.md)
+
+These are optional deeper references; the workflow above remains usable when the upstream repository is unavailable. When installed with `manage_skills.py`, use the recorded `source_commit` in `.devconcord/skills-manifest.json` in place of `main` in these URLs to pin the references to the installed source revision.

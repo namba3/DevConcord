@@ -16,3 +16,10 @@ description: "Review a repository's code, architecture, requirements, tests, CI,
 ## Completion
 
 Summarize scope and evidence, prioritized findings, checks performed and limitations. Do not treat a score or successful CI as proof of correctness.
+
+## References
+
+- [DevConcord review criteria](https://github.com/namba3/DevConcord/blob/main/REVIEWS.md)
+- [Repository review workflow](https://github.com/namba3/DevConcord/blob/main/docs/README.md)
+
+For an external target, apply its local `REVIEWS.md` as the project-specific source of review criteria. These upstream references are optional and may require network access. When installed with `manage_skills.py`, use the recorded `source_commit` in `.devconcord/skills-manifest.json` in place of `main` in these URLs to pin the references to the installed source revision.

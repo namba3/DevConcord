@@ -17,3 +17,10 @@ description: "Apply Performance by Design to requirements, feature behavior, and
 ## Completion
 
 Show workload evidence → design choice → acceptance/measurement condition → actual result or unverified status. Avoid post-hoc “make it fast” directives and unsupported claims.
+
+## References
+
+- [DevConcord AI-assisted development guide](https://github.com/namba3/DevConcord/blob/main/docs/common/ai-assisted-development.md)
+- [Requirements template](https://github.com/namba3/DevConcord/blob/main/docs/application-design/templates/requirements.md)
+
+These optional deeper references do not replace the workflow above and may require network access. When installed with `manage_skills.py`, use the recorded `source_commit` in `.devconcord/skills-manifest.json` in place of `main` in these URLs to pin the references to the installed source revision.

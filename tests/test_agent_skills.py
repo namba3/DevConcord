@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -124,7 +125,57 @@ description: Use this Skill for a focused task.
 
         errors = validate_repository_skills(self.root)
 
-        self.assertTrue(any("duplicate skill name" in error for error in errors))
+        self.assertTrue(any("conflicting same-name Skill" in error for error in errors))
+
+    def test_distinguishes_identical_duplicate_copy_from_content_conflict(self) -> None:
+        skill = self.make_skill("sample-skill")
+        second_root = self.root / ".claude" / "skills"
+        second_skill = second_root / "sample-skill"
+        second_skill.mkdir(parents=True)
+        (second_skill / "SKILL.md").write_bytes((skill / "SKILL.md").read_bytes())
+
+        errors = validate_repository_skills(self.root)
+
+        self.assertTrue(any("identical Skill copy" in error for error in errors))
+
+    def test_identical_copy_is_allowed_only_for_disjoint_agent_exposure(self) -> None:
+        skill = self.make_skill("sample-skill")
+        second_root = self.root / ".claude" / "skills"
+        second_skill = second_root / "sample-skill"
+        second_skill.mkdir(parents=True)
+        (second_skill / "SKILL.md").write_bytes((skill / "SKILL.md").read_bytes())
+        manifest = self.root / ".devconcord" / "skills-manifest.json"
+        manifest.parent.mkdir()
+        manifest.write_text(
+            json.dumps(
+                {
+                    "schema_version": 2,
+                    "packages": {
+                        ".agents/skills": {"agents": ["codex"], "skills": {}},
+                        ".claude/skills": {"agents": ["claude"], "skills": {}},
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        errors = validate_repository_skills(self.root)
+        self.assertFalse(any("duplicate" in error for error in errors))
+
+        manifest.write_text(
+            json.dumps(
+                {
+                    "schema_version": 2,
+                    "packages": {
+                        ".agents/skills": {"agents": ["codex", "copilot"], "skills": {}},
+                        ".claude/skills": {"agents": ["claude", "copilot"], "skills": {}},
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        errors = validate_repository_skills(self.root)
+        self.assertTrue(any("identical Skill copy" in error for error in errors))
 
 
 if __name__ == "__main__":

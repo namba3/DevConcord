@@ -22,7 +22,7 @@ Identify all design-document paths, target directory, project name and constrain
 
 ## Workflow
 
-1. Inspect target files, Git state, remotes, and existing rules before editing. Distinguish an empty uninitialized directory, a populated uninitialized directory, an initialized empty repository, and an implemented project. Never discard files, history, uncommitted changes, or remotes. Run `git init` only for an empty uninitialized target or when explicitly authorized; never push, create a hosted repository, or commit without explicit instruction.
+1. Inspect target files, Git state, remotes, and existing rules before editing. Distinguish an empty uninitialized directory, a populated uninitialized directory, an initialized empty repository, and an implemented project. Never discard files, history, uncommitted changes, or remotes. Run `git init` only for an empty uninitialized target or when explicitly authorized; never push, create a hosted repository, or commit without explicit instruction. A preinstalled DevConcord Skill is not by itself a reason to reject a new target: treat it as a safe bootstrap state only when a valid schema 2 `.devconcord/skills-manifest.json` accounts for every file under `.agents/skills/` and `.claude/skills/`, all recorded tree hashes match, no other project files or untracked Skills exist, and any `.git` has no history, remotes, or unrelated staged/working changes. If any condition is uncertain, preserve the target and stop; prefer bootstrapping before installing Skills or running the Skill from an external work context.
 2. Read each input using available tools. For PDF/DOCX or image-based material, report what was actually extracted and what remains unread; do not invent content or install an extractor without approval. Record source filename, version/date/commit and section/page where available. Keep design-source provenance distinct from shared-guidance provenance. Do not copy design documents without permission to redistribute and store them.
 3. Analyze purpose/scope, users and tasks, platform/toolchain, selected technology, use cases/domain, contracts/invariants, dependencies, quality and security requirements, verification/release conditions, contradictions, unknowns, assumptions and risks. Preserve source references. Resolve document precedence only when the documents state it. Ask about consequential contradictions; proceed only with reversible foundation work where safe.
 4. Convert evidence into a lightweight trace: source section → TASK/REQ/NFR → architecture/ADR → initial modules and tasks → acceptance criteria → tests/evidence. Use existing project tables and avoid a second tracking ledger. Do not choose an unprovided license or invent numeric targets.
@@ -34,3 +34,11 @@ Identify all design-document paths, target directory, project name and constrain
 ## Safety and completion
 
 Stop before destructive changes or consequential unresolved design decisions. Preserve existing Git history and worktree. Report inputs and unread portions, starting state, decisions/assumptions, changed outputs, checks and results, unresolved issues and residual risks. Bootstrap completion does not imply feature completion or verified quality claims.
+
+## References
+
+- [Bootstrap workflow prompt](https://github.com/namba3/DevConcord/blob/main/prompts/bootstrap-from-design.md)
+- [Requirements template](https://github.com/namba3/DevConcord/blob/main/docs/application-design/templates/requirements.md)
+- [Issue tracking and quality rules](https://github.com/namba3/DevConcord/blob/main/docs/work-management/issue-tracking.md)
+
+These optional deeper references do not replace the workflow above and may require network access. When installed with `manage_skills.py`, use the recorded `source_commit` in `.devconcord/skills-manifest.json` in place of `main` in these URLs to pin the references to the installed source revision.

@@ -10,7 +10,7 @@
 | すでにコードや規約があるプロジェクトに共通資料を選んで導入する | [既存プロジェクトへの初回導入](../prompts/adopt-guidance.md) | 既存成果物を保護し、共通資料を選択的に統合 |
 | すでに導入済みの共通資料を更新する | [導入済み資料の同期](../prompts/sync-guidance.md) | 資料別の比較基準と保留メモを使った差分適用 |
 
-Bootstrapは既存成果物を新規構成で上書きするためのものではありません。ファイルや実装がある場合は既存状態を先に確認し、共通資料の導入が目的なら初回導入ワークフローを選択します。
+Bootstrapは既存成果物を新規構成で上書きするためのものではありません。ファイルや実装がある場合は既存状態を先に確認し、共通資料の導入が目的なら初回導入ワークフローを選択します。新規対象へBootstrap Skillを先に導入した場合は、検証済みschema 2 manifestに記録されたSkillファイルだけを例外的な初期状態として扱えます。その他のファイル、未知のSkill、既存Git履歴やremoteがあれば、通常の既存状態として保護して停止します。最も安全で簡単な順序は、空の対象でBootstrapを実施してからSkillを導入することです。
 
 ## Agent Skillsを利用する
 
@@ -18,11 +18,20 @@ Skillsは作業時に必要な手順だけを選択的に読み込む標準形�
 
 | エージェント | リポジトリ探索先 | 導入方法 |
 |---|---|---|
-| OpenAI Codex | `.agents/skills/` | `--agent codex` で選択インストール |
-| GitHub Copilot | `.agents/skills/` | `--agent copilot` で選択インストール |
-| Claude Code | `.claude/skills/` | `--agent claude` で選択インストール（正本からコピーを生成） |
+| OpenAI Codex | `.agents/skills/` | `--agent codex` または `--agents` |
+| GitHub Copilot | `.agents/skills/` と `.claude/skills/` 等 | `--agent copilot` または `--agents` |
+| Claude Code | `.claude/skills/` | `--agent claude` または `--agents`（正本からコピーを生成） |
 
-`.agents/skills/` と `.claude/skills/` など複数の探索先に同名Skillを同時に置くと、エージェントごとに重複発見や名前衝突の挙動が異なります。通常は利用中のエージェントに対応する一つの配置先だけを使ってください。導入支援ツールも他の既知探索先で同名Skillを検出すると停止します。
+Skill本体は `.agents/skills/` に一つだけ置き、agent名をSkillの所有者にしません。schema 2 manifestは各配置パッケージの `agents` 配列とSkill出典・ハッシュを記録します。組み合わせは次の配置です。
+
+| 利用エージェント | 配置 |
+|---|---|
+| Codex / Copilot / Codex + Copilot | `.agents/skills/` 一つを共有 |
+| Claude Code / Claude Code + Copilot | `.claude/skills/` 一つを共有 |
+| Codex + Claude Code | `.agents/skills/` と `.claude/skills/` に同内容を生成 |
+| Codex + Claude Code + Copilot | 上記二箇所。Copilotから重複発見される可能性があるため明示opt-inが必要 |
+
+Copilotは複数のSkill探索先を持ちます。Claude Codeのsymlink重複扱い等の仕様をCopilotや他エージェントに一般化しません。三者併用時の同名Skill重複解決はホスト依存で、実機確認されていない限り保証しません。通常はCopilotが見える探索先を一つにし、重複のない組み合わせを選んでください。
 
 DevConcordのcloneを `~/projects/devconcord`、対象を `~/projects/my-app` とした例です。まず `--apply` なしで計画を確認します。これは既定のdry-runで、ファイルを変更しません。
 
@@ -34,6 +43,23 @@ python3 ~/projects/devconcord/scripts/manage_skills.py install \
 
 表示された対象・変更内容を確認した後、同じコマンドに `--apply` を追加してインストールします。全Skillsを選ぶ場合は `--skills` を省略します。既に導入したSkillの更新もdry-runで確認し、意図したものだけを適用します。
 
+CodexとCopilot、またはClaude CodeとCopilotが同じSkillを使う場合は一回だけ導入し、同じ配置パッケージを共有します。
+
+```sh
+python3 ~/projects/devconcord/scripts/manage_skills.py install \
+  --target ~/projects/my-app --agents codex copilot --skills bootstrap-from-design
+python3 ~/projects/devconcord/scripts/manage_skills.py install \
+  --target ~/projects/my-app --agents claude copilot --skills bootstrap-from-design
+```
+
+CodexとClaude Codeは探索先が分かれているため、別々の配置へ同じSkillを生成できます。3エージェント併用はCopilotが両方の探索先から同名Skillを見つけ得ます。動作を実機で確認し、重複を許容する場合に限り、dry-runと適用の両方で `--allow-duplicate-discovery` を明示します。
+
+```sh
+python3 ~/projects/devconcord/scripts/manage_skills.py install \
+  --target ~/projects/my-app --agents codex claude copilot \
+  --skills bootstrap-from-design --allow-duplicate-discovery
+```
+
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py sync \
   --target ~/projects/my-app --agent codex
@@ -42,6 +68,24 @@ python3 ~/projects/devconcord/scripts/manage_skills.py sync \
 ```
 
 初回導入時は `.devconcord/skills-manifest.json` にSkillごとの出典リポジトリ識別子・コミット、出典ツリーのSHA-256、導入済みツリーのSHA-256を記録します。Git remote URLを記録する場合はユーザー情報・query・fragmentを除去します。導入先でSkillが編集されている、管理記録がない同名Skillがある、別の探索先と衝突する場合は上書きしません。内容を確認してローカル変更を退避・統合するか、衝突する配置を一つに整理してから再実行します。`guidance-provenance.md` は共通ガイド資料の記録であり、Skillの導入記録には使用しません。
+
+同期は記録された完全コミットが現在のソースcloneに存在し、現在のコミットがその子孫であることを確認します。同一コミットはそのまま、通常の前進だけを同期し、巻き戻し・分岐・欠落履歴・浅い履歴・ローカル編集・未コミットソースは止めます。fetch / unshallow / reset は行いません。別のソースを意図的に採用する場合だけ、差分を確認して `rebind-source` を使います。rebindも導入先ローカル編集の上書きは許可せず、明示的な `--apply` が必要です。
+
+```sh
+python3 ~/projects/devconcord/scripts/manage_skills.py rebind-source \
+  --target ~/projects/my-app --agent codex
+python3 ~/projects/devconcord/scripts/manage_skills.py rebind-source \
+  --target ~/projects/my-app --agent codex --apply
+```
+
+適用は対象リポジトリ内の排他ロックとトランザクションジャーナルを使い、パッケージ内容を検証してから置換し、最後にmanifestを更新します。コマンドが異常終了した場合、次のinstall/syncは残った処理を検知して停止します。まず次をdry-runし、対象と状態を確認してください。
+
+```sh
+python3 ~/projects/devconcord/scripts/manage_skills.py recover --target ~/projects/my-app
+python3 ~/projects/devconcord/scripts/manage_skills.py recover --target ~/projects/my-app --apply
+```
+
+`skills.lock` が残っていて、対応プロセスが停止済みと確認できた場合だけ `recover --apply --force` を使用します。回復はジャーナル・バックアップ・現在の内容が整合するときに限ります。不明または破損したジャーナル、ジャーナル作成前の孤立ステージング、外部変更、バックアップ欠落時は自動削除・上書きせず停止し、手動調査が必要です。異なるファイルシステムを跨ぐ置換は拒否します。OS/電源障害に対する全ファイルシステムでの完全原子性は保証しません。
 
 導入前にSkillの本文・同梱ファイル・出典を確認してください。インストーラーはSkill内のスクリプトを実行しませんが、Skill本文はエージェントへ指示を与えるため、信頼できない出典を信頼済みコードや安全な指示とみなしてはいけません。dry-runは対象ファイルと衝突を確認するもので、Skill内容の安全性を保証するものではありません。
 
@@ -125,6 +169,8 @@ codex
 ## Design-to-Repository Bootstrapを行う
 
 新規プロジェクトのディレクトリを用意し、その対象を作業コンテキストとしてAIエージェントを起動します。対象を既存プロジェクトのGit URLからcloneする必要はありません。複数のMarkdown設計書を渡すほか、PDF/DOCX等は利用中のエージェント環境で実際に内容を読み取れる場合に限り入力にできます。読み取りできない節・抽出結果の不確かな内容は未確認として扱います。
+
+Bootstrap Skillを使う場合、推奨順序は空の対象でBootstrapを開始し、初期成果物を作成してから対象へ必要なSkillsを導入することです。Skillを先にインストール済みの対象を使う場合は、[`bootstrap-from-design.md`](../prompts/bootstrap-from-design.md) にあるschema 2 manifest・ツリーハッシュ・対象内の他成果物・Git履歴の検査をすべて満たさなければ進めません。Codex / Claude Code / CopilotいずれでもSkillの利用と対象へのファイル変更を区別し、agentの探索挙動が未確認ならプロンプト全文を使う手順へフォールバックします。
 
 [`bootstrap-from-design.md`](../prompts/bootstrap-from-design.md) の全文をエージェントへ渡し、入力欄を指定します。
 
