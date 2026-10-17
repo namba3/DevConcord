@@ -24,6 +24,27 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 
 ヘルパーの単体テストはこれらのアサーションが誤った状態を検出することを検証します。独立したagent-runnerがないため、実際のエージェント出力へ自動適用した証拠とは区別してください。
 
+## Agent Skillsの決定的な配布・検証テスト
+
+[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、相対リンク、権限frontmatter、複数探索先の名前衝突を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリに対してdry-run、Codex/CopilotとClaude Codeの配置先、選択インストール、出典manifest、冪等な再実行、更新、ローカル編集・同名衝突の保護、失敗時ロールバック、正本の不変性を確認します。
+
+```sh
+python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
+```
+
+これはファイルシステム操作とメタデータの決定的なテストです。実際のエージェントがSkillを発見・選択・実行することを証明しません。
+
+## Agent Skillsのエージェント実機シナリオ
+
+| 対象 | 手動確認 | 証拠と制限 |
+|---|---|---|
+| OpenAI Codex | 一時リポジトリへ `.agents/skills/` を導入し、Skillを発見・選択できるか確認 | 対象Codexの版と実行記録を残す。静的チェックだけでは実機確認済みとしない |
+| Claude Code | `.claude/skills/` の選択導入後、Skillと同梱参照を発見・利用できるか確認 | symlinkではなく生成コピーを使う。Claude Codeの版と結果を残す |
+| GitHub Copilot | 対応する `.agents/skills/` からSkillを発見・参照できるか確認 | 対象Copilot環境と版を記録。未実行環境は未検証とする |
+| 複数探索先 | `.agents/skills/` / `.claude/skills/` / `.github/skills/` に同名Skillがある場合、警告・衝突挙動を確認 | ホストにより重複発見動作が異なるため、可能なら一つの探索先に整理する |
+
+実機シナリオでは入力、エージェント/版、導入Skillと出典revision、生成・変更ファイル、実行した検証、未実施の検証を記録してください。AIが必要なBootstrapや設計品質の評価は、下記の設計書fixtureを用いる手動シナリオと同様に、決定的な静的テストの結果から切り離して報告します。
+
 ## AIエージェントを使う手動シナリオ
 
 モデル出力は非決定的なため、通常CIでは実行しません。Bootstrap/導入・同期プロンプトや関連規約を変更した場合は、使い捨てのローカルリポジトリと実際の対象エージェントで該当シナリオを評価します。開始前に入力設計書/資料集の版、対象のHEAD・作業ツリー状態・対象ファイル内容を記録し、シナリオ後に比較します。比較用一時リポジトリ以外の履歴を変更せず、実行していないシナリオは未実施と報告します。
@@ -64,7 +85,7 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 
 ## 設計原則の適用シナリオ
 
-これらはAIの設計・課題分解に対する手動評価です。原則名の列挙ではなく、根拠から要求、設計、受け入れ条件、検証への具体的な接続を確認します。コード実装を求めない評価では、実装済み・実測済みと誤認しないよう明記します。
+これらは対応する `ux-functional-design` / `design-performance` / `design-robustness` / `design-replaceability` Skillsを使った場合を含む、AIの設計・課題分解に対する手動評価です。原則名の列挙ではなく、根拠から要求、設計、受け入れ条件、検証への具体的な接続を確認します。コード実装を求めない評価では、実装済み・実測済みと誤認しないよう明記します。
 
 | シナリオ | 観測する具体的な判断 |
 |---|---|

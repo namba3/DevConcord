@@ -12,6 +12,58 @@
 
 Bootstrapは既存成果物を新規構成で上書きするためのものではありません。ファイルや実装がある場合は既存状態を先に確認し、共通資料の導入が目的なら初回導入ワークフローを選択します。
 
+## Agent Skillsを利用する
+
+Skillsは作業時に必要な手順だけを選択的に読み込む標準形式のワークフローです。Skillの正本はDevConcordの `.agents/skills/<skill-name>/SKILL.md` に一つだけ置きます。既存プロンプトと `AGENTS.md` / `REVIEWS.md` / `docs/` は引き続き利用でき、Skills非対応環境では従来のプロンプトを使えます。
+
+| エージェント | リポジトリ探索先 | 導入方法 |
+|---|---|---|
+| OpenAI Codex | `.agents/skills/` | `--agent codex` で選択インストール |
+| GitHub Copilot | `.agents/skills/` | `--agent copilot` で選択インストール |
+| Claude Code | `.claude/skills/` | `--agent claude` で選択インストール（正本からコピーを生成） |
+
+`.agents/skills/` と `.claude/skills/` など複数の探索先に同名Skillを同時に置くと、エージェントごとに重複発見や名前衝突の挙動が異なります。通常は利用中のエージェントに対応する一つの配置先だけを使ってください。導入支援ツールも他の既知探索先で同名Skillを検出すると停止します。
+
+DevConcordのcloneを `~/projects/devconcord`、対象を `~/projects/my-app` とした例です。まず `--apply` なしで計画を確認します。これは既定のdry-runで、ファイルを変更しません。
+
+```sh
+python3 ~/projects/devconcord/scripts/manage_skills.py install \
+  --target ~/projects/my-app --agent codex \
+  --skills bootstrap-from-design design-robustness
+```
+
+表示された対象・変更内容を確認した後、同じコマンドに `--apply` を追加してインストールします。全Skillsを選ぶ場合は `--skills` を省略します。既に導入したSkillの更新もdry-runで確認し、意図したものだけを適用します。
+
+```sh
+python3 ~/projects/devconcord/scripts/manage_skills.py sync \
+  --target ~/projects/my-app --agent codex
+python3 ~/projects/devconcord/scripts/manage_skills.py sync \
+  --target ~/projects/my-app --agent codex --apply
+```
+
+初回導入時は `.devconcord/skills-manifest.json` にSkillごとの出典リポジトリ識別子・コミット、出典ツリーのSHA-256、導入済みツリーのSHA-256を記録します。Git remote URLを記録する場合はユーザー情報・query・fragmentを除去します。導入先でSkillが編集されている、管理記録がない同名Skillがある、別の探索先と衝突する場合は上書きしません。内容を確認してローカル変更を退避・統合するか、衝突する配置を一つに整理してから再実行します。`guidance-provenance.md` は共通ガイド資料の記録であり、Skillの導入記録には使用しません。
+
+導入前にSkillの本文・同梱ファイル・出典を確認してください。インストーラーはSkill内のスクリプトを実行しませんが、Skill本文はエージェントへ指示を与えるため、信頼できない出典を信頼済みコードや安全な指示とみなしてはいけません。dry-runは対象ファイルと衝突を確認するもので、Skill内容の安全性を保証するものではありません。
+
+### Skill品質と検証
+
+Skillの発見品質（名前・frontmatter・目的を示すdescription）、選択品質（適用条件と非適用範囲）、実行品質（安全な手順、成果物、検証、結果報告）を別々に評価します。説明文が適切でSkillが発見されても、AIの実行結果が正しいとは限りません。共有Skillではベンダー固有のpermission frontmatterを使わず、Markdown参照がSkill配布単位内に解決することを確認します。
+
+DevConcordルートで `requirements-dev.txt` の依存が導入済みのPython仮想環境を有効にして実行します。
+
+```sh
+cd ~/projects/devconcord
+python3 scripts/manage_skills.py validate
+python3 scripts/validate_docs.py
+python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
+```
+
+決定的な検証で確認できるのは構造・メタデータ・参照・配布処理です。対象エージェントでのSkill発見、選択、適用は[統合シナリオ](../tests/integration/README.md)に従って個別に評価します。
+
+Claude Code・Codex・Copilotでの実際の発見・呼び出し動作は各エージェントと環境のバージョンに依存します。静的検証や配布テストは実エージェントによる実行確認の代替ではありません。未実行のエージェントは未検証として報告してください。
+
+仕様・各エージェントの探索先は[Agent Skills specification](https://agentskills.io/specification)、[Claude Code Skills](https://code.claude.com/docs/en/skills)、[OpenAI Codex Skills](https://developers.openai.com/codex/skills)、[GitHub Copilot Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)を参照してください。エージェント側の対応範囲は更新されるため、配布先の現行バージョンで確認します。
+
 ## 1. リポジトリを準備する
 
 資料集と対象プロジェクトは、隣り合うディレクトリに clone するとパスを指定しやすくなります。

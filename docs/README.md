@@ -4,6 +4,8 @@
 
 初回導入・更新適用の手順は[はじめての導入と運用](getting-started.md)を参照してください。
 
+作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。Skillsはプロンプトを置き換えるのではなく、選択時に読み込む実行ワークフローです。外部プロジェクトへの配布と同期は [`manage_skills.py`](../scripts/manage_skills.py) を使います。
+
 ## 共通
 
 | 資料 | 用途 |
@@ -44,6 +46,7 @@
 - 設計書起点の初期化では、入力出典・節からTASK/REQ/NFR、ADR、初期構造、課題、受け入れ条件へ必要な範囲で追跡します。設計書自体の出典と共通資料の `guidance-provenance.md` を混同せず、未確認事項を確定仕様として補いません。
 - 課題表と規約のリンクを保つ場合は `work-management/` をディレクトリごと対象リポジトリの `docs/` へコピーします。テンプレートだけをコピーする場合は、規約へのリンク先を対象内の配置に合わせて変更します。
 - AIエージェントに常時適用する作業ルールは対象リポジトリの `AGENTS.md`、レビュー専用の観点は `REVIEWS.md` に置くための[生成プロンプト](../prompts/README.md)も用意しています。
+- Agent Skillsは必要なタスクに応じて個別に読み込むワークフローです。Codex/Copilotでは `.agents/skills/`、Claude Codeでは `.claude/skills/` を使い、同じ名前のSkillを複数の探索先へ置かないでください。導入・同期ではdry-runが既定で、ローカル編集や衝突を検出した場合は上書きせず停止します。インストール記録は `.devconcord/skills-manifest.json` に保存し、共通資料の `docs/guidance-provenance.md` とは別に管理します。
 - 設計書を入力に新しいリポジトリの開発基盤・初期構造を作る場合は[Design-to-Repository Bootstrap](../prompts/bootstrap-from-design.md)を使います。これは既存成果物を調査・保持しながら規約を選択導入する初回導入とは別のワークフローです。
 - 既存プロジェクトへ導入するときは、[導入プロンプト](../prompts/adopt-guidance.md)で既存規約との重複・差異を確認してから適用します。
 - 導入済み資料を更新するときは、[更新プロンプト](../prompts/sync-guidance.md)で資料ごとの比較基準コミット以降の差分と、適用メモに残る保留項目を確認します。
@@ -51,7 +54,7 @@
 
 ## 自動検証
 
-Pull Request と `main` への push で、Markdownlint、DevConcord内のMarkdown/HTMLリンク、管理規約・テンプレートの既知の必須項目と正規評価軸/重み、課題・ADR・リスク・要求状態の定義間整合、Markdown中の個人情報・個人環境情報・秘密らしき値のヒューリスティック検査を行います。任意形式の課題表の全ID・状態・優先度、実際の要求仕様/ADR、DevConcord資料を導入した外部リポジトリ、AIエージェントが規約に従ったかは検証しません。Markdown上の規約検査は正規資料・テンプレートの静的な整合確認であり、実プロジェクトの適合や設計判断の品質を保証しません。プライバシー検査はMarkdown中の候補検出に限られ、誤検出・見逃しがあるため、ソース/設定を含む専用シークレットスキャナーの代わりにはなりません。導入・同期ヘルパーの決定的なテストと、実AIエージェントを使う手動評価は[統合シナリオ](../tests/integration/README.md)で分離しています。CIはPython 3.14、Node.js 22、markdownlint-cli2 0.23.3およびrequirements-dev.txtで固定したPython依存を使います。Workflowはブランチ保護/rulesetを設定しないため、管理者はGitHub上で `main` へのマージにDocumentationワークフローの必須チェックを設定してください。ローカルでは仮想環境にPython依存を一度インストールしてから次を実行できます。
+Pull Request と `main` への push で、Markdownlint、DevConcord内のMarkdown/HTMLリンク、Agent Skillsのfrontmatter・配置・相対リンク・探索先間の名前重複、管理規約・テンプレートの既知の必須項目と正規評価軸/重み、課題・ADR・リスク・要求状態の定義間整合、Markdown中の個人情報・個人環境情報・秘密らしき値のヒューリスティック検査を行います。任意形式の課題表の全ID・状態・優先度、実際の要求仕様/ADR、DevConcord資料を導入した外部リポジトリ、AIエージェントが規約に従ったかは検証しません。Markdown上の規約検査は正規資料・テンプレートの静的な整合確認であり、実プロジェクトの適合や設計判断の品質を保証しません。プライバシー検査はMarkdown中の候補検出に限られ、誤検出・見逃しがあるため、ソース/設定を含む専用シークレットスキャナーの代わりにはなりません。導入・同期ヘルパーの決定的なテストと、実AIエージェントを使う手動評価は[統合シナリオ](../tests/integration/README.md)で分離しています。CIはPython 3.14、Node.js 22、markdownlint-cli2 0.23.3およびrequirements-dev.txtで固定したPython依存を使います。Workflowはブランチ保護/rulesetを設定しないため、管理者はGitHub上で `main` へのマージにDocumentationワークフローの必須チェックを設定してください。ローカルでは仮想環境にPython依存を一度インストールしてから次を実行できます。
 
 ```sh
 python3 -m venv .venv
