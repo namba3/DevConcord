@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import stat
 import subprocess
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from scripts import validate_docs
 
@@ -172,6 +172,38 @@ def assert_idempotent(first: dict[str, bytes], second: dict[str, bytes]) -> None
         raise AssertionError(
             f"repeat application changed files: {', '.join(sorted(changed))}"
         )
+
+
+def assert_bootstrap_artifacts(
+    root: Path,
+    before: dict[str, bytes],
+    allowed_paths: set[str],
+    required_paths: set[str],
+    protected_paths: set[str] | None = None,
+) -> None:
+    """Check a design bootstrap's declared scope, required outputs, and local links."""
+    root = root.resolve()
+    paths = allowed_paths | required_paths | (protected_paths or set())
+    for value in paths:
+        parsed = PurePosixPath(value)
+        if parsed.is_absolute() or ".." in parsed.parts or not parsed.parts:
+            raise AssertionError(f"bootstrap assertion path is not root-relative: {value}")
+
+    after = snapshot_files(root)
+    assert_changes_within(before, after, allowed_paths)
+    assert_paths_unchanged(before, after, protected_paths or set())
+    missing: list[str] = []
+    for path in sorted(required_paths):
+        artifact = root / path
+        try:
+            artifact.resolve().relative_to(root)
+        except ValueError:
+            raise AssertionError(f"required bootstrap artifact escapes target: {path}") from None
+        if not artifact.is_file():
+            missing.append(path)
+    if missing:
+        raise AssertionError(f"required bootstrap artifacts are missing: {', '.join(missing)}")
+    assert_markdown_links_resolve(root)
 
 
 def assert_source_tree_unchanged(

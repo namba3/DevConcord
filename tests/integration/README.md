@@ -1,6 +1,6 @@
-# 導入・同期・設計判断の統合シナリオ
+# Bootstrap・導入・同期・設計判断の統合シナリオ
 
-このディレクトリは、決定的に検査できる成果物不変条件と、AIエージェントの判断を人が評価するシナリオを分離します。通常のユニットテストは固定のMarkdown出力やモデル文面に依存せず、AIモデルも呼び出しません。
+このディレクトリは、設計書から新規リポジトリを作るBootstrap、既存プロジェクトへの導入・同期について、決定的に検査できる成果物不変条件と、AIエージェントの判断を人が評価するシナリオを分離します。通常のユニットテストは固定のMarkdown出力やモデル文面に依存せず、AIモデルも呼び出しません。
 
 ## 決定的な検査
 
@@ -17,6 +17,7 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 - `assert_markdown_links_resolve`: 導入先のMarkdown相対リンクを検査。
 - `assert_provenance`: 比較基準SHA、出典ファイル、適用状態、対象ファイル、部分適用/保留理由を照合。
 - `assert_idempotent`: 同じ入力への再適用前後のファイルスナップショットが同一か確認。
+- `assert_bootstrap_artifacts`: Bootstrapの許可差分、必須成果物、保護ファイル、Markdownリンクを検査。
 - `assert_validation_failure_kept_pending`: 検証失敗時に適用済みへ進めず、比較基準SHAも進めていないことを確認。
 - `assert_no_undefined_requirement_ids`: タスクから参照するREQ IDが要求表に存在するか確認。
 - `check_forward_history`: Git前進関係、同一SHA、巻き戻し、分岐、欠落コミット、浅い履歴の扱いを検査。
@@ -25,7 +26,7 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 
 ## AIエージェントを使う手動シナリオ
 
-モデル出力は非決定的なため、通常CIでは実行しません。導入・同期プロンプトや関連規約を変更した場合は、使い捨てのローカルリポジトリと実際の対象エージェントで該当シナリオを評価します。開始前に資料集のコミット/SHA、導入先のHEAD・作業ツリー状態・対象ファイル内容を記録し、シナリオ後に比較します。比較用一時リポジトリ以外の履歴を変更せず、実行していないシナリオは未実施と報告します。
+モデル出力は非決定的なため、通常CIでは実行しません。Bootstrap/導入・同期プロンプトや関連規約を変更した場合は、使い捨てのローカルリポジトリと実際の対象エージェントで該当シナリオを評価します。開始前に入力設計書/資料集の版、対象のHEAD・作業ツリー状態・対象ファイル内容を記録し、シナリオ後に比較します。比較用一時リポジトリ以外の履歴を変更せず、実行していないシナリオは未実施と報告します。
 
 ### シナリオA：既存プロジェクトへの初回導入
 
@@ -46,6 +47,20 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 ### シナリオC：履歴関係が通常同期でない場合
 
 一時的な資料集履歴で、前進、同一コミット、更新先が古い状態、分岐、比較元/更新先の欠落、浅いcloneを作ります。`merge-base --is-ancestor` の終了状態 `0`・`1`・その他を区別し、通常前進以外で自動適用・fetch・reset・基準SHA変更をしないこと、履歴不足を分岐と断定しないことを確認します。履歴関係の判定ロジック自体は合成履歴のユニットテストでも確認します。
+
+### Design-to-Repository Bootstrapの手動シナリオ
+
+[`bootstrap-from-design.md`](../../prompts/bootstrap-from-design.md) を対象エージェントへ実行し、開始前後のファイルスナップショット、Git HEAD/状態、対象範囲、実行したコマンドと結果を記録します。次の設計書fixtureを入力として利用できます。
+
+| ケース | Fixture | 評価内容 |
+|---|---|---|
+| A. 小規模CLI | [`cli/design.md`](fixtures/bootstrap/cli/design.md) | GUI要件を混入せず、ストリーム入力、stderr/終了コード契約、過剰な層を避けた最小骨格とビルド/スモークテストを作る |
+| B. GUIデスクトップ | [`desktop/design.md`](fixtures/bootstrap/desktop/design.md) | iced型をコアへ漏らさず、進捗・取消・破損画像の責務、要求/受け入れ条件/初期課題、UI交換境界を反映する |
+| C. バックエンドサービス | [`service/design.md`](fixtures/bootstrap/service/design.md) | 原子性・冪等性・障害時契約、認証情報の扱い、必要最小限のストレージ境界と契約/統合テスト方針を記録する |
+| D. 不完全・矛盾設計 | [`design-a.md`](fixtures/bootstrap/incomplete-conflicting/design-a.md)、[`design-b.md`](fixtures/bootstrap/incomplete-conflicting/design-b.md) | OS/保存データの重要な矛盾と未定義ライセンス/範囲を確定事項にせず、可逆的な基盤作業だけ進めるか判断を求める |
+| E. 既存ファイルあり | [`fixtures/existing-project/`](fixtures/existing-project/) を一時ディレクトリへコピーし、既存ファイルをコミットした状態でBootstrap対象に指定 | 既存成果物・Git履歴・課題状態を保護し、対象差分を宣言して再実行で不要差分を作らない。既存プロジェクトへの規約導入が目的ならBootstrapではなくシナリオAの導入を使う |
+
+シナリオごとに、設計書出典→TASK/REQ/NFR→設計/初期構造→課題→受け入れ条件/検証の追跡、読めなかった内容と仮定の明示、指定初期化範囲の遵守、ライセンスを勝手に選んでいないこと、`guidance-provenance.md` と設計書出典を混同しないことを確認します。対象でのビルド・テストに加えて、再実行前後のスナップショットが不変であることを確認します。決定的アサーションはAIの設計判断の正しさそのものを保証しません。
 
 ## 設計原則の適用シナリオ
 

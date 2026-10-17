@@ -321,6 +321,17 @@ class ConventionValidationTests(unittest.TestCase):
 
         self.assertTrue(any("user tasks must link to stable requirement IDs" in error for error in errors))
 
+    def test_requirement_template_must_record_design_sources(self) -> None:
+        template = self.root / "docs/application-design/templates/requirements.md"
+        text = template.read_text(encoding="utf-8").replace(
+            "**入力設計書・版/コミット等:**", "**関連資料:**", 1
+        )
+        template.write_text(text, encoding="utf-8")
+
+        errors = self.conventions()
+
+        self.assertTrue(any("trace to source design documents" in error for error in errors))
+
     def test_unrecognized_requirement_state_is_reported(self) -> None:
         template = self.root / "docs/application-design/templates/requirements.md"
         text = template.read_text(encoding="utf-8").replace(

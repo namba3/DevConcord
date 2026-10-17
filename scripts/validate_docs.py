@@ -459,13 +459,18 @@ def check_conventions(files: list[Path]) -> list[str]:
     if requirement_statuses != REQUIREMENT_STATUSES:
         errors.append("requirement lifecycle states must use the canonical ordered set")
     for expected_header in (
-        "| ID | 要求 | 優先度 | 状態 | 関連タスクID | 受け入れ条件 | 検証方法・証跡 | 設計・実装・課題 |",
-        "| ID | 品質特性 | 要求・条件 | 状態 | 受け入れ条件・検証方法・証跡 | 設計・実装・課題 |",
+        "| ID | 要求 | 優先度 | 状態 | 関連タスクID | 設計書出典・節 | 受け入れ条件 | 検証方法・証跡 | 設計・実装・課題 |",
+        "| ID | 品質特性 | 要求・条件 | 状態 | 設計書出典・節 | 受け入れ条件・検証方法・証跡 | 設計・実装・課題 |",
     ):
         if expected_header not in requirements_template:
             errors.append("requirements.md: requirement rows must connect state, acceptance, evidence, and references")
     if "| タスクID |" not in requirements_template or "| 関連要求ID |" not in requirements_template:
         errors.append("requirements.md: user tasks must link to stable requirement IDs")
+    if (
+        "| 設計書出典・節 |" not in requirements_template
+        or "**入力設計書・版/コミット等:**" not in requirements_template
+    ):
+        errors.append("requirements.md: tasks and requirements must trace to source design documents")
 
     risk_status_line = next(
         (line for line in risk_guide.splitlines() if line.startswith("状態は `")), ""

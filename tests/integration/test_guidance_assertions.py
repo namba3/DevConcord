@@ -7,6 +7,7 @@ from pathlib import Path
 
 from tests.integration.assertions import (
     HistoryValidationError,
+    assert_bootstrap_artifacts,
     assert_changes_within,
     assert_idempotent,
     assert_issue_records_preserved,
@@ -133,6 +134,60 @@ class AdoptionInvariantTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "unexpected changed paths"):
             assert_changes_within(before, after, {"AGENTS.md"})
 
+    def test_bootstrap_artifacts_are_scoped_complete_and_linked(self) -> None:
+        protected = self.root / "notes.txt"
+        protected.write_text("keep\n", encoding="utf-8")
+        before = snapshot_files(self.root)
+        (self.root / "README.md").write_text("[requirements](docs/requirements.md)\n", encoding="utf-8")
+        (self.root / "docs").mkdir()
+        (self.root / "docs/requirements.md").write_text("# Requirements\n", encoding="utf-8")
+        allowed = {"README.md", "docs/requirements.md"}
+        required = {"README.md", "docs/requirements.md"}
+
+        assert_bootstrap_artifacts(
+            self.root, before, allowed, required, {"notes.txt"}
+        )
+
+        first_result = snapshot_files(self.root)
+        assert_bootstrap_artifacts(
+            self.root, first_result, set(), required, {"notes.txt"}
+        )
+        second_result = snapshot_files(self.root)
+        assert_idempotent(first_result, second_result)
+        (self.root / "README.md").write_text("[missing](absent.md)\n", encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "unresolved Markdown links"):
+            assert_bootstrap_artifacts(
+                self.root, before, allowed, required, {"notes.txt"}
+            )
+        (self.root / "README.md").write_text(
+            "[requirements](docs/requirements.md)\n", encoding="utf-8"
+        )
+        (self.root / "unexpected.txt").write_text("out of scope\n", encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "unexpected changed paths"):
+            assert_bootstrap_artifacts(
+                self.root, before, allowed, required, {"notes.txt"}
+            )
+
+    def test_bootstrap_rejects_missing_outputs_changed_protected_files_and_bad_paths(self) -> None:
+        protected = self.root / "existing.md"
+        protected.write_text("# Existing\n", encoding="utf-8")
+        before = snapshot_files(self.root)
+
+        with self.assertRaisesRegex(AssertionError, "required bootstrap artifacts"):
+            assert_bootstrap_artifacts(
+                self.root, before, set(), {"README.md"}
+            )
+        with self.assertRaisesRegex(AssertionError, "root-relative"):
+            assert_bootstrap_artifacts(
+                self.root, before, {"../outside"}, set()
+            )
+
+        (self.root / "existing.md").write_text("# Overwritten\n", encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "protected files changed"):
+            assert_bootstrap_artifacts(
+                self.root, before, {"existing.md"}, set(), {"existing.md"}
+            )
+
     def test_reapplication_and_issue_records_are_checked(self) -> None:
         initial = {"docs/rules.md": b"rule\n"}
         assert_idempotent(initial, initial.copy())
@@ -245,6 +300,26 @@ class AdoptionInvariantTests(unittest.TestCase):
         (source / "docs/rule.md").write_text("# Changed\n", encoding="utf-8")
         with self.assertRaisesRegex(AssertionError, "source files changed"):
             assert_source_tree_unchanged(source_before, source, source_git_before)
+
+
+class BootstrapInputFixtureTests(unittest.TestCase):
+    def test_design_fixtures_cover_requested_bootstrap_cases(self) -> None:
+        fixtures = Path(__file__).parent / "fixtures" / "bootstrap"
+        cli = (fixtures / "cli/design.md").read_text(encoding="utf-8")
+        desktop = (fixtures / "desktop/design.md").read_text(encoding="utf-8")
+        service = (fixtures / "service/design.md").read_text(encoding="utf-8")
+        conflicting_a = (
+            fixtures / "incomplete-conflicting/design-a.md"
+        ).read_text(encoding="utf-8")
+        conflicting_b = (
+            fixtures / "incomplete-conflicting/design-b.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("CLI only", cli)
+        self.assertIn("cancellation", desktop)
+        self.assertIn("must be atomic", service)
+        self.assertIn("SQLite is mandatory", conflicting_a)
+        self.assertIn("SQLite is prohibited", conflicting_b)
 
 
 if __name__ == "__main__":
