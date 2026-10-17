@@ -9,6 +9,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+from markdown_it import MarkdownIt
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ISSUE_RULES = ROOT / "docs/work-management/issue-tracking.md"
@@ -54,7 +56,8 @@ KNOWN_SECRET_MARKER = re.compile(
     r"\b(?:ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{30,}|"
     r"AKIA[0-9A-Z]{16}|sk_live_[A-Za-z0-9]{16,})\b"
 )
-PRIVATE_KEY_MARKER = re.compile(r"-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY-----")
+PRIVATE_KEY_MARKER = re.compile(r"-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----")
+URL_CREDENTIAL = re.compile(r"\b(?:https?|ftp)://[^/\s:@]+:[^@\s/]+@", flags=re.IGNORECASE)
 GENERIC_USER_NAMES = {
     "user", "username", "specific-user", "your-user", "yourname", "example",
     "developer", "test", "name", "placeholder", "user-name",
@@ -75,6 +78,23 @@ def fail(errors: list[str]) -> int:
     return 0
 
 
+def relative_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def read_utf8(path: Path, purpose: str, errors: list[str]) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        errors.append(
+            f"{relative_path(path)}: cannot read {purpose} ({type(error).__name__})"
+        )
+        return None
+
+
 def markdown_files() -> list[Path]:
     return sorted(
         path
@@ -82,27 +102,6 @@ def markdown_files() -> list[Path]:
         if ".git" not in path.relative_to(ROOT).parts
         and "node_modules" not in path.relative_to(ROOT).parts
     )
-
-
-def without_fenced_code(text: str) -> str:
-    lines = text.splitlines()
-    result: list[str] = []
-    fence_char: str | None = None
-    fence_size = 0
-    for line in lines:
-        match = re.match(r"^\s*(`{3,}|~{3,})", line)
-        if match:
-            marker = match.group(1)
-            if fence_char is None:
-                fence_char, fence_size = marker[0], len(marker)
-            elif marker[0] == fence_char and len(marker) >= fence_size:
-                fence_char, fence_size = None, 0
-            result.append("")
-        elif fence_char is None:
-            result.append(line)
-        else:
-            result.append("")
-    return "\n".join(result)
 
 
 def slugify_heading(heading: str) -> str:
@@ -114,155 +113,28 @@ def slugify_heading(heading: str) -> str:
 
 
 def heading_anchors(text: str) -> set[str]:
-    text = without_fenced_code(text)
-    anchors = {
-        match.group(1)
-        for match in re.finditer(
-            r"<(?:a|[^>]+)\b(?:id|name)=[\"']([^\"']+)[\"']",
-            text,
-            flags=re.IGNORECASE,
-        )
-    }
+    tokens = MarkdownIt("commonmark").parse(text)
+    html_anchors = HTMLAnchorParser()
     counts: dict[str, int] = {}
-    for line in text.splitlines():
-        match = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", line)
-        if not match:
-            continue
-        slug = slugify_heading(match.group(1))
-        index = counts.get(slug, 0)
-        counts[slug] = index + 1
-        anchors.add(slug if index == 0 else f"{slug}-{index}")
+    anchors: set[str] = set()
+    for index, token in enumerate(tokens):
+        if token.type == "heading_open" and index + 1 < len(tokens):
+            slug = slugify_heading(tokens[index + 1].content)
+            occurrence = counts.get(slug, 0)
+            counts[slug] = occurrence + 1
+            anchors.add(slug if occurrence == 0 else f"{slug}-{occurrence}")
+        if token.type == "html_block":
+            html_anchors.feed(token.content)
+        elif token.type == "inline" and token.children:
+            for child in token.children:
+                if child.type == "html_inline":
+                    html_anchors.feed(child.content)
+    anchors.update(html_anchors.anchors)
     return anchors
 
 
-def normalized_reference(label: str) -> str:
-    return re.sub(r"\s+", " ", label).strip().casefold()
-
-
-def unescape_markdown_punctuation(value: str) -> str:
-    return re.sub(r"\\([^\w\s])", r"\1", value)
-
-
-def closing_markdown_delimiter(text: str, start: int, opening: str, closing: str) -> int | None:
-    depth = 0
-    index = start
-    while index < len(text):
-        char = text[index]
-        if char == "\\":
-            index += 2
-            continue
-        if char == opening:
-            depth += 1
-        elif char == closing:
-            depth -= 1
-            if depth == 0:
-                return index
-        index += 1
-    return None
-
-
-def inline_link_destination(text: str, opening: int) -> tuple[str, int] | None:
-    link_close = closing_markdown_delimiter(text, opening, "(", ")")
-    if link_close is None:
-        return None
-    index = opening + 1
-    while index < link_close and text[index].isspace():
-        index += 1
-
-    if index < link_close and text[index] == "<":
-        start = index + 1
-        index = start
-        while index < link_close:
-            if text[index] == "\\":
-                index += 2
-                continue
-            if text[index] == ">":
-                return unescape_markdown_punctuation(text[start:index]), link_close + 1
-            index += 1
-        return None
-
-    start = index
-    nested_parentheses = 0
-    while index < link_close:
-        char = text[index]
-        if char == "\\":
-            index += 2
-            continue
-        if char == "(":
-            nested_parentheses += 1
-        elif char == ")":
-            nested_parentheses -= 1
-        elif char.isspace() and nested_parentheses == 0:
-            break
-        index += 1
-    return unescape_markdown_punctuation(text[start:index]), link_close + 1
-
-
-def inline_link_destinations(text: str) -> list[str]:
-    destinations: list[str] = []
-    index = 0
-    while index < len(text):
-        opener = index + 1 if text[index] == "!" and index + 1 < len(text) and text[index + 1] == "[" else index
-        if text[opener] != "[" or (opener > 0 and text[opener - 1] == "\\"):
-            index += 1
-            continue
-        close_bracket = closing_markdown_delimiter(text, opener, "[", "]")
-        if close_bracket is None:
-            index += 1
-            continue
-        link_open = close_bracket + 1
-        if link_open >= len(text) or text[link_open] != "(":
-            index = close_bracket + 1
-            continue
-        parsed = inline_link_destination(text, link_open)
-        if parsed is None:
-            index = close_bracket + 1
-            continue
-        destination, index = parsed
-        destinations.append(destination)
-    return destinations
-
-
 def markdown_link_destinations(text: str) -> tuple[list[str], list[str]]:
-    """Return inline, reference, and HTML link targets plus unresolved references."""
-    text = without_fenced_code(text)
-    text = re.sub(r"(`+)[^`\n]*?\1", "", text)
-
-    reference_pattern = re.compile(
-        r"^ {0,3}\[([^\]]+)\]:\s*(?:<([^>]+)>|(\S+))[^\n]*$",
-        flags=re.MULTILINE,
-    )
-    references: dict[str, str] = {}
-
-    def remove_reference(match: re.Match[str]) -> str:
-        destination = unescape_markdown_punctuation(match.group(2) or match.group(3))
-        references.setdefault(normalized_reference(match.group(1)), destination)
-        return ""
-
-    body = reference_pattern.sub(remove_reference, text)
-    destinations = list(references.values())
-    unresolved: list[str] = []
-
-    destinations.extend(inline_link_destinations(body))
-
-    explicit_reference = re.compile(r"!?\[([^\]]+)\]\[([^\]]*)\]")
-    for match in explicit_reference.finditer(body):
-        label = match.group(2) or match.group(1)
-        key = normalized_reference(label)
-        if key in references:
-            destinations.append(references[key])
-        else:
-            unresolved.append(label)
-
-    used_ranges = [match.span() for match in explicit_reference.finditer(body)]
-    shortcut_reference = re.compile(r"!?\[([^\]]+)\](?![\[(])")
-    for match in shortcut_reference.finditer(body):
-        if any(start <= match.start() < end for start, end in used_ranges):
-            continue
-        key = normalized_reference(match.group(1))
-        if key in references:
-            destinations.append(references[key])
-
+    """Extract CommonMark link targets and raw HTML links without scanning code."""
     class LinkAttributeParser(HTMLParser):
         def __init__(self) -> None:
             super().__init__(convert_charrefs=True)
@@ -277,10 +149,63 @@ def markdown_link_destinations(text: str) -> tuple[list[str], list[str]]:
         def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
             self.handle_starttag(tag, attrs)
 
-    html_links = LinkAttributeParser()
-    html_links.feed(body)
-    destinations.extend(html_links.destinations)
+    destinations: list[str] = []
+    unresolved: list[str] = []
+    parser = MarkdownIt("commonmark")
+    for token in parser.parse(text):
+        if token.type == "inline" and token.children:
+            for child in token.children:
+                if child.type == "link_open" and child.attrs:
+                    target = child.attrs.get("href")
+                    if target is not None:
+                        destinations.append(target)
+                elif child.type == "image" and child.attrs:
+                    target = child.attrs.get("src")
+                    if target is not None:
+                        destinations.append(target)
+                elif child.type == "text":
+                    unresolved.extend(
+                        match.group(2) or match.group(1)
+                        for match in re.finditer(
+                            r"!?\[([^\]\n]+)\]\[([^\]\n]*)\]", child.content
+                        )
+                    )
+                if child.type == "html_inline" and child.content:
+                    html_links = LinkAttributeParser()
+                    html_links.feed(child.content)
+                    destinations.extend(html_links.destinations)
+        elif token.type == "html_block" and token.content:
+            html_links = LinkAttributeParser()
+            html_links.feed(token.content)
+            destinations.extend(html_links.destinations)
     return destinations, unresolved
+
+
+class HTMLAnchorParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.anchors: set[str] = set()
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        for name, value in attrs:
+            if value is not None and (
+                name.lower() == "id" or (tag.lower() == "a" and name.lower() == "name")
+            ):
+                self.anchors.add(value)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+
+
+def anchors_for_target(path: Path, text: str) -> set[str]:
+    extension = path.suffix.casefold()
+    if extension in {".html", ".htm"}:
+        anchors = HTMLAnchorParser()
+        anchors.feed(text)
+        return anchors.anchors
+    if extension in {".md", ".markdown"}:
+        return heading_anchors(text)
+    return set()
 
 
 def check_links(files: list[Path]) -> list[str]:
@@ -288,17 +213,32 @@ def check_links(files: list[Path]) -> list[str]:
     cache: dict[Path, tuple[str, set[str]]] = {}
 
     for source in files:
-        source_text = source.read_text(encoding="utf-8")
+        source_text = read_utf8(source, "Markdown links", errors)
+        if source_text is None:
+            continue
         destinations, unresolved = markdown_link_destinations(source_text)
         for label in unresolved:
             errors.append(f"{source.relative_to(ROOT)}: undefined link reference {label!r}")
         for destination in destinations:
-            parsed = urlsplit(destination)
+            try:
+                parsed = urlsplit(destination)
+            except ValueError:
+                errors.append(
+                    f"{source.relative_to(ROOT)}: invalid link destination {destination!r}"
+                )
+                continue
             if parsed.scheme or parsed.netloc:
                 continue
 
             relative_path = unquote(parsed.path)
-            target = (source.parent / relative_path).resolve() if relative_path else source
+            try:
+                target = (source.parent / relative_path).resolve() if relative_path else source
+            except (OSError, RuntimeError) as error:
+                errors.append(
+                    f"{source.relative_to(ROOT)}: cannot resolve link target "
+                    f"{destination!r} ({type(error).__name__})"
+                )
+                continue
             try:
                 target.relative_to(ROOT)
             except ValueError:
@@ -310,9 +250,12 @@ def check_links(files: list[Path]) -> list[str]:
             if not parsed.fragment:
                 continue
 
-            if target not in cache and target.is_file():
-                text = target.read_text(encoding="utf-8")
-                cache[target] = (text, heading_anchors(text))
+            if target.is_file() and target.suffix.casefold() in {
+                ".md", ".markdown", ".html", ".htm"
+            } and target not in cache:
+                text = read_utf8(target, f"fragment in {destination!r}", errors)
+                if text is not None:
+                    cache[target] = (text, anchors_for_target(target, text))
             if target in cache and unquote(parsed.fragment) not in cache[target][1]:
                 errors.append(
                     f"{source.relative_to(ROOT)}: missing anchor {parsed.fragment!r} in "
@@ -326,9 +269,11 @@ def check_privacy_hygiene(files: list[Path]) -> list[str]:
     errors: list[str] = []
 
     for path in files:
-        text = path.read_text(encoding="utf-8")
+        text = read_utf8(path, "privacy patterns", errors)
+        if text is None:
+            continue
         for line_number, line in enumerate(text.splitlines(), start=1):
-            relative = path.relative_to(ROOT)
+            relative = relative_path(path)
             for pattern in (UNIX_HOME_PATH, WINDOWS_USER_PATH):
                 for match in pattern.finditer(line):
                     username = match.group(1).casefold()
@@ -361,6 +306,10 @@ def check_privacy_hygiene(files: list[Path]) -> list[str]:
                 errors.append(
                     f"{relative}:{line_number}: possible private key material; review without copying the value"
                 )
+            if URL_CREDENTIAL.search(line):
+                errors.append(
+                    f"{relative}:{line_number}: possible embedded URL credentials; review without copying the value"
+                )
 
     return errors
 
@@ -380,12 +329,26 @@ def backtick_values(line: str) -> list[str]:
 
 def check_conventions(files: list[Path]) -> list[str]:
     errors: list[str] = []
-    rules = ISSUE_RULES.read_text(encoding="utf-8")
-    template = ISSUE_TEMPLATE.read_text(encoding="utf-8")
-    guide = ADR_GUIDE.read_text(encoding="utf-8")
-    adr_template = ADR_TEMPLATE.read_text(encoding="utf-8")
-    requirements_template = REQUIREMENTS_TEMPLATE.read_text(encoding="utf-8")
-    risk_guide = RISK_GUIDE.read_text(encoding="utf-8")
+    canonical_paths = (
+        ISSUE_RULES,
+        ISSUE_TEMPLATE,
+        ADR_GUIDE,
+        ADR_TEMPLATE,
+        REQUIREMENTS_TEMPLATE,
+        RISK_GUIDE,
+    )
+    canonical = {
+        path: read_utf8(path, "canonical conventions", errors)
+        for path in canonical_paths
+    }
+    if any(text is None for text in canonical.values()):
+        return errors
+    rules = canonical[ISSUE_RULES] or ""
+    template = canonical[ISSUE_TEMPLATE] or ""
+    guide = canonical[ADR_GUIDE] or ""
+    adr_template = canonical[ADR_TEMPLATE] or ""
+    requirements_template = canonical[REQUIREMENTS_TEMPLATE] or ""
+    risk_guide = canonical[RISK_GUIDE] or ""
 
     rules_axis_section = rules[rules.find("### 3.1 評価軸と重み") : rules.find("### 3.2")]
     template_axes_start = template.find("| 評価軸 | 重み | 完成度 |")
@@ -496,11 +459,13 @@ def check_conventions(files: list[Path]) -> list[str]:
     if requirement_statuses != REQUIREMENT_STATUSES:
         errors.append("requirement lifecycle states must use the canonical ordered set")
     for expected_header in (
-        "| ID | 要求 | 優先度 | 状態 | 受け入れ条件 | 検証方法・証跡 | 設計・実装・課題 |",
+        "| ID | 要求 | 優先度 | 状態 | 関連タスクID | 受け入れ条件 | 検証方法・証跡 | 設計・実装・課題 |",
         "| ID | 品質特性 | 要求・条件 | 状態 | 受け入れ条件・検証方法・証跡 | 設計・実装・課題 |",
     ):
         if expected_header not in requirements_template:
             errors.append("requirements.md: requirement rows must connect state, acceptance, evidence, and references")
+    if "| タスクID |" not in requirements_template or "| 関連要求ID |" not in requirements_template:
+        errors.append("requirements.md: user tasks must link to stable requirement IDs")
 
     risk_status_line = next(
         (line for line in risk_guide.splitlines() if line.startswith("状態は `")), ""
@@ -529,7 +494,9 @@ def check_conventions(files: list[Path]) -> list[str]:
 
     deprecated_examples = re.compile(r"ISSUE(?:-|_)(?:\d|\.\.\.)|^\s*-\s*(?:Status:\s*Open|Priority:\s*High)", re.MULTILINE)
     for path in files:
-        text = path.read_text(encoding="utf-8")
+        text = read_utf8(path, "document conventions", errors)
+        if text is None:
+            continue
         if deprecated_examples.search(text):
             errors.append(f"{path.relative_to(ROOT)}: use canonical ISS/P-priority/Japanese-state examples")
 
@@ -539,8 +506,12 @@ def check_conventions(files: list[Path]) -> list[str]:
     if "正式な総合完成度" not in rules or "評価済みカバレッジ" not in rules:
         errors.append("issue-tracking.md: scoring rules must define formal score and evaluation coverage")
 
-    agents_prompt = (ROOT / "prompts/create-agents-md.md").read_text(encoding="utf-8")
-    review_instruction = (ROOT / "prompts/create-reviews-md.md").read_text(encoding="utf-8")
+    agents_prompt = read_utf8(
+        ROOT / "prompts/create-agents-md.md", "agent prompt conventions", errors
+    ) or ""
+    review_instruction = read_utf8(
+        ROOT / "prompts/create-reviews-md.md", "review prompt conventions", errors
+    ) or ""
     if "## コードレビュー" not in agents_prompt or "REVIEWS.md" not in agents_prompt:
         errors.append("create-agents-md.md: must require a review-time REVIEWS.md instruction")
     if "AGENTS.md" not in review_instruction or "レビュー開始前" not in review_instruction:

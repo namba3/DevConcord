@@ -8,4 +8,5 @@
 - レビュー作業では [`REVIEWS.md`](REVIEWS.md) を先に読み、リポジトリ固有の確認観点を適用してください。
 - 外部の導入先リポジトリを編集せず、このリポジトリの資料・検証コードだけを対象にしてください。
 - 資料・検証コードを変更した場合は、`python3 scripts/validate_docs.py`、`python3 -B -m unittest discover -s tests -v`、`npx --yes markdownlint-cli2@0.23.3 "**/*.md"` を実行し、未実施の検証を成功として報告しないでください。
+- Python検証器の依存は [`requirements-dev.txt`](requirements-dev.txt) に固定しています。必要な場合は [`docs/README.md`](docs/README.md) の手順で隔離環境へ導入してください。
 - 初回導入・同期の手順変更は [`tests/integration/README.md`](tests/integration/README.md) の受け入れシナリオに照らして確認し、実際のAIエージェント実行と文書ユニットテストの証拠を区別してください。

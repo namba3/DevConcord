@@ -49,9 +49,12 @@
 
 ## 自動検証
 
-Pull Request と `main` への push で、Markdownlint、内部リンク、課題表テンプレートの必須項目、課題ID・優先度・状態の表記、SDSと総合完成度の軸・重み、Markdown中の個人情報・個人環境情報・秘密らしき値のヒューリスティック検査を行います。プライバシー検査は候補の検出であり、誤検出・見逃しがあるため専用シークレットスキャナーの代わりにはなりません。ローカルでは次を実行できます。
+Pull Request と `main` への push で、Markdownlint、DevConcord内のMarkdown/HTMLリンク、管理規約・テンプレートの既知の必須項目と正規評価軸/重み、課題・ADR・リスク・要求状態の定義間整合、Markdown中の個人情報・個人環境情報・秘密らしき値のヒューリスティック検査を行います。任意形式の課題表の全ID・状態・優先度、実際の要求仕様/ADR、DevConcord資料を導入した外部リポジトリ、AIエージェントが規約に従ったかは検証しません。Markdown上の規約検査は正規資料・テンプレートの静的な整合確認であり、実プロジェクトの適合や設計判断の品質を保証しません。プライバシー検査はMarkdown中の候補検出に限られ、誤検出・見逃しがあるため、ソース/設定を含む専用シークレットスキャナーの代わりにはなりません。導入・同期ヘルパーの決定的なテストと、実AIエージェントを使う手動評価は[統合シナリオ](../tests/integration/README.md)で分離しています。CIはPython 3.14、Node.js 22、markdownlint-cli2 0.23.3およびrequirements-dev.txtで固定したPython依存を使います。Workflowはブランチ保護/rulesetを設定しないため、管理者はGitHub上で `main` へのマージにDocumentationワークフローの必須チェックを設定してください。ローカルでは仮想環境にPython依存を一度インストールしてから次を実行できます。
 
 ```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements-dev.txt
 python3 scripts/validate_docs.py
 python3 -B -m unittest discover -s tests -v
 npx --yes markdownlint-cli2@0.23.3 "**/*.md"

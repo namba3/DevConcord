@@ -24,11 +24,18 @@ class LinkValidationTests(unittest.TestCase):
         path.write_text(content, encoding="utf-8")
         return path
 
+    def write_bytes(self, name: str, content: bytes) -> Path:
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        return path
+
     def test_valid_inline_reference_image_and_html_links(self) -> None:
         source = self.write(
             "index.md",
             """[inline](target.md#section)
 ![image][diagram]
+
 [Guide]: target.md#section
 [diagram]: target.md#section-1
 ![section-1]
@@ -116,6 +123,80 @@ class LinkValidationTests(unittest.TestCase):
         self.assertTrue(any("missing anchor 'example-2'" in error for error in errors))
         self.assertFalse(any("missing anchor 'example-1'" in error for error in errors))
 
+    def test_links_in_comments_indented_code_and_inline_code_are_ignored(self) -> None:
+        source = self.write(
+            "index.md",
+            r"""<!-- [missing](absent.md#missing) -->
+    [indented code](absent.md#missing)
+
+```md
+[fenced code](absent.md#missing)
+```
+
+`[inline code](absent.md#missing)`
+
+\[escaped label\](absent.md#missing)
+[real link](target.md#present)
+[directory](docs/)
+""",
+        )
+        self.write("target.md", "# Present\n")
+        (self.root / "docs").mkdir()
+
+        self.assertEqual(validate_docs.check_links([source]), [])
+
+    def test_html_id_attributes_and_non_markdown_fragments(self) -> None:
+        source = self.write(
+            "index.md",
+            """[html](page.HTML#chapter)
+[pdf](manual.pdf#page=2)
+""",
+        )
+        self.write("page.HTML", '<section id=chapter><a name="legacy"></a></section>')
+        self.write_bytes("manual.pdf", b"%PDF-1.7\xff\xfe\x00")
+
+        self.assertEqual(validate_docs.check_links([source]), [])
+
+    def test_html_id_and_name_anchors_are_recognized(self) -> None:
+        source = self.write(
+            "index.md",
+            """[id](page.html#chapter)
+[legacy](page.html#legacy)
+""",
+        )
+        self.write("page.html", '<section id="chapter"><a name=legacy></a></section>')
+
+        self.assertEqual(validate_docs.check_links([source]), [])
+
+    def test_relative_path_outside_repository_is_reported(self) -> None:
+        source = self.write("index.md", "[outside](../outside.md)\n")
+
+        errors = validate_docs.check_links([source])
+
+        self.assertTrue(any("link escapes repository" in error for error in errors))
+
+    def test_malformed_url_is_reported_without_raising(self) -> None:
+        source = self.write("index.md", '<a href="http://[::1">invalid</a>\n')
+
+        errors = validate_docs.check_links([source])
+
+        self.assertTrue(any("invalid link destination" in error for error in errors))
+
+    def test_invalid_utf8_source_is_reported_without_raising(self) -> None:
+        source = self.write_bytes("index.md", b"[invalid](\xff)\n")
+
+        errors = validate_docs.check_links([source])
+
+        self.assertTrue(any("cannot read Markdown links" in error for error in errors))
+
+    def test_invalid_utf8_fragment_target_is_reported_without_raising(self) -> None:
+        source = self.write("index.md", "[target](bad.md#anchor)\n")
+        self.write_bytes("bad.md", b"# \xff\n")
+
+        errors = validate_docs.check_links([source])
+
+        self.assertTrue(any("cannot read fragment" in error for error in errors))
+
 
 class PrivacyHygieneTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -133,6 +214,7 @@ class PrivacyHygieneTests(unittest.TestCase):
 C:\\Users\\Alice\\Documents\\project
 person@private-corp.com
 api_key = verysecretcredentialvalue123
+https://build-user:embedded-secret@service.example/path
 """,
             encoding="utf-8",
         )
@@ -143,9 +225,11 @@ api_key = verysecretcredentialvalue123
         self.assertTrue(any("personal home path" in error for error in errors))
         self.assertTrue(any("personal contact address" in error for error in errors))
         self.assertTrue(any("embedded credential" in error for error in errors))
+        self.assertTrue(any("embedded URL credentials" in error for error in errors))
         self.assertNotIn("alice", combined)
         self.assertNotIn("person@private-corp.com", combined)
         self.assertNotIn("verysecretcredentialvalue123", combined)
+        self.assertNotIn("embedded-secret", combined)
 
     def test_allows_generic_paths_and_placeholder_values(self) -> None:
         source = self.root / "example.md"
@@ -159,6 +243,22 @@ api_key = <YOUR_TOKEN>
         )
 
         self.assertEqual(validate_docs.check_privacy_hygiene([source]), [])
+
+    def test_detects_multiple_private_key_header_formats_without_echoing_content(self) -> None:
+        source = self.root / "key-markers.md"
+        source.write_text(
+            """-----BEGIN EC PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN OPENSSH PRIVATE KEY-----
+""",
+            encoding="utf-8",
+        )
+
+        errors = validate_docs.check_privacy_hygiene([source])
+
+        self.assertEqual(len(errors), 3)
+        self.assertTrue(all("private key material" in error for error in errors))
+        self.assertNotIn("EC PRIVATE KEY", "\n".join(errors))
 
 
 class ConventionValidationTests(unittest.TestCase):
@@ -211,6 +311,15 @@ class ConventionValidationTests(unittest.TestCase):
 
         errors = self.conventions()
         self.assertTrue(any("requirement rows must connect state" in error for error in errors))
+
+    def test_user_task_table_must_link_to_requirement_ids(self) -> None:
+        template = self.root / "docs/application-design/templates/requirements.md"
+        text = template.read_text(encoding="utf-8").replace("| 関連要求ID |", "| 機能 |", 1)
+        template.write_text(text, encoding="utf-8")
+
+        errors = self.conventions()
+
+        self.assertTrue(any("user tasks must link to stable requirement IDs" in error for error in errors))
 
     def test_unrecognized_requirement_state_is_reported(self) -> None:
         template = self.root / "docs/application-design/templates/requirements.md"
