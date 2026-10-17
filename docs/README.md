@@ -8,7 +8,7 @@
 
 | 資料 | 用途 |
 |---|---|
-| [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Doc Comments・Annotation Comments・性能設計の原則と、プライバシー・環境衛生を含む開発手法 |
+| [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness by Design、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
 
 ## アプリ設計
 
@@ -36,7 +36,9 @@
 - 課題一覧の評価基準や更新手順は[課題管理・完成度評価規約](work-management/issue-tracking.md)を参照します。
 - コードの自己説明性とSDSの基準は、AI支援開発ガイドと課題管理規約にあります。SDSは独立した補助指標で、既存の総合完成度へ加算しません。
 - Doc CommentsとAnnotation Commentsの記法・対象・課題表との連携は、[AI支援開発ガイド §2.2](common/ai-assisted-development.md#22-doc-commentsとannotation-comments)を参照してください。コメント数を品質指標にはしません。
-- プライバシー・環境衛生とPerformance by Designは共通開発原則として扱い、既存の完成度10評価軸へ反映します。絶対パスや性能計測を一律禁止・強制するのではなく、必要性と対象環境に応じて適用します。
+- UI/UXは利用者の目的、タスク、操作、状態、回復条件を導き、機能要求と検証へつなぐ設計入力です。Web・デスクトップ・CLI・ライブラリ等の製品形態に合わせ、GUI固有要件を一律強制しません。
+- DDD・Self-documenting Code・Performance by Design・Robustness by Designは横断的な設計原則として扱います。Performance / Robustnessとプライバシー・環境衛生は既存の完成度10評価軸へ反映し、新しい評価軸は追加しません。絶対パス、性能計測、故障注入を一律禁止・強制せず、必要性・影響・対象環境に応じて適用します。
+- Robustness by Designは、重要な異常条件・データ整合性・原子性・再実行・復旧・診断を初期設計へ含める考え方です。対応作業は既存課題表で管理し、別の作業台帳を作りません。
 - 要求と受け入れ条件は要求仕様書で管理し、要求IDからADR・実装・検証・課題を必要な範囲で参照します。将来の不確実性を管理する場合はリスク規約を使い、対応作業は課題表に置きます。
 - 課題表と規約のリンクを保つ場合は `work-management/` をディレクトリごと対象リポジトリの `docs/` へコピーします。テンプレートだけをコピーする場合は、規約へのリンク先を対象内の配置に合わせて変更します。
 - AIエージェントに常時適用する作業ルールは対象リポジトリの `AGENTS.md`、レビュー専用の観点は `REVIEWS.md` に置くための[生成プロンプト](../prompts/README.md)も用意しています。

@@ -13,16 +13,18 @@
 
 - 既存の `AGENTS.md`、仕様、ADR、課題一覧、関連コードとテストを確認する。
 - 変更の目的、範囲、対象外、互換性への影響を特定する。
-- 変更規模とリスクに応じ、依存関係・公開API・データ・状態・失敗時の保証・セキュリティ境界・対象環境・関連資料への影響を確認する。局所的な変更は限定的と判断した根拠を短く残す。
+- 変更規模とリスクに応じ、利用者の目的/タスク、依存関係・公開API・データ・状態・異常時の保証/回復・セキュリティ境界・対象環境・関連資料への影響を確認する。局所的な変更は限定的と判断した根拠を短く残す。
 - 曖昧さや不足情報は事実のように補わず、仮定・未確認事項として示す。
 - 振る舞いを変える作業では、観測可能な受け入れ条件と検証方法を定める。
 
 ## 設計・実装
 
 - 意味・責務・契約・振る舞いをコードの名前、型、API、構造、テストで表現できるか考える。自己説明性はコメントを減らすことではなく、コードで伝わらない理由・制約をコメントや設計資料で補うこと。
-- DDDで概念と責務を、Self-documenting Codeで理解可能性を、Performance by Designで処理構造の効率性を考える。DbC・テスト・計測で必要な契約と品質を確かめる。
+- DDDで概念と責務を、Self-documenting Codeで理解可能性を、Performance by Designで処理構造の効率性を、Robustness by Designで異常条件・整合性・回復可能性を考える。UI/UXは利用者の要求と機能設計を方向付ける入力とする。DbC・テスト・計測で契約と品質を確かめる。
 - ドメイン用語と既存の責務境界を保ち、必要な箇所だけ抽象化する。
-- 重要な契約は事前条件、事後条件、不変条件、失敗時の保証に分ける。
+- 機能要求は必要に応じてユーザー目標、主要タスク、操作・状態・フィードバック、受け入れ条件と検証へ結ぶ。UIのない製品にはGUI固有要件を課さない。
+- 重要な契約は事前条件、事後条件、不変条件、失敗時の保証に分け、必要に応じて原子性、キャンセル時点、再実行時の副作用、回復方法を明記する。
+- 性能上重要な経路はワークロード、データ規模、対象環境、測定方法と許容範囲から設計する。異常条件・部分成功・競合・資源不足等は影響に応じて選び、無条件の再試行・多重化を避ける。
 - 公開・重要APIには利用者に必要なDoc Commentsを付け、契約・エラー・副作用・制約を実装と同期する。必要な場合だけ標準形式で使用例や性能特性を記載する。
 - 未解決事項・暫定対応・重要な注意は `TODO`、`FIXME`、`HACK`、`NOTE`、`PERF`、`SECURITY`、`DEPRECATED` で明示する。重要な作業は既存の課題IDへ結び付け、進捗・完了条件は課題表で管理する。
 - 課題の解決時に関連コメントを削除または有効な説明へ更新する。コメントの数を品質指標にせず、コード・コメント・資料・テストの整合を保つ。
@@ -35,7 +37,7 @@
 - 守るべき設計制約を自動検査・テスト・人間のレビューのうち適した方法で確認する。
 - 実施した検証、未実施の検証、環境上の制約を区別して報告する。
 - 証跡がある場合は対象コミット、実行内容、環境、日時、結果を追跡できるようにする。過去の成功を変更後の保証に流用しない。
-- 変更内容に応じて、個人・秘密・環境情報がコード、設定、ログ、文書、AIの報告に不要に含まれていないか確かめる。性能上重要な変更は想定ワークロードと計測根拠を扱い、実測なしの最適化を避ける。
+- 変更内容に応じて、個人・秘密・環境情報がコード、設定、ログ、文書、AIの報告に不要に含まれていないか確かめる。性能上重要な変更は想定ワークロードと計測根拠を扱い、実測なしの最適化を避ける。重要な失敗時保証は対応するテストで検証し、未確認範囲を示す。
 - テスト成功だけで要求の正しさを証明したことにしない。仕様と期待値も確認する。
 - コードレビュー前に対象リポジトリの `REVIEWS.md` を読む（存在しない場合は明記する）。
 
@@ -62,5 +64,6 @@
 | 課題管理・完成度評価 | [課題管理規約](../work-management/issue-tracking.md) |
 | Self-documenting Code、SDS | [開発ガイド §2.1](ai-assisted-development.md#21-self-documenting-codeへの貢献)、[課題管理規約 §3.5](../work-management/issue-tracking.md#35-self-documenting-scoresds) |
 | Doc Comments、Annotation Comments | [開発ガイド §2.2](ai-assisted-development.md#22-doc-commentsとannotation-comments) |
-| プライバシー・性能設計 | [Performance by Design §9.4](ai-assisted-development.md#94-performance-by-design)、[Privacy & Environment Hygiene §11.3](ai-assisted-development.md#113-privacy-environment-hygiene)、[要求仕様テンプレート](../application-design/templates/requirements.md) |
-| UI/UX | [UI/UX設計ガイド](../application-design/ui-ux-guide.md) |
+| 性能・堅牢性設計 | [Performance by Design §9.4](ai-assisted-development.md#94-performance-by-design)、[Robustness by Design §9.5](ai-assisted-development.md#95-robustness-by-design)、[要求仕様テンプレート](../application-design/templates/requirements.md) |
+| UI/UXを機能設計へ接続 | [UI/UX設計ガイド §2.5](../application-design/ui-ux-guide.md#sec02-design-to-function)、[UI/UXクイックチェック](../application-design/ui-ux-quick-reference.md) |
+| プライバシー・環境衛生 | [Privacy & Environment Hygiene §11.3](ai-assisted-development.md#113-privacy-environment-hygiene) |
