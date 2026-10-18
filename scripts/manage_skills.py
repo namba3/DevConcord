@@ -2278,6 +2278,7 @@ def _reference_command(args: argparse.Namespace) -> int:
         )
         source_identity: str
         source_head: str
+        metadata_lines: list[str] = []
         if args.revision == "working-tree":
             for parent in (source_path, *source_path.parents):
                 if parent == source_root.parent:
@@ -2297,7 +2298,7 @@ def _reference_command(args: argparse.Namespace) -> int:
             )
             if changed.returncode:
                 raise SkillManagementError("could not inspect local reference Git state")
-            print(
+            metadata_lines.append(
                 f"Reference: local working tree"
                 + (" (uncommitted or untracked changes)" if changed.stdout.strip() else "")
             )
@@ -2378,7 +2379,7 @@ def _reference_command(args: argparse.Namespace) -> int:
                         )
                 if not _full_commit_id(commit):
                     raise SkillManagementError("installed Skill source commit is invalid")
-                print(
+                metadata_lines.append(
                     f"Reference: installed Skill {args.skill} source commit {commit}"
                     f" (current source HEAD {revision})"
                 )
@@ -2390,7 +2391,9 @@ def _reference_command(args: argparse.Namespace) -> int:
                 )
                 commit = revision
                 source_head = revision
-                print(f"Reference: configured source HEAD {commit}; uncommitted edits excluded")
+                metadata_lines.append(
+                    f"Reference: configured source HEAD {commit}; uncommitted edits excluded"
+                )
             commit_check = _git(
                 source_root,
                 "cat-file",
@@ -2451,11 +2454,16 @@ def _reference_command(args: argparse.Namespace) -> int:
                     f"Git could not read reference {relative!r} at commit {commit}"
                 )
             content = result.stdout
-        print(f"Reference path: {relative}")
-        print(f"Source identity: {source_identity}; source HEAD {source_head}")
-        sys.stdout.write(content)
+        metadata_lines.extend(
+            (
+                f"Reference path: {relative}",
+                f"Source identity: {source_identity}; source HEAD {source_head}",
+            )
+        )
+        output = "\n".join(metadata_lines) + "\n" + content
         if content and not content.endswith("\n"):
-            sys.stdout.write("\n")
+            output += "\n"
+        sys.stdout.write(output)
         return 0
     except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
         print(f"ERROR: local DevConcord reference unavailable: {error}", file=sys.stderr)

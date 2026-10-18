@@ -907,11 +907,61 @@ Version: {version}
             return original_git(root, *arguments, check=check)
 
         with patch.object(manage_skills, "_git", side_effect=malformed_tree):
-            result, _output, error = self.run_reference(
+            result, output, error = self.run_reference(
                 path="docs/reference.md", revision="head"
             )
         self.assertEqual(result, 2)
         self.assertIn("malformed tree data", error)
+        self.assertEqual(output, "")
+
+    def test_reference_failures_never_emit_partial_success_metadata(self) -> None:
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        original_git = manage_skills._git
+
+        def failed_read(root: Path, *arguments: str, check: bool = True):
+            if arguments and arguments[0] == "show":
+                return subprocess.CompletedProcess(
+                    ["git", *arguments], 1, "partial content", "injected read error"
+                )
+            return original_git(root, *arguments, check=check)
+
+        with patch.object(manage_skills, "_git", side_effect=failed_read):
+            result, output, error = self.run_reference(
+                path="docs/reference.md", revision="head"
+            )
+        self.assertEqual(result, 2)
+        self.assertIn("could not read reference", error)
+        self.assertEqual(output, "")
+
+        invalid_utf8 = repository / "docs" / "invalid-utf8.md"
+        invalid_utf8.write_bytes(b"\xff\xfe")
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "add invalid UTF-8 fixture")
+        result, output, error = self.run_reference(
+            path="docs/invalid-utf8.md", revision="head"
+        )
+        self.assertEqual(result, 2)
+        self.assertIn("utf-8", error.lower())
+        self.assertEqual(output, "")
+
+        reference_path = repository / "docs" / "reference.md"
+        original_read_text = Path.read_text
+
+        def denied_reference(path: Path, *args, **kwargs):
+            if path == reference_path:
+                raise PermissionError("injected permission denial")
+            return original_read_text(path, *args, **kwargs)
+
+        with patch.object(Path, "read_text", denied_reference):
+            result, output, error = self.run_reference(
+                path="docs/reference.md", revision="working-tree"
+            )
+        self.assertEqual(result, 2)
+        self.assertIn("permission", error.lower())
+        self.assertEqual(output, "")
 
     def test_reference_scope_manifests_are_independent(self) -> None:
         self.assertEqual(
