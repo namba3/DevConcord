@@ -364,6 +364,9 @@ description: Use this Skill for a focused task.
             "devconcord-gap-analysis",
             "自動実行・自動インストール",
             "専門Skillの実行結果を確認するまでは",
+            "既存の尺度",
+            "実際の設計依存関係から決め",
+            "不必要に直列化しない",
         ):
             with self.subTest(common_recommendation_contract=expected):
                 self.assertIn(expected, common_guidance)
