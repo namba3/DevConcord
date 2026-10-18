@@ -1860,6 +1860,98 @@ Version: {version}
             ),
         )
 
+    def test_source_revision_selects_origin_or_unique_remote_and_rejects_ambiguity(self) -> None:
+        repository = self.source.parents[1]
+        self.assertTrue(
+            manage_skills.source_revision(self.source)[2].startswith("local-git-sha256:")
+        )
+        self.git(repository, "remote", "add", "upstream", "https://example.com/team/upstream.git")
+        self.assertEqual(
+            manage_skills.source_revision(self.source)[2], "example.com/team/upstream"
+        )
+        self.git(repository, "remote", "rename", "upstream", "origin")
+        self.assertEqual(
+            manage_skills.source_revision(self.source)[2], "example.com/team/upstream"
+        )
+        self.git(repository, "remote", "add", "fork", "git@example.com:team/fork.git")
+        self.assertEqual(
+            manage_skills.source_revision(self.source)[2], "example.com/team/upstream"
+        )
+        self.git(
+            repository,
+            "remote",
+            "set-url",
+            "origin",
+            "git@example.com:team/upstream.git",
+        )
+        self.assertEqual(
+            manage_skills.source_revision(self.source)[2], "example.com/team/upstream"
+        )
+        self.git(
+            repository,
+            "remote",
+            "set-url",
+            "origin",
+            "https://example.com/team/other.git",
+        )
+        self.assertEqual(
+            manage_skills.source_revision(self.source)[2], "example.com/team/other"
+        )
+        self.git(repository, "remote", "rename", "origin", "selected-origin")
+        with self.assertRaisesRegex(manage_skills.SkillManagementError, "ambiguous"):
+            manage_skills.source_revision(self.source)
+
+    def test_ambiguous_remotes_block_sync_without_mutating_either_scope(self) -> None:
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_operation("install", skills=["sample-skill"], apply=True)[0], 0
+        )
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        user_manifest = self.user_home / ".devconcord/skills-manifest.json"
+        project_manifest = self.target / ".devconcord/skills-manifest.json"
+        user_skill = self.user_home / ".agents/skills/sample-skill/SKILL.md"
+        project_skill = self.target / ".agents/skills/sample-skill/SKILL.md"
+        snapshots = {
+            path: path.read_bytes()
+            for path in (user_manifest, project_manifest, user_skill, project_skill)
+        }
+        self.git(repository, "remote", "add", "upstream", "https://example.com/team/upstream.git")
+        self.git(repository, "remote", "add", "fork", "https://example.com/team/fork.git")
+
+        user_result, _, user_error = self.run_user_operation("sync", apply=True)
+        project_result, _, project_error = self.run_operation("sync", apply=True)
+
+        self.assertEqual(user_result, 2)
+        self.assertEqual(project_result, 2)
+        self.assertIn("ambiguous", user_error)
+        self.assertIn("ambiguous", project_error)
+        for path, expected in snapshots.items():
+            self.assertEqual(path.read_bytes(), expected)
+
+        user_result, _, user_error = self.run_user_operation("rebind-source", apply=True)
+        project_result, _, project_error = self.run_operation("rebind-source", apply=True)
+        self.assertEqual((user_result, project_result), (2, 2))
+        self.assertIn("ambiguous", user_error)
+        self.assertIn("ambiguous", project_error)
+        for scope, target in (("user", None), ("project", self.target)):
+            result, output, error = self.run_reference(
+                path="docs/reference.md", scope=scope, target=target
+            )
+            self.assertEqual(result, 2)
+            self.assertEqual(output, "")
+            self.assertIn("ambiguous", error)
+        for path, expected in snapshots.items():
+            self.assertEqual(path.read_bytes(), expected)
+
     def test_sync_verifies_baseline_skill_content_against_recorded_commit(self) -> None:
         self.assertEqual(self.run_operation("install", apply=True)[0], 0)
         manifest_path = self.target / ".devconcord" / "skills-manifest.json"
@@ -2203,6 +2295,7 @@ Version: {version}
             SimpleNamespace(returncode=0, stdout="/source/repo\n"),
             SimpleNamespace(returncode=0, stdout="abc123\n"),
             SimpleNamespace(returncode=0, stdout=""),
+            SimpleNamespace(returncode=0, stdout="origin\n"),
             SimpleNamespace(
                 returncode=0,
                 stdout="https://user:password@example.com/org/repo.git?token=secret\n",

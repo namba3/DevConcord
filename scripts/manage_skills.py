@@ -343,18 +343,34 @@ def source_revision(source_root: Path) -> tuple[str, bool, str]:
     status = _git(source_root, "status", "--porcelain", "--", ".")
     if status.returncode:
         raise SkillManagementError(f"could not inspect Skill source status: {status.stderr.strip()}")
-    remote = _git(source_root, "remote", "get-url", "origin", check=False)
-    if remote.returncode:
-        remotes = _git(source_root, "remote", check=False)
-        remote_names = remotes.stdout.splitlines() if remotes.returncode == 0 else []
-        if len(remote_names) == 1:
-            remote = _git(source_root, "remote", "get-url", remote_names[0], check=False)
-        if remote.returncode:
-            repository = _local_repository_identity(Path(top.stdout.strip()))
-        else:
-            repository = _repository_identity(remote.stdout.strip(), source_root)
+    remotes = _git(source_root, "remote", check=False)
+    if remotes.returncode:
+        raise SkillManagementError(
+            f"could not inspect Git remotes: {remotes.stderr.strip()}"
+        )
+    remote_names = remotes.stdout.splitlines()
+    if "origin" in remote_names:
+        remote_name = "origin"
+    elif len(remote_names) == 1:
+        remote_name = remote_names[0]
+    elif len(remote_names) > 1:
+        raise SkillManagementError(
+            "source identity is ambiguous: multiple Git remotes exist without origin; "
+            "add or select a unique origin remote before using this source"
+        )
     else:
-        repository = _repository_identity(remote.stdout.strip(), source_root)
+        remote_name = None
+    if remote_name is None:
+        repository = _local_repository_identity(Path(top.stdout.strip()))
+    else:
+        remote = _git(source_root, "remote", "get-url", remote_name, check=False)
+        urls = remote.stdout.splitlines()
+        if remote.returncode or len(urls) != 1 or not urls[0]:
+            raise SkillManagementError(
+                f"could not establish a unique source identity from Git remote "
+                f"{remote_name!r}"
+            )
+        repository = _repository_identity(urls[0], source_root)
     repository = "".join(character for character in repository if character.isprintable())[:512]
     return commit.stdout.strip(), bool(status.stdout.strip()), repository
 
