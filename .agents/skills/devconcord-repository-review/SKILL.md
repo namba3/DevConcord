@@ -2,14 +2,22 @@
 name: devconcord-repository-review
 description: >
   Review code, architecture, requirements, tests, CI, and project guidance to
-  find concrete actionable defects, design problems, and regression risks.
-  Use for code or change reviews that need evidence-based severity and specific
-  remediation. Use devconcord-gap-analysis for repository-wide or incremental
-  alignment with DevConcord principles, evidence coverage, and improvement
-  roadmaps.
+  find concrete actionable defects, design problems, and regression risks
+  with evidence-based severity and specific remediation; assess proposed
+  changes before implementation. Use devconcord-gap-analysis
+  for repository-wide or incremental alignment with DevConcord principles,
+  evidence coverage, and improvement roadmaps.
 ---
 
 # Repository Review
+
+## Select the work mode
+
+Follow the user's request:
+
+- **Change Impact Assessment** is for a proposed change before implementation. Analyze its likely scope, affected contracts, dependencies, migration and regression risks, and verification needs. Treat these as forecasts and open questions, not confirmed defects. This is read-only by default and does not produce an implementation sequence; use `devconcord-implementation-planning` when sequencing work is needed.
+- **Repository / Change Review** is for existing code, architecture, or a concrete diff. Find evidenced defects, contract violations, regressions, and verification gaps. Preserve the existing evidence-based severity and remediation behavior.
+- If the request clearly asks for both, separate predicted impacts from findings about current behavior. If the mode is unclear, use Repository / Change Review for a supplied diff or existing implementation, and ask or state the assumption for an unimplemented proposal.
 
 ## Workflow
 
@@ -18,6 +26,22 @@ description: >
 3. Evaluate correctness, user task/function fit, contracts and invariants, boundary/failure behavior, and—where relevant—assets, trust boundaries, threats, least privilege, secure defaults, data lifecycle, dependency/supply-chain risk, security invariants, compatibility, resource/performance implications, dependency direction and verification evidence.
 4. Report only actionable findings with severity, file/line, concrete impact, reproduction or evidence, confidence and a minimal remedy. Separate findings from questions, residual risks, and unverified assumptions.
 5. Do not infer missing code or tests as present; do not claim tests passed unless run. Avoid speculative findings, style-only comments and fixes unless the user requests implementation.
+
+## Change Impact Assessment
+
+For the selected proposal, inspect relevant requirements, acceptance conditions, existing implementation, project guidance, tests and CI, ADRs, and existing issue/risk records. Select only affected areas from:
+
+- public APIs, compatibility, domain responsibilities, and module boundaries;
+- persisted formats, data migration, state transitions, invariants, and error/cancel/retry behavior;
+- user workflows and UI state, where relevant;
+- workload, resource use, security assets and trust boundaries, external dependencies, and OS-specific behavior;
+- tests, CI, documentation, configuration, and operations.
+
+Distinguish confirmed current facts from assumptions about the proposal. Do not attach normal defect severity labels to unverified forecasts; state confidence, impact, and the evidence needed to resolve uncertainty. Prefer analysis of concrete downstream effects over a checklist of unaffected areas.
+
+When useful, report the change purpose and scope, inspected specifications and implementation, likely change locations, affected contracts and dependencies, plausible regressions or migration risks, decisions still needed, suggested verification, unknowns, and related REQ / ADR / ISSUE IDs. Keep implementation sequencing in `devconcord-implementation-planning` and test-case design in `devconcord-test-design`; these Skills are optional and are not invoked automatically.
+
+Do not edit source, configuration, requirements, issue or risk records as part of this assessment. A separately requested implementation or record update is a separate scope and follows the target repository's rules.
 
 ## Completion
 
