@@ -202,6 +202,23 @@ description: Use this Skill for a focused task.
             with self.subTest(expected=expected):
                 self.assertIn(expected, report_text)
 
+    def test_review_and_gap_skills_read_legacy_review_criteria_without_migration(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skills_root = repository_root / ".agents" / "skills"
+        repository_review = (
+            skills_root / "devconcord-repository-review" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        gap_analysis = (
+            skills_root / "devconcord-gap-analysis" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("read legacy root `REVIEWS.md`", repository_review)
+        self.assertIn("If both exist, read both", repository_review)
+        self.assertIn("do not edit, delete, or silently merge either file", repository_review)
+        self.assertIn("`REVIEWS.md` when the new name is absent", gap_analysis)
+        self.assertIn("If both exist, compare substantive\nrules", gap_analysis)
+        self.assertIn("never migrates, merges, or deletes either file", gap_analysis)
+
     def test_gap_analysis_is_documented_and_manual_scenarios_cover_contract(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         readme = (repository_root / "README.md").read_text(encoding="utf-8")
