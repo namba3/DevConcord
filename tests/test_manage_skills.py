@@ -1475,6 +1475,16 @@ Version: {version}
         record = manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
         self.assertTrue(record["source_dirty"])
 
+    def test_install_ignores_untracked_empty_directories_in_clean_skill(self) -> None:
+        (self.source / "sample-skill" / "references" / "nested").mkdir(parents=True)
+
+        result, _, error = self.run_operation("install", apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertTrue(
+            (self.target / ".agents" / "skills" / "sample-skill" / "SKILL.md").is_file()
+        )
+
     def test_target_validation_checks_manifest_hash_and_untracked_skill_files(self) -> None:
         self.assertEqual(self.run_operation("install", apply=True)[0], 0)
         self.assertEqual(self.run_validation()[0], 0)

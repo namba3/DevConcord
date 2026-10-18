@@ -232,13 +232,27 @@ def _filesystem_executable_files(root: Path) -> tuple[str, ...]:
 def _portable_tree_digest(root: Path, executable_files: tuple[str, ...]) -> str:
     executable_set = set(executable_files)
     regular_files: set[str] = set()
-    digest = hashlib.sha256()
-    for path in sorted(root.rglob("*")):
+    paths = sorted(root.rglob("*"))
+    populated_directories: set[str] = set()
+    for path in paths:
         if path.is_symlink():
             raise SkillManagementError(f"symlinks are not supported in skill packages: {path}")
-        if not path.is_dir() and not path.is_file():
+        if path.is_dir():
+            continue
+        if not path.is_file():
             raise SkillManagementError(f"unsupported non-regular file in skill package: {path}")
+        parent = path.parent
+        while parent != root:
+            populated_directories.add(parent.relative_to(root).as_posix())
+            parent = parent.parent
+
+    digest = hashlib.sha256()
+    for path in paths:
         relative_path = path.relative_to(root).as_posix()
+        if path.is_dir() and relative_path not in populated_directories:
+            # Git does not store empty directories, so they cannot be part of
+            # the committed Skill baseline or its portable package contents.
+            continue
         relative = relative_path.encode("utf-8")
         digest.update(len(relative).to_bytes(4, "big"))
         digest.update(relative)
