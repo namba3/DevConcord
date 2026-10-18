@@ -39,7 +39,7 @@ Copilot CLIが公式にサポートする`~/.copilot/skills/`は別の個人探�
 
 ### ローカルDevConcord資料の参照
 
-各Skillは必要な場合だけSkill配布単位内の `references/local-devconcord.md` を読みます。共通のローカル参照手順を各Skillへコピーしないため、参照helperとして `manage_skills.py reference` を使います。helperはユーザー設定から `source_root` を解決し、既定ではインストール済みSkillのmanifestに記録されたコミットから資料を読みます。
+各Skillには配布単位内で参照が完結するよう、タスクに必要な資料パスと短い呼び出し手順を記した `references/local-devconcord.md` を同梱します。参照コマンドの設定、revision、Scope、失敗時の扱いはこの節を正本とし、各Skill側では重複する詳細説明を省きます。helperはユーザー設定から `source_root` を解決し、既定ではインストール済みSkillのmanifestに記録されたコミットから資料を読みます。
 
 ```sh
 python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \

@@ -180,6 +180,18 @@ description: Use this Skill for a focused task.
                 self.assertIn("この案内だけでは作業手順の全文", text)
                 self.assertLess(len(text), 700)
 
+    def test_local_reference_guidance_is_compact_and_skill_specific(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skills_root = repository_root / ".agents" / "skills"
+        for skill_dir in sorted(path for path in skills_root.iterdir() if path.is_dir()):
+            with self.subTest(skill=skill_dir.name):
+                reference = skill_dir / "references" / "local-devconcord.md"
+                text = reference.read_text(encoding="utf-8")
+                self.assertLessEqual(len(text.splitlines()), 20)
+                self.assertIn(f"--skill {skill_dir.name}", text)
+                self.assertIn("installed", text)
+                self.assertNotIn("prompts/", text)
+
     def test_rejects_invalid_metadata_and_name_mismatch(self) -> None:
         skill_dir = self.make_skill(
             "sample-skill",
