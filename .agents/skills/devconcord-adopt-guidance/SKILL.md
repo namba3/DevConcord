@@ -29,6 +29,7 @@ When one of these canonical references is needed, use `devconcord-reference` if 
 
 - `docs/README.md`
 - `docs/agent-skills.md`
+- `docs/common/ai-assisted-development.md`
 - `docs/common/documentation-design.md`
 - `docs/work-management/issue-tracking.md`
 - `docs/application-design/templates/requirements.md`
@@ -37,4 +38,4 @@ If the common Skill cannot be selected, run the configured source checkout's `sc
 
 ## Completion report
 
-List adopted, excluded, partially applied, and held materials; target rules and records preserved; source URL and checked commit; changed paths; validations run and not run; unresolved conflicts; and remaining decisions. Keep `docs/guidance-provenance.md` consistent with the actual applied scope.
+List adopted, excluded, partially applied, and held materials; target rules and records preserved; source URL and checked commit; changed paths; validations run and not run; unresolved conflicts; and remaining decisions. When useful based on evidence gathered during Adoption, include follow-up Gap Analysis or specialist Skill recommendations under `docs/common/ai-assisted-development.md` §17.3. Do not imply that adopted guidance has been implemented or that unexamined design quality was assessed. Recommendations remain outside Adoption scope and do not run or install Skills. Keep `docs/guidance-provenance.md` consistent with the actual applied scope.

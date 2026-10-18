@@ -390,6 +390,21 @@ description: Use this Skill for a focused task.
         self.assertIn("docs/guidance-provenance.md", workflow_text)
         self.assertIn("課題ID・状態・履歴", workflow_text)
         self.assertIn("未実施の確認", workflow_text)
+        self.assertIn("docs/common/ai-assisted-development.md", skill_text)
+        self.assertIn("§17.3", skill_text)
+        for expected in (
+            "共通原則・規約を採用したことと",
+            "Adoption作業で既に確認した対象情報",
+            "devconcord-gap-analysis",
+            "有効な最新ギャップ分析レポート",
+            "Incremental Assessment",
+            "追加評価が必要か",
+            "課題表、リスク台帳、要求仕様、ADR",
+            "自動実行・インストールせず",
+            "未実施の評価・検証",
+        ):
+            with self.subTest(adoption_follow_up=expected):
+                self.assertIn(expected, workflow_text)
 
     def test_sync_workflow_reference_separates_document_and_skill_updates(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
