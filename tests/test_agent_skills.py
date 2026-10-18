@@ -123,6 +123,10 @@ description: Use this Skill for a focused task.
             "Mark a finding **Resolved** only when evidence",
             "relationships need not be one-to-one",
             "criteria revision change can require",
+            "When a material gap needs a focused design activity",
+            "Do not assign a Skill to every\nfinding;",
+            "Do not mark a gap resolved based",
+            "optional follow-up Skills section",
             "If only optional references fail",
             "do not judge that area's",
             "core criteria needed for a comprehensive assessment",
@@ -183,6 +187,9 @@ description: Use this Skill for a focused task.
             "Added tests alone are not proof",
             "Partial reference assessment",
             "Do not label unassessed areas as gaps",
+            "## 10. Recommended follow-up Skills (optional)",
+            "Expected artifact and verification",
+            "Recommendations are not a second task",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, report_text)

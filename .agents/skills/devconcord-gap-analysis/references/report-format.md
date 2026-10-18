@@ -80,6 +80,17 @@ nonconformance, and limit the overall conclusion to the evaluated scope.
 ## 8. Checks performed and results
 
 ## 9. Items for the next assessment
+
+## 10. Recommended follow-up Skills (optional)
+
+| Skill | State | Target and evidence / impact / unresolved question | Reason and timing/dependencies | Expected artifact and verification | Related REQ / ADR / issue |
+|---|---|---|---|---|---|
+
+Include only evidence-supported candidates. Use the statuses and selection
+conditions in `docs/common/ai-assisted-development.md` §17.3. Leave this section
+out when no specialist Skill adds value. Recommendations are not a second task
+ledger and do not authorize Skill execution or installation. A recommendation
+or unreviewed Skill output alone does not resolve a finding.
 ```
 
 For an Incremental Assessment, compare findings by the underlying problem or

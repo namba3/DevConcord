@@ -264,14 +264,27 @@ acceptance conditions, and verification method. Relate it to existing REQ,
 ADR, issue, and risk IDs when present. Suggest an existing issue update or a
 new issue candidate; do not edit the target's tracker by default.
 
+When a material gap needs a focused design activity, recommend a matching
+specialist Skill only when its purpose and expected output follow from the gap's
+evidence. Use the common selection conditions and recommendation states in
+`docs/common/ai-assisted-development.md` §17.3. Do not assign a Skill to every
+finding; a small direct fix may need no separate Skill. Use
+`devconcord-repository-review` when a concrete code defect or change risk needs
+deeper review. Do not recommend an unconditional Full Assessment when an
+existing useful report supports an Incremental Assessment or a focused follow-up.
+Recommendations do not run or install Skills. Do not mark a gap resolved based
+only on a recommendation or an unreviewed Skill output; reassess against the
+contract and verification evidence.
+
 ### 7. Report and close
 
 Use the assessment and report conventions in
 [`references/report-format.md`](references/report-format.md). Tailor detail to
 scope rather than mechanically filling every field. Include good practices,
 unassessed areas, residual risks, checks actually performed and their results,
-and items to revisit. The report is an assessment artifact, not a new source of
-truth for issues or risks.
+and items to revisit. Add the optional follow-up Skills section only when the
+evidence warrants it; omit it when no specialist activity would add value. The
+report is an assessment artifact, not a new source of truth for issues or risks.
 
 By default, deliver the report in the conversation. Save it in the target only
 when explicitly requested. Do not edit source, documents, `AGENTS.md`,
