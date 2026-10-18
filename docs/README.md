@@ -61,7 +61,7 @@
 
 ## 自動検証
 
-Pull Request と `main` への push で、Markdownlint、DevConcord内のMarkdown/HTMLリンク、Agent Skillsのfrontmatter・配置・相対リンク・探索先間の名前重複、管理規約・テンプレートの既知の必須項目と正規評価軸/重み、課題・ADR・リスク・要求状態の定義間整合、Markdown中の個人情報・個人環境情報・秘密らしき値のヒューリスティック検査を行います。任意形式の課題表の全ID・状態・優先度、実際の要求仕様/ADR、DevConcord資料を導入した外部リポジトリ、AIエージェントが規約に従ったかは検証しません。Markdown上の規約検査は正規資料・テンプレートの静的な整合確認であり、実プロジェクトの適合や設計判断の品質を保証しません。プライバシー検査はMarkdown中の候補検出に限られ、誤検出・見逃しがあるため、ソース/設定を含む専用シークレットスキャナーの代わりにはなりません。導入・同期ヘルパーの決定的なテストと、実AIエージェントを使う手動評価は[統合シナリオ](../tests/integration/README.md)で分離しています。CIはPython 3.14、Node.js 22、markdownlint-cli2 0.23.3およびrequirements-dev.txtで固定したPython依存を使います。Workflowはブランチ保護/rulesetを設定しないため、管理者はGitHub上で `main` へのマージにDocumentationワークフローの必須チェックを設定してください。ローカルでは仮想環境にPython依存を一度インストールしてから次を実行できます。
+Pull Request と `main` への push で、Markdownlint、DevConcord内のMarkdown/HTMLリンク、Agent Skillsのfrontmatter・配置・相対リンク・探索先間の名前重複、管理規約・テンプレートの既知の必須項目と正規評価軸/重み、課題・ADR・リスク・要求状態の定義間整合、Markdown中の個人情報・個人環境情報・秘密らしき値のヒューリスティック検査を行います。Python検証はUbuntu/Python 3.12、Ubuntu/Python 3.14、Windows/Python 3.14で実行し、MarkdownlintはNode.js 22で別ジョブとして1回実行します。任意形式の課題表の全ID・状態・優先度、実際の要求仕様/ADR、DevConcord資料を導入した外部リポジトリ、AIエージェントが規約に従ったかは検証しません。Markdown上の規約検査は正規資料・テンプレートの静的な整合確認であり、実プロジェクトの適合や設計判断の品質を保証しません。プライバシー検査はMarkdown中の候補検出に限られ、誤検出・見逃しがあるため、ソース/設定を含む専用シークレットスキャナーの代わりにはなりません。導入・同期ヘルパーの決定的なテストと、実AIエージェントを使う手動評価は[統合シナリオ](../tests/integration/README.md)で分離しています。Workflowはブランチ保護/rulesetを設定しないため、管理者はGitHub上で `main` へのマージに必要なチェックを設定してください。ローカルでは仮想環境にPython依存を一度インストールしてから次を実行できます。
 
 ```sh
 python3 -m venv .venv

@@ -912,7 +912,6 @@ Version: {version}
         self.assertEqual(result, 2)
         self.assertIn("does not exist at Git commit", error)
 
-    @unittest.skipIf(os.name == "nt", "Git symlink mode is platform-specific")
     def test_reference_git_tree_accepts_only_regular_files_and_parses_exact_paths(self) -> None:
         repository = self.source.parents[1]
         self.assertEqual(
@@ -922,10 +921,26 @@ Version: {version}
         regular.write_text("unicode and space path\n", encoding="utf-8")
         executable = repository / "docs" / "executable.md"
         executable.write_text("executable regular file\n", encoding="utf-8")
-        executable.chmod(0o755)
-        symlink = repository / "docs" / "symlink.md"
-        symlink.symlink_to("reference.md")
-        self.git(repository, "add", ".")
+        self.git(
+            repository,
+            "add",
+            "docs/reference with space 日本語.md",
+            "docs/executable.md",
+        )
+        symlink_blob = subprocess.run(
+            ["git", "-C", str(repository), "hash-object", "-w", "--stdin"],
+            input=b"reference.md",
+            capture_output=True,
+            check=True,
+        ).stdout.decode("ascii").strip()
+        self.git(
+            repository,
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            f"120000,{symlink_blob},docs/symlink.md",
+        )
+        self.git(repository, "update-index", "--chmod=+x", "docs/executable.md")
         self.git(repository, "commit", "-qm", "add reference entry types")
         self.assertEqual(self.run_operation("install", apply=True)[0], 0)
         for path, expected in (
@@ -937,7 +952,7 @@ Version: {version}
                 self.assertEqual((result, error), (0, ""))
                 self.assertIn(expected, output)
 
-        symlink.unlink()
+        symlink = repository / "docs" / "symlink.md"
         symlink.write_text("working tree regular file\n", encoding="utf-8")
         result, output, error = self.run_reference(
             path="docs/symlink.md", revision="working-tree"
@@ -960,7 +975,6 @@ Version: {version}
             self.assertIn("not a regular Git file", error)
 
         symlink.unlink()
-        symlink.symlink_to("reference.md")
         for path in ("docs/subdir", "docs/not-present.md"):
             with self.subTest(path=path):
                 result, _output, error = self.run_reference(path=path, revision="head")
@@ -2278,6 +2292,10 @@ Version: {version}
         self.assertIn("another Skill operation", apply_error)
         self.assertFalse((self.target / ".agents" / "skills").exists())
         self.assertTrue(lock_path.exists())
+
+    def test_process_liveness_check_handles_running_and_missing_processes(self) -> None:
+        self.assertTrue(manage_skills._process_is_running(os.getpid()))
+        self.assertFalse(manage_skills._process_is_running(2**31 - 1))
 
     def test_recovery_preserves_staging_without_a_valid_journal(self) -> None:
         orphan = self.target / ".devconcord" / "skills-transactions" / "orphan"

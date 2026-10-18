@@ -32,7 +32,7 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 ```
 
-これはファイルシステム操作とメタデータの決定的なテストです。実際のエージェントがSkillを発見・選択・実行することを証明しません。
+GitHub ActionsではUbuntu/Python 3.12・3.14とWindows/Python 3.14でSkills管理・文書検証テストを実行し、Git indexから作るsymlink mode等のホスト依存を抑えたfixtureも使います。これはファイルシステム操作とメタデータの決定的なテストです。実際のエージェントがSkillを発見・選択・実行することを証明しません。ローカル実行結果とGitHub-hosted Windows runnerの結果は区別して報告します。
 
 ## User Scopeの手動E2E受け入れ
 
