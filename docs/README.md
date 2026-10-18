@@ -4,7 +4,7 @@
 
 初回利用では[実行例付きの導入ガイド](getting-started.md)からUser ScopeのSkillsセットアップ、Bootstrap、Adoptionの該当シナリオを選んでください。Agent Skillsはユーザー単位が標準で、Project Scopeはチーム共有・CI等に使う任意の方式です。ワークフロー作業は導入先を作業コンテキストとし、DevConcordを参照元として使います。Skillsの出典管理・復旧などの詳細は[Agent Skills運用ガイド](agent-skills.md)が正本です。
 
-作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。Skillsの選択は[Agent Skills運用ガイドの一覧](agent-skills.md#skills)、導入・同期・復旧は [`manage_skills.py`](../scripts/manage_skills.py) と[運用手順](agent-skills.md)を参照してください。Skills非対応環境では、該当する `SKILL.md` と必要な `references/` の全文を対象エージェントへ渡します。
+作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。[`devconcord-reference`](../.agents/skills/devconcord-reference/SKILL.md)は共通資料を読むためのAI向け窓口、[`manage_skills.py reference`](../scripts/manage_skills.py)は出典・版・パスを検証して内容を返す決定的なCLIです。各業務Skillが必要な資料パスを決め、共通Skillが使えない場合も同じCLIを直接実行できます。Skillsの選択は[Agent Skills運用ガイドの一覧](agent-skills.md#skills)、Scopeや参照の詳細は[運用手順](agent-skills.md#ローカルdevconcord資料の参照)を参照してください。Skills非対応環境では、該当する `SKILL.md` と必要な `references/` の全文を対象エージェントへ渡します。
 
 ## 共通
 
@@ -13,6 +13,7 @@
 | [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness / Replaceability by Design、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
 | [ドキュメント設計ガイド](common/documentation-design.md) | 読者中心の情報設計、README・文書の役割、ナビゲーション、Single Source of Truth、変更影響、Docs as Code |
 | [Agent Skills運用ガイド](agent-skills.md) | 導入先へのSkillsの選択導入、共用、更新、manifest、復旧、検証 |
+| [`devconcord-reference` Skill](../.agents/skills/devconcord-reference/SKILL.md) | ローカル共通資料を要求元Skillの版に合わせて参照する |
 
 ## アプリ設計
 

@@ -41,10 +41,10 @@ python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 1. 専用環境にDevConcordをcloneし、`config set-source` でその環境のローカルcloneを登録します。`config show` で正規化されたパスを確認します。
 2. User Scopeのdry-runと適用を行い、対象が `~/.agents/skills/` または `~/.claude/skills/` と `~/.devconcord/` のみで、プロジェクトにはmanifestやSkillのコピーがないことを確認します。
 3. `validate --scope user` と `doctor --target <temporary-project>` を実行します。DevConcord管理外のSkillと対象プロジェクトのローカルSkillが変更されないことを確認します。
-4. 新規の空プロジェクトでは、エージェントをその作業ディレクトリから起動し、Bootstrap Skillにローカル参照元の版固定ガイドと設計書を使わせます。生成先がその対象だけであること、未実装機能・未確認コマンドを断定しないことを確認します。
+4. 新規の空プロジェクトでは、エージェントをその作業ディレクトリから起動し、Bootstrap Skillにローカル参照元の版固定ガイドと設計書を使わせます。共通参照Skillが選択されない場合も直接CLIフォールバックを使えるか、必須資料が取得できないときに安全に停止するかを確認します。生成先がその対象だけであること、未実装機能・未確認コマンドを断定しないことを確認します。
 5. Adoptionでは専用の既存fixtureを使い、既存構成・規約・公開リンク・独自文書とprovenanceを保護し、対象自身の検証方法を使うことを確認します。
 6. source checkoutを別の絶対パスへ移動してconfigだけ更新し、元のSkill commitのreferenceとUser Scopeのno-op syncが継続できることを確認します。remote付き・remoteなしの両方を必要に応じて記録します。
-7. エージェント、製品版、OS/実行環境、参照できたcommit、生成差分、検証結果、未実施項目を記録します。別マシンやクラウドでユーザーのローカルファイルが参照できない場合は、その制約を未対応または別スコープの要件として報告します。
+7. エージェント、製品版、OS/実行環境、参照できたcommit、共通Skillの選択/直接CLI経路、生成差分、検証結果、未実施項目を記録します。Codex、Claude Code、CopilotでSkill間呼び出しが機能するか個別に確認し、確認していないエージェントは未検証とします。別マシンやクラウドでユーザーのローカルファイルが参照できない場合は、その制約を未対応または別スコープの要件として報告します。
 
 意味的な品質、スキル選択、読者タスク達成をテスト文字列だけで合否判定しません。変更した文書は対象の既存リンク検証・サイトビルド・API生成・テスト等で確認し、DevConcordの `validate_docs.py` を外部プロジェクトへ無条件に適用しません。
 

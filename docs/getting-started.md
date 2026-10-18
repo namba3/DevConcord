@@ -66,6 +66,8 @@ Claude Codeだけを使う場合は `--agents codex copilot` の代わりに `--
 
 **期待する成果物:** Codex/Copilot用なら `~/.agents/skills/`、Claude Code用なら `~/.claude/skills/` に選択したSkillsが配置され、状態・manifest・lock・復旧情報はユーザーの `~/.devconcord/` に保存されます。インストールしても対象プロジェクトにはファイルを作成しません。
 
+全Skillsを導入すると共通参照Skill [`devconcord-reference`](../.agents/skills/devconcord-reference/SKILL.md)も含まれます。業務Skillが必要とする資料パスを選び、利用できる場合に共通Skillへ参照を依頼します。Skill間の自動呼び出しは保証されないため、各業務Skillには同じ決定的CLIを直接実行するフォールバックがあります。要求元Skillのinstalled版を使い、必須資料が取得できないときは安全に停止し、任意資料なら自己完結した作業を続けられるか判断します。例とScope・エラー処理は[Agent Skills運用ガイドのローカル参照節](agent-skills.md#ローカルdevconcord資料の参照)を参照してください。
+
 ## 3. 設計書から新規Bootstrapする（Codex CLI）
 
 **前提:** Codex CLIが利用でき、登録済みのローカル参照元とグローバル `devconcord-bootstrap-from-design` SkillをCodexから読めること。`my-new-app/` は空にしておきます。グローバルSkillは対象へコピーしないため、Skill導入によってBootstrap開始状態が変わりません。
