@@ -55,7 +55,7 @@ description: Use this Skill for a focused task.
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 12)
+        self.assertEqual(len(skill_dirs), 13)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
