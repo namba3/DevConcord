@@ -6,16 +6,16 @@
 
 | Skill | 用途 |
 |---|---|
-| [`bootstrap-from-design`](../.agents/skills/bootstrap-from-design/SKILL.md) | 設計要求から新規リポジトリのFoundation/Scaffold/Initial Implementationを構築 |
-| [`adopt-guidance`](../.agents/skills/adopt-guidance/SKILL.md) | 既存プロジェクトへ共通資料を選択導入 |
-| [`sync-guidance`](../.agents/skills/sync-guidance/SKILL.md) | 導入済み資料・Skillsをローカル変更を保護しながら同期 |
-| [`ux-functional-design`](../.agents/skills/ux-functional-design/SKILL.md) | ユーザー目標を機能・状態・受け入れ条件へ接続 |
-| [`design-performance`](../.agents/skills/design-performance/SKILL.md) | ワークロードに基づく性能設計と測定条件を定義 |
-| [`design-robustness`](../.agents/skills/design-robustness/SKILL.md) | 不変条件・失敗時契約・回復・検証を設計 |
-| [`design-replaceability`](../.agents/skills/design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |
-| [`repository-review`](../.agents/skills/repository-review/SKILL.md) | 実装・設計・テスト・CI・運用記録を根拠にレビュー |
-| [`generate-agent-guidance`](../.agents/skills/generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEWS.md` の作成・更新 |
-| [`documentation-architecture`](../.agents/skills/documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
+| [`devconcord-bootstrap-from-design`](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) | 設計要求から新規リポジトリのFoundation/Scaffold/Initial Implementationを構築 |
+| [`devconcord-adopt-guidance`](../.agents/skills/devconcord-adopt-guidance/SKILL.md) | 既存プロジェクトへ共通資料を選択導入 |
+| [`devconcord-sync-guidance`](../.agents/skills/devconcord-sync-guidance/SKILL.md) | 導入済み資料・Skillsをローカル変更を保護しながら同期 |
+| [`devconcord-ux-functional-design`](../.agents/skills/devconcord-ux-functional-design/SKILL.md) | ユーザー目標を機能・状態・受け入れ条件へ接続 |
+| [`devconcord-design-performance`](../.agents/skills/devconcord-design-performance/SKILL.md) | ワークロードに基づく性能設計と測定条件を定義 |
+| [`devconcord-design-robustness`](../.agents/skills/devconcord-design-robustness/SKILL.md) | 不変条件・失敗時契約・回復・検証を設計 |
+| [`devconcord-design-replaceability`](../.agents/skills/devconcord-design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |
+| [`devconcord-repository-review`](../.agents/skills/devconcord-repository-review/SKILL.md) | 実装・設計・テスト・CI・運用記録を根拠にレビュー |
+| [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEWS.md` の作成・更新 |
+| [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
 
 ## User Scope
 
@@ -58,7 +58,7 @@ Copilot CLIが公式にサポートする`~/.copilot/skills/`は別の個人探�
 
 ```sh
 python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
-  --skill documentation-architecture \
+  --skill devconcord-documentation-architecture \
   --path docs/common/documentation-design.md
 ```
 
@@ -99,9 +99,9 @@ DevConcord cloneのルートから実行します。`--scope user` を指定し�
 
 ```sh
 python3 scripts/manage_skills.py install \
-  --scope user --agents codex copilot --skills bootstrap-from-design adopt-guidance
+  --scope user --agents codex copilot --skills devconcord-bootstrap-from-design devconcord-adopt-guidance
 python3 scripts/manage_skills.py install \
-  --scope user --agents codex copilot --skills bootstrap-from-design adopt-guidance --apply
+  --scope user --agents codex copilot --skills devconcord-bootstrap-from-design devconcord-adopt-guidance --apply
 python3 scripts/manage_skills.py validate --scope user
 ```
 
@@ -114,7 +114,7 @@ Claude Codeだけに導入する場合は `--agent claude` を選びます。Cod
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py install \
   --scope project --target ~/projects/my-app --agent codex \
-  --skills bootstrap-from-design design-robustness
+  --skills devconcord-bootstrap-from-design devconcord-design-robustness
 ```
 
 表示された対象・変更内容を確認した後、同じコマンドに `--apply` を追加してインストールします。全Skillsを選ぶ場合は `--skills` を省略します。既に導入したSkillの更新もdry-runで確認し、意図したものだけを適用します。
@@ -123,9 +123,9 @@ CodexとCopilot、またはClaude CodeとCopilotが同じSkillを使う場合は
 
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-app --agents codex copilot --skills bootstrap-from-design
+  --target ~/projects/my-app --agents codex copilot --skills devconcord-bootstrap-from-design
 python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-app --agents claude copilot --skills bootstrap-from-design
+  --target ~/projects/my-app --agents claude copilot --skills devconcord-bootstrap-from-design
 ```
 
 CodexとClaude Codeは探索先が分かれているため、別々の配置へ同じSkillを生成できます。3エージェント併用はCopilotが両方の探索先から同名Skillを見つけ得ます。動作を実機で確認し、重複を許容する場合に限り、dry-runと適用の両方で `--allow-duplicate-discovery` を明示します。
@@ -133,7 +133,7 @@ CodexとClaude Codeは探索先が分かれているため、別々の配置へ�
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py install \
   --target ~/projects/my-app --agents codex claude copilot \
-  --skills bootstrap-from-design --allow-duplicate-discovery
+  --skills devconcord-bootstrap-from-design --allow-duplicate-discovery
 ```
 
 同期もdry-runで確認してから適用します。

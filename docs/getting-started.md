@@ -66,7 +66,7 @@ Claude Codeだけを使う場合は `--agents codex copilot` の代わりに `--
 
 ## 3. 設計書から新規Bootstrapする（Codex CLI）
 
-**前提:** Codex CLIが利用でき、登録済みのローカル参照元とグローバル `bootstrap-from-design` SkillをCodexから読めること。`my-new-app/` は空にしておきます。グローバルSkillは対象へコピーしないため、Skill導入によってBootstrap開始状態が変わりません。
+**前提:** Codex CLIが利用でき、登録済みのローカル参照元とグローバル `devconcord-bootstrap-from-design` SkillをCodexから読めること。`my-new-app/` は空にしておきます。グローバルSkillは対象へコピーしないため、Skill導入によってBootstrap開始状態が変わりません。
 
 **作業ディレクトリ・変更先:** `~/projects/my-new-app/`。入力設計書は `~/projects/design/requirements.md`、ローカル参照元は `~/projects/devconcord/` です。
 
@@ -75,13 +75,13 @@ cd ~/projects/my-new-app
 codex
 ```
 
-Codexへ「`bootstrap-from-design` Skillを使い、`~/projects/design/requirements.md` からこの空のリポジトリを初期化してください。DevConcordの資料は読み取り専用で参照し、変更先はこのリポジトリだけにしてください。未確認の機能やコマンドを事実として記載しないでください」と依頼します。
+Codexへ「`devconcord-bootstrap-from-design` Skillを使い、`~/projects/design/requirements.md` からこの空のリポジトリを初期化してください。DevConcordの資料は読み取り専用で参照し、変更先はこのリポジトリだけにしてください。未確認の機能やコマンドを事実として記載しないでください」と依頼します。
 
-Skillが利用できない場合は、`bootstrap-from-design` の `SKILL.md` と詳細手順を読み、両方の全文を対象リポジトリで実行中のエージェントへ渡します。
+Skillが利用できない場合は、`devconcord-bootstrap-from-design` の `SKILL.md` と詳細手順を読み、両方の全文を対象リポジトリで実行中のエージェントへ渡します。
 
 ```sh
-cat ~/projects/devconcord/.agents/skills/bootstrap-from-design/SKILL.md
-cat ~/projects/devconcord/.agents/skills/bootstrap-from-design/references/workflow.md
+cat ~/projects/devconcord/.agents/skills/devconcord-bootstrap-from-design/SKILL.md
+cat ~/projects/devconcord/.agents/skills/devconcord-bootstrap-from-design/references/workflow.md
 ```
 
 **期待する成果物:** 合意した範囲のREADME、設計・要求資料、最小限の実装骨格・検証資産などです。Git初期化や技術スタックは設計と対象の状態に基づき判断します。生成された記述が設計書・実装と一致するか、人が確認してください。
@@ -97,13 +97,13 @@ cd ~/projects/my-app
 codex
 ```
 
-「`adopt-guidance` Skillを使い、このリポジトリの既存実装・文書・規約・リンク・履歴を調査してください。DevConcordの共通資料はローカル参照から必要な範囲だけ確認し、独自規約や未コミット変更を保護してください。導入・変更はこのリポジトリだけに行い、必要な資料を選択して理由を説明してください」と依頼します。
+「`devconcord-adopt-guidance` Skillを使い、このリポジトリの既存実装・文書・規約・リンク・履歴を調査してください。DevConcordの共通資料はローカル参照から必要な範囲だけ確認し、独自規約や未コミット変更を保護してください。導入・変更はこのリポジトリだけに行い、必要な資料を選択して理由を説明してください」と依頼します。
 
-Skillが利用できない場合は、`adopt-guidance` の `SKILL.md` と詳細手順を読み、両方の全文を対象コンテキストで使います。
+Skillが利用できない場合は、`devconcord-adopt-guidance` の `SKILL.md` と詳細手順を読み、両方の全文を対象コンテキストで使います。
 
 ```sh
-cat ~/projects/devconcord/.agents/skills/adopt-guidance/SKILL.md
-cat ~/projects/devconcord/.agents/skills/adopt-guidance/references/workflow.md
+cat ~/projects/devconcord/.agents/skills/devconcord-adopt-guidance/SKILL.md
+cat ~/projects/devconcord/.agents/skills/devconcord-adopt-guidance/references/workflow.md
 ```
 
 **期待する成果物:** 調査と合意に基づく必要最小限の共通資料、`AGENTS.md` / `REVIEWS.md`、採用内容を示すprovenance等です。DevConcordのSkills manifestと対象の `guidance-provenance.md` は別の記録です。適用後に差分、既存規約、リンク、provenance、対象固有の検証を確認します。
@@ -122,7 +122,7 @@ Codex拡張やエージェントがユーザーのホーム・DevConcord clone�
 
 ## 6. Claude Code・GitHub CopilotでSkillsを使う
 
-対応するエージェントで対象プロジェクトを開き、「`adopt-guidance` Skillを使って必要な範囲を調査してください」のように依頼します。Claude Codeの個人Skillは `~/.claude/skills/`、CodexとCopilotで共有するSkillは `~/.agents/skills/` に配置します。CLIのインストール成功と、エージェントがSkillを発見・選択・実行できることは別々に確認してください。
+対応するエージェントで対象プロジェクトを開き、「`devconcord-adopt-guidance` Skillを使って必要な範囲を調査してください」のように依頼します。Claude Codeの個人Skillは `~/.claude/skills/`、CodexとCopilotで共有するSkillは `~/.agents/skills/` に配置します。CLIのインストール成功と、エージェントがSkillを発見・選択・実行できることは別々に確認してください。
 
 CopilotがCodex用 `.agents/skills/` とClaude用 `.claude/skills/` の両方を使う構成は、対応版や表示・選択動作を実機で確認してください。Claude Code、Copilot CLI、クラウドエージェントでユーザー単位のSkillsやローカルファイルアクセスが使えるかは、それぞれの実行形態によって異なります。グローバルSkillsを利用できない環境ではProject Scopeを検討します。
 
@@ -136,7 +136,7 @@ Project Scopeはチーム共有、CI、バージョン固定、クラウドエ�
 cd ~/projects/devconcord
 python3 scripts/manage_skills.py install \
   --scope project --target ~/projects/my-app --agent codex \
-  --skills adopt-guidance
+  --skills devconcord-adopt-guidance
 ```
 
 dry-runの対象と差分を確認後、同じコマンドに `--apply` を加えます。後方互換性のため `--scope` を省略して `--target` を指定した場合もProject Scopeです。User Scopeでは `--target` を指定しません。既存の非DevConcord Skills、同名Skill、ローカル編集は保護されます。
@@ -152,7 +152,7 @@ cd ~/projects/my-app
 codex
 ```
 
-`sync-guidance` Skillを使い、ローカル変更を保護し、採用済み資料の必要な差分だけを適用するよう指示します。Skillを利用できない場合は `.agents/skills/sync-guidance/SKILL.md` と `references/workflow.md` の全文を対象エージェントへ渡します。比較対象のDevConcordコミットやprovenanceを推測で変更しません。適用後は対象の差分、provenance、リンク、既存の文書検証を確認します。
+`devconcord-sync-guidance` Skillを使い、ローカル変更を保護し、採用済み資料の必要な差分だけを適用するよう指示します。Skillを利用できない場合は `.agents/skills/devconcord-sync-guidance/SKILL.md` と `references/workflow.md` の全文を対象エージェントへ渡します。比較対象のDevConcordコミットやprovenanceを推測で変更しません。適用後は対象の差分、provenance、リンク、既存の文書検証を確認します。
 
 ## 9. Agent Skillsの同期・検証・復旧
 
@@ -199,11 +199,11 @@ python3 scripts/manage_skills.py validate \
 
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py reference \
-  --skill documentation-architecture \
+  --skill devconcord-documentation-architecture \
   --path docs/common/documentation-design.md
 ```
 
-`--revision head` は現在のコミット、`--revision working-tree` は意図的に未コミット変更を含む参照です。既定のinstalled revisionはネットワークを使いません。設定したcloneが移動した場合は、検証後 `config set-source --replace --source-root <新しい絶対パス>` で更新します。詳細な意味と失敗時の扱いは[Skill内のローカル参照手順](../.agents/skills/documentation-architecture/references/local-devconcord.md)を確認してください。
+`--revision head` は現在のコミット、`--revision working-tree` は意図的に未コミット変更を含む参照です。既定のinstalled revisionはネットワークを使いません。設定したcloneが移動した場合は、検証後 `config set-source --replace --source-root <新しい絶対パス>` で更新します。詳細な意味と失敗時の扱いは[Skill内のローカル参照手順](../.agents/skills/devconcord-documentation-architecture/references/local-devconcord.md)を確認してください。
 
 ## 10. よくあるエラーと対処
 

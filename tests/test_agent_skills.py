@@ -52,7 +52,7 @@ description: Use this Skill for a focused task.
             repository_root
             / ".agents"
             / "skills"
-            / "documentation-architecture"
+            / "devconcord-documentation-architecture"
         )
         self.assertEqual(validate_skill_directory(skill_dir), [])
         skills_guide = (repository_root / "docs" / "agent-skills.md").read_text(
@@ -61,12 +61,12 @@ description: Use this Skill for a focused task.
         docs_index = (repository_root / "docs" / "README.md").read_text(
             encoding="utf-8"
         )
-        self.assertIn("documentation-architecture", skills_guide)
+        self.assertIn("devconcord-documentation-architecture", skills_guide)
         self.assertIn("documentation-design.md", docs_index)
 
     def test_bootstrap_workflow_reference_preserves_safety_and_scope_contracts(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
-        skill = repository_root / ".agents" / "skills" / "bootstrap-from-design"
+        skill = repository_root / ".agents" / "skills" / "devconcord-bootstrap-from-design"
         skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
         workflow_text = (skill / "references" / "workflow.md").read_text(
             encoding="utf-8"
@@ -82,7 +82,7 @@ description: Use this Skill for a focused task.
 
     def test_adoption_workflow_reference_preserves_provenance_and_existing_records(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
-        skill = repository_root / ".agents" / "skills" / "adopt-guidance"
+        skill = repository_root / ".agents" / "skills" / "devconcord-adopt-guidance"
         skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
         workflow_text = (skill / "references" / "workflow.md").read_text(
             encoding="utf-8"
@@ -100,7 +100,7 @@ description: Use this Skill for a focused task.
 
     def test_sync_workflow_reference_separates_document_and_skill_updates(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
-        skill = repository_root / ".agents" / "skills" / "sync-guidance"
+        skill = repository_root / ".agents" / "skills" / "devconcord-sync-guidance"
         skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
         workflow_text = (skill / "references" / "workflow.md").read_text(
             encoding="utf-8"
@@ -117,7 +117,7 @@ description: Use this Skill for a focused task.
 
     def test_agent_guidance_generation_modes_and_detailed_contracts(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
-        skill = repository_root / ".agents" / "skills" / "generate-agent-guidance"
+        skill = repository_root / ".agents" / "skills" / "devconcord-generate-agent-guidance"
         skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
         agents_text = (skill / "references" / "agents-md.md").read_text(
             encoding="utf-8"
@@ -149,7 +149,7 @@ description: Use this Skill for a focused task.
             encoding="utf-8"
         )
         self.assertIn("(docs/getting-started.md)", readme)
-        self.assertIn("(.agents/skills/bootstrap-from-design/SKILL.md)", readme)
+        self.assertIn("(.agents/skills/devconcord-bootstrap-from-design/SKILL.md)", readme)
         self.assertIn("(docs/agent-skills.md#skills)", readme)
         self.assertIn("(docs/agent-skills.md)", readme)
         self.assertIn("## 2. Agent Skillsをユーザー単位でインストールする", getting_started)

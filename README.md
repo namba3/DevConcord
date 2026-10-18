@@ -11,8 +11,8 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 設計書から新規Bootstrapする | [Bootstrapの実行例](docs/getting-started.md#3-設計書から新規bootstrapするcodex-cli) |
 | 既存リポジトリへAdoptionする | [Adoptionの実行例](docs/getting-started.md#4-既存リポジトリへadoptionするcodex-cli) |
 | はじめてDevConcordを使う | [導入と運用ガイド](docs/getting-started.md) |
-| 設計書から新しいプロジェクトを始める | [`bootstrap-from-design` Skill](.agents/skills/bootstrap-from-design/SKILL.md) |
-| 既存プロジェクトへ規約を選んで導入する | [`adopt-guidance` Skill](.agents/skills/adopt-guidance/SKILL.md) |
+| 設計書から新しいプロジェクトを始める | [`devconcord-bootstrap-from-design` Skill](.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |
+| 既存プロジェクトへ規約を選んで導入する | [`devconcord-adopt-guidance` Skill](.agents/skills/devconcord-adopt-guidance/SKILL.md) |
 | 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
 | Agent Skillsを選ぶ | [Skills一覧](docs/agent-skills.md#skills) |

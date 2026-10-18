@@ -40,13 +40,13 @@
 | 設計原則とAI支援開発の共通ルールを理解する | [AI支援開発ガイド](common/ai-assisted-development.md)、[AI開発クイックリファレンス](common/ai-development-quick-reference.md) |
 | 要求仕様や設計判断を記録する | [要求仕様テンプレート](application-design/templates/requirements.md)、[ADRテンプレート](application-design/templates/adr.md) |
 | 利用者タスクから機能を設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md) |
-| 性能・堅牢性・依存境界を検討する | [設計原則](common/ai-assisted-development.md)と個別の `design-performance`、`design-robustness`、`design-replaceability` [Skills](agent-skills.md#skills) |
-| READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`documentation-architecture` Skill](../.agents/skills/documentation-architecture/SKILL.md) |
+| 性能・堅牢性・依存境界を検討する | [設計原則](common/ai-assisted-development.md)と個別の `devconcord-design-performance`、`devconcord-design-robustness`、`devconcord-design-replaceability` [Skills](agent-skills.md#skills) |
+| READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`devconcord-documentation-architecture` Skill](../.agents/skills/devconcord-documentation-architecture/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
-| レビュー基準を作る・調べる | [`generate-agent-guidance` Skill](../.agents/skills/generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEWS.md) |
-| 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`bootstrap-from-design` Skill](../.agents/skills/bootstrap-from-design/SKILL.md) |
-| 既存プロジェクトへ規約を導入する | [Adoptionの実行例](getting-started.md#4-既存リポジトリへadoptionするcodex-cli)、[`adopt-guidance` Skill](../.agents/skills/adopt-guidance/SKILL.md) |
-| 導入済み共通資料を更新する | [資料Synchronizationの実行例](getting-started.md#8-共通ガイドのsynchronization)、[`sync-guidance` Skill](../.agents/skills/sync-guidance/SKILL.md) |
+| レビュー基準を作る・調べる | [`devconcord-generate-agent-guidance` Skill](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEWS.md) |
+| 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`devconcord-bootstrap-from-design` Skill](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |
+| 既存プロジェクトへ規約を導入する | [Adoptionの実行例](getting-started.md#4-既存リポジトリへadoptionするcodex-cli)、[`devconcord-adopt-guidance` Skill](../.agents/skills/devconcord-adopt-guidance/SKILL.md) |
+| 導入済み共通資料を更新する | [資料Synchronizationの実行例](getting-started.md#8-共通ガイドのsynchronization)、[`devconcord-sync-guidance` Skill](../.agents/skills/devconcord-sync-guidance/SKILL.md) |
 | User ScopeのSkillsを導入・更新・検証する | [Skillsの実行例](getting-started.md#2-agent-skillsをユーザー単位でインストールする)、[Agent Skills運用ガイド](agent-skills.md) |
 | Project Scopeを使ってSkillを共有する | [Project Scopeの実行例](getting-started.md#7-project-scopeでskillsを導入する任意)、[Agent Skills運用ガイド](agent-skills.md) |
 
