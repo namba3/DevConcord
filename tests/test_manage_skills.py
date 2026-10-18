@@ -2243,7 +2243,7 @@ Version: {version}
         real_rmtree = shutil.rmtree
 
         def fail_target_removal(path: Path, *args: object, **kwargs: object) -> None:
-            if Path(path) == target_skill:
+            if paths_equal(Path(path), target_skill):
                 raise OSError("simulated recovery I/O failure")
             real_rmtree(path, *args, **kwargs)
 
