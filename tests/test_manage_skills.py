@@ -859,6 +859,17 @@ Version: {version}
                 self.assertEqual((result, error), (0, ""))
                 self.assertIn("Root reference fixture.", output)
 
+        self.git(repository, "rm", "REVIEWS.md")
+        self.git(repository, "commit", "-qm", "retire legacy review filename")
+        result, output, error = self.run_reference(
+            path="REVIEWS.md", revision="installed"
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Root reference fixture.", output)
+        result, _output, error = self.run_reference(path="REVIEWS.md", revision="head")
+        self.assertEqual(result, 2)
+        self.assertIn("does not exist at Git commit", error)
+
         result, _output, error = self.run_reference(path="LICENSE.md")
         self.assertEqual(result, 2)
         self.assertIn("must be under docs/", error)
@@ -1375,6 +1386,50 @@ Version: {version}
             before_global,
         )
         self.assertEqual(project_skill.joinpath("SKILL.md").read_bytes(), before_project)
+
+    def test_user_scope_health_is_separate_from_unrelated_source_validation(self) -> None:
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        (self.source / "unrelated-broken-skill").mkdir()
+
+        result, output, error = self.run_user_operation("validate")
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Validated 1 DevConcord-managed Skill package", output)
+        self.assertIn("separate from User Scope installation health", output)
+        self.assertIn("source Skill validation failed", output)
+
+        result, output, error = self.run_user_operation("doctor")
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Validated 1 DevConcord-managed Skill package", output)
+        self.assertIn("separate from User Scope installation health", output)
+
+        args = SimpleNamespace(
+            command="validate", scope=None, target=None, source=self.source
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            source_result = manage_skills._run(args)
+        self.assertEqual(source_result, 1)
+        self.assertIn("unrelated-broken-skill", stderr.getvalue())
+
+        installed_skill = self.user_home / ".agents/skills/sample-skill/SKILL.md"
+        installed_skill.write_text("locally modified\n", encoding="utf-8")
+        result, _output, error = self.run_user_operation("validate")
+        self.assertEqual(result, 1)
+        self.assertIn("installed Skill differs from its manifest hash", error)
 
     def test_dry_run_does_not_write_then_install_records_provenance(self) -> None:
         source_before = {
@@ -2324,6 +2379,37 @@ Version: {version}
         self.assertEqual(result, 2)
         self.assertIn("no valid journal", error)
         self.assertTrue(orphan.is_dir())
+
+    def test_repository_identity_preserves_nonstandard_ports_and_normalizes_defaults(self) -> None:
+        identities = {
+            "https://git.example.com:8443/team/repo.git": "git.example.com:8443/team/repo",
+            "https://git.example.com:9443/team/repo.git": "git.example.com:9443/team/repo",
+            "https://git.example.com:443/team/repo.git": "git.example.com/team/repo",
+            "ssh://git@git.example.com:22/team/repo.git": "git.example.com/team/repo",
+            "git://git.example.com:9418/team/repo.git": "git.example.com/team/repo",
+            "ssh://user@[2001:db8::1]:2222/team/repo.git": "[2001:db8::1]:2222/team/repo",
+            "git@[2001:db8::1]:team/repo.git": "[2001:db8::1]/team/repo",
+        }
+        for remote, expected in identities.items():
+            with self.subTest(remote=remote):
+                self.assertEqual(manage_skills._repository_identity(remote), expected)
+
+        self.assertNotEqual(
+            manage_skills._repository_identity("https://git.example.com:8443/team/repo.git"),
+            manage_skills._repository_identity("https://git.example.com:9443/team/repo.git"),
+        )
+        self.assertFalse(
+            manage_skills._source_identities_match(
+                "git.example.com/team/repo",
+                "git.example.com:8443/team/repo",
+            )
+        )
+        self.assertTrue(
+            manage_skills._source_identities_match(
+                "git.example.com/team/repo",
+                "https://git.example.com:443/team/repo.git",
+            )
+        )
 
     def test_source_repository_identifier_redacts_credentials_and_query(self) -> None:
         results = [

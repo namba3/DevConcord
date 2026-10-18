@@ -414,18 +414,41 @@ def _local_repository_identity(repository_root: Path) -> str:
 
 
 def _repository_identity(remote: str, source_root: Path | None = None) -> str:
-    parsed = urlsplit(remote)
+    try:
+        parsed = urlsplit(remote)
+    except ValueError:
+        return "local Git repository"
     if parsed.scheme == "file":
         local_path = Path(parsed.path)
         if local_path.is_dir():
             return _local_repository_identity(local_path)
         return "local Git repository"
     if parsed.hostname:
-        host = parsed.hostname.lower()
+        hostname = parsed.hostname.lower()
+        host = f"[{hostname}]" if ":" in hostname else hostname
+        try:
+            port = parsed.port
+        except ValueError:
+            return "local Git repository"
+        default_ports = {"http": 80, "https": 443, "ssh": 22, "git": 9418}
+        if port is not None and port != default_ports.get(parsed.scheme.lower()):
+            host = f"{host}:{port}"
         path = parsed.path.strip("/")
     elif "@" in remote and ":" in remote and "://" not in remote:
-        host, path = remote.rsplit("@", maxsplit=1)[1].split(":", maxsplit=1)
-        host = host.lower()
+        remainder = remote.rsplit("@", maxsplit=1)[1]
+        if remainder.startswith("["):
+            separator = remainder.find("]:")
+            if separator < 0:
+                return "local Git repository"
+            endpoint, path = remainder[: separator + 1], remainder[separator + 2 :]
+        else:
+            endpoint, path = remainder.split(":", maxsplit=1)
+        hostname = (
+            endpoint[1 : endpoint.index("]")]
+            if endpoint.startswith("[") and "]" in endpoint
+            else endpoint
+        ).lower()
+        host = f"[{hostname}]" if ":" in hostname else hostname
     elif (
         source_root is not None
         and (remote.startswith(("./", "../")) or Path(remote).is_absolute())
@@ -1914,14 +1937,16 @@ def _run(args: argparse.Namespace) -> int:
                 print("ERROR: --target cannot be combined with --scope user", file=sys.stderr)
                 return 2
             try:
-                _read_user_config()
+                config, _config_path = _read_user_config(validate_skills=False)
                 errors = _validate_user_installation(_user_home())
             except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+                config = None
                 errors = [f"User Scope validation stopped safely ({error})"]
             if errors:
                 for error in errors:
                     print(f"ERROR: {error}", file=sys.stderr)
                 return 1
+            _report_configured_source_validation(config)
             return 0
         if scope not in {None, "project"}:
             print(f"ERROR: unsupported Skill scope: {scope}", file=sys.stderr)
@@ -2277,6 +2302,20 @@ def _validate_user_installation(home: Path) -> list[str]:
         return [f"cannot validate User Scope Skills safely ({type(error).__name__}: {error})"]
 
 
+def _report_configured_source_validation(config: dict[str, Any] | None) -> None:
+    if config is None:
+        return
+    try:
+        _validate_source_repository(Path(config["source_root"]))
+    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+        print(
+            "WARNING: configured DevConcord source Skill validation failed "
+            f"(separate from User Scope installation health): {error}"
+        )
+    else:
+        print("Configured DevConcord source Skills validated.")
+
+
 def _safe_reference_path(value: str) -> str:
     path = Path(value)
     parts = value.split("/")
@@ -2537,7 +2576,7 @@ def _reference_command(args: argparse.Namespace) -> int:
 
 def _doctor_command(args: argparse.Namespace) -> int:
     try:
-        config, config_path = _read_user_config()
+        config, config_path = _read_user_config(validate_skills=False)
         if config is None:
             print(
                 f"Local DevConcord source is not configured ({config_path}); "
@@ -2556,6 +2595,7 @@ def _doctor_command(args: argparse.Namespace) -> int:
                     managed.setdefault(name.casefold(), []).append((package_path, record))
         else:
             print("No User Scope DevConcord Skill manifest is installed.")
+        _report_configured_source_validation(config)
 
         target = getattr(args, "target", None)
         if target is None:
