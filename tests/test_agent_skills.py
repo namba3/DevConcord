@@ -115,6 +115,27 @@ description: Use this Skill for a focused task.
         self.assertIn("User Scope", workflow_text)
         self.assertIn("Do not run `manage_skills.py` merely because a shared document changed.", workflow_text)
 
+    def test_agent_guidance_generation_modes_and_detailed_contracts(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill = repository_root / ".agents" / "skills" / "generate-agent-guidance"
+        skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
+        agents_text = (skill / "references" / "agents-md.md").read_text(
+            encoding="utf-8"
+        )
+        reviews_text = (skill / "references" / "reviews-md.md").read_text(
+            encoding="utf-8"
+        )
+
+        for mode in ("`agents`", "`reviews`", "`both`"):
+            self.assertIn(mode, skill_text)
+        self.assertIn("writing `REVIEWS.md` first", skill_text)
+        self.assertIn("## コードレビュー", agents_text)
+        self.assertIn("REVIEWS.md", agents_text)
+        self.assertIn("レビュー開始前", reviews_text)
+        self.assertIn("AGENTS.md", reviews_text)
+        self.assertIn("実装済み", agents_text)
+        self.assertIn("未確認", reviews_text)
+
     def test_reader_navigation_connects_quick_start_and_skill_operations(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         readme = (repository_root / "README.md").read_text(encoding="utf-8")

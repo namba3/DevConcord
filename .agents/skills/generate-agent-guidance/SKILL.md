@@ -1,23 +1,31 @@
 ---
 name: generate-agent-guidance
-description: "Create or update repository-specific AGENTS.md and REVIEWS.md based on actual code, architecture, tests, CI, and existing rules. Use when configuring coding-agent instructions or review guidance."
+description: "Create or update repository-specific AGENTS.md, REVIEWS.md, or both based on actual code, architecture, tests, CI, and existing rules. Use when configuring coding-agent instructions or review guidance."
 ---
 
 # Generate Agent Guidance
 
+Choose the smallest mode that matches the request:
+
+- `agents`: create or update only `AGENTS.md`.
+- `reviews`: create or update only `REVIEWS.md`.
+- `both`: create or update both files consistently, writing `REVIEWS.md` first and ensuring `AGENTS.md` tells reviewers to read it.
+
+Infer the mode from the user's request. If it is ambiguous, work only on the clearly requested file and report the other as out of scope.
+
+## Required safety checks
+
+- Ground current-state statements and commands in the target's actual source, manifests, tests, CI, and documentation. Mark unknowns as unverified; do not invent functionality, guarantees, licenses, or checks.
+- Preserve valid existing instructions, project-specific rules, issue/requirement IDs, and unrelated edits. Integrate changes instead of replacing unexamined files.
+- Keep `AGENTS.md` concise and operational; keep repository-specific review findings in `REVIEWS.md`. Do not copy a generic rulebook or add unsupported vendor-specific invocation syntax.
+- Do not change source code, settings, or tests as a side effect. Report checks actually run and those not run.
+
 ## Workflow
 
-1. Inspect existing `AGENTS.md`, `REVIEWS.md`, README, documentation conventions, architecture, source, manifests, test commands, CI and project issue/requirements records. Preserve valid existing rules and IDs.
-2. Record only verified current facts as such. Label requirements for future work and unverified constraints separately. Keep AGENTS concise and operational; put review-specific contracts and risks in REVIEWS.
-3. Include relevant commands only when confirmed in manifests, CI or existing docs. Do not invent architecture, guarantees, license, or available tests. Keep `AGENTS.md` concise and include a proportional document-impact rule only when useful; keep documentation-specific review concerns in `REVIEWS.md`.
-4. Maintain the instruction that reviewers read repository-root `REVIEWS.md` before review. Avoid copying a large generic rulebook; link to nearby project docs where present.
-5. Discover Skills by inspecting the repository/user agent skill paths that actually exist. Mention available skill names and when to use them; do not assume every agent recognizes every path or impose vendor-specific invocation syntax in shared instructions.
-6. Validate Markdown links and changed paths. Report missing evidence and tests not run.
+Read [the AGENTS.md generation procedure](references/agents-md.md) and/or [the REVIEWS.md generation procedure](references/reviews-md.md) for the selected mode. Use both references in `both` mode and create the review criteria first.
 
-For documentation principles, prefer the target's own adopted guide. The optional DevConcord [documentation-design guide](https://github.com/namba3/DevConcord/blob/main/docs/common/documentation-design.md) is a reference, not a mandated layout. For version-matched guidance, use this Skill's recorded `source_commit` when available; otherwise make no claim that the remote guide matches the Skill.
+For optional DevConcord documentation guidance, use [the version-pinned local reference procedure](references/local-devconcord.md). The generation procedures remain usable without this checkout.
 
-## Compatibility
+## Completion report
 
-When the repository contains DevConcord generation prompts, use `prompts/create-agents-md.md` and `prompts/create-reviews-md.md` as the detailed source of procedure. Otherwise follow the portable steps above without requiring the DevConcord repository.
-
-When the target does not contain these prompts and the local DevConcord checkout is available, use the [version-pinned local reference procedure](references/local-devconcord.md). Do not copy a user-specific absolute path into generated project guidance.
+Report the selected mode, files changed, verified repository evidence, preserved or reconciled existing rules, link and command checks, unknowns, checks run and not run, and remaining issues.
