@@ -2287,6 +2287,8 @@ def _reference_command(args: argparse.Namespace) -> int:
                     raise SkillManagementError(
                         "refusing to read a symlinked local reference path"
                     )
+            if not source_path.resolve().is_relative_to(source_root):
+                raise SkillManagementError("local reference path escapes source_root")
             if not source_path.is_file():
                 raise SkillManagementError(f"local reference does not exist: {relative}")
             content = source_path.read_text(encoding="utf-8")
@@ -2303,8 +2305,6 @@ def _reference_command(args: argparse.Namespace) -> int:
                 + (" (uncommitted or untracked changes)" if changed.stdout.strip() else "")
             )
         else:
-            if not source_path.resolve().is_relative_to(source_root):
-                raise SkillManagementError("local reference path escapes source_root")
             if args.revision == "installed":
                 manifest, _migrated = _read_manifest(installation_root / MANIFEST_PATH)
                 records = [
