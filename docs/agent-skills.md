@@ -70,10 +70,6 @@ python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
 
 Skillsは作業時に必要な手順だけを選択的に読み込む標準形式のワークフローです。Skillの正本はDevConcordの `.agents/skills/<skill-name>/SKILL.md` に一つだけ置きます。
 
-## Skills非対応環境で手動利用
-
-以前の汎用プロンプトを使っていた場合も、該当するSkillの `SKILL.md` とタスクに必要な `references/` の全文を読み、対象エージェントへ渡します。AGENTS/REVIEWS生成では依頼内容に応じたreferenceを選びます。Skillの本文だけ、あるいは共通ガイドだけで必要な詳細手順を読んだことにしないでください。ローカル共通資料が必要な場合は `references/local-devconcord.md` の手順で版固定参照します。
-
 以下の表は **Project Scope** でリポジトリ内にSkillを配置する場合の探索先です。User Scopeの配置先は前節を参照してください。
 
 | エージェント | リポジトリ探索先 | 導入方法 |
@@ -205,3 +201,7 @@ python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 異常状態の診断や手動復旧ではmanifestとtransaction journalを保持し、内容を確認せず削除しないでください。`recover` が不整合を報告した場合は自動修復を繰り返さず、対象・manifest・transaction backupを保全して調査します。
 
 Claude Code・Codex・Copilotでの実際の発見・呼び出し動作は各エージェントと環境のバージョンに依存します。ローカルユーザースコープの記載はCopilot CLI、Codex CLI/IDE、Claude Codeのそれぞれに対するもので、GitHub-hosted/cloud agentにユーザーのローカルSkillsや `source_root` が見えることを意味しません。静的検証や配布テストは実エージェントによる実行確認の代替ではありません。未実行のエージェントは未検証として報告してください。探索先・仕様は[Agent Skills specification](https://agentskills.io/specification)、[Claude Code Skills](https://code.claude.com/docs/en/skills)、[OpenAI Codex Skills](https://developers.openai.com/codex/skills)、[GitHub Copilot Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)を参照してください。
+
+## Skills非対応環境で手動利用
+
+以前の汎用プロンプトを使っていた場合も、該当するSkillの `SKILL.md` とタスクに必要な `references/` の全文を読み、対象エージェントへ渡します。AGENTS/REVIEWS生成では依頼内容に応じたreferenceを選びます。Skillの本文だけ、あるいは共通ガイドだけで必要な詳細手順を読んだことにしないでください。ローカル共通資料が必要な場合は `references/local-devconcord.md` の手順で版固定参照します。
