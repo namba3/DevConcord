@@ -15,6 +15,7 @@ import yaml
 
 
 SKILL_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+DEVCONCORD_SKILL_PREFIX = "devconcord-"
 ALLOWED_FRONTMATTER = {
     "name",
     "description",
@@ -532,4 +533,25 @@ def validate_repository_skills(
                 errors.append(f"{canonical_root}: canonical Agent Skills source is empty")
         except ValueError:
             pass
+    return errors
+
+
+def validate_official_skill_names(skills_root: Path) -> list[str]:
+    """Require the namespace only for DevConcord's official source set."""
+    try:
+        skills = skill_directories(skills_root)
+    except ValueError as error:
+        return [str(error)]
+    errors: list[str] = []
+    for skill_dir in skills:
+        if not skill_dir.name.startswith(DEVCONCORD_SKILL_PREFIX):
+            errors.append(
+                f"{skill_dir}: official DevConcord Skill names must start with "
+                f"{DEVCONCORD_SKILL_PREFIX!r}"
+            )
+        elif skill_dir.name.startswith(DEVCONCORD_SKILL_PREFIX * 2):
+            errors.append(
+                f"{skill_dir}: official DevConcord Skill names must not repeat "
+                "the namespace prefix"
+            )
     return errors

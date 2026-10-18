@@ -153,6 +153,12 @@ Version: {version}
         )
         return skill
 
+    def commit_skill(self, name: str, version: str) -> None:
+        self.write_skill(name, version)
+        source_repo = self.source.parents[1]
+        self.git(source_repo, "add", ".")
+        self.git(source_repo, "commit", "-qm", f"{name} {version}")
+
     def run_operation(
         self,
         command: str,
@@ -185,6 +191,7 @@ Version: {version}
         self,
         command: str,
         *,
+        target: Path | None = None,
         agents: list[str] | None = None,
         skills: list[str] | None = None,
         apply: bool = False,
@@ -193,7 +200,7 @@ Version: {version}
         args = SimpleNamespace(
             command=command,
             scope="user",
-            target=None,
+            target=target,
             source=source,
             agent=None,
             agents=agents,
@@ -314,6 +321,135 @@ Version: {version}
         self.assertIn("Dry run only", output)
         self.assertFalse((self.user_home / ".agents").exists())
         self.assertFalse((self.user_home / ".devconcord").exists())
+
+    def test_namespaced_skill_user_install_sync_reference_and_doctor(self) -> None:
+        skill_name = "devconcord-bootstrap-from-design"
+        self.commit_skill(skill_name, "v1")
+        source_repo = self.source.parents[1]
+
+        result, output, error = self.run_user_operation(
+            "install",
+            agents=["codex", "copilot"],
+            skills=[skill_name],
+            source=self.source,
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn(f".agents/skills/{skill_name}", output)
+        self.assertFalse((self.user_home / ".agents").exists())
+
+        result, _, error = self.run_user_operation(
+            "install",
+            agents=["codex", "copilot"],
+            skills=[skill_name],
+            apply=True,
+            source=self.source,
+        )
+        self.assertEqual((result, error), (0, ""))
+        installed_skill = self.user_home / ".agents" / "skills" / skill_name
+        self.assertTrue((installed_skill / "SKILL.md").is_file())
+        self.assertFalse(
+            (self.user_home / ".agents" / "skills" / "bootstrap-from-design").exists()
+        )
+        manifest_path = self.user_home / ".devconcord" / "skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        records = manifest["packages"][".agents/skills"]["skills"]
+        self.assertEqual(set(records), {skill_name})
+        self.assertEqual(
+            self.run_config("set-source", source_root=source_repo, replace=False)[0],
+            0,
+        )
+        result, output, error = self.run_reference(
+            path="docs/reference.md", skill=skill_name
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Initial committed guidance.", output)
+
+        project_skill = self.target / ".agents" / "skills" / skill_name
+        project_skill.mkdir(parents=True)
+        project_skill.joinpath("SKILL.md").write_text(
+            "project-owned Skill\n", encoding="utf-8"
+        )
+        result, output, error = self.run_user_operation(
+            "doctor", target=self.target, source=self.source
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("same-name User/Project Skill", output)
+        self.assertIn(skill_name, output)
+
+        self.commit_skill(skill_name, "v2")
+        result, _, error = self.run_user_operation(
+            "sync", apply=True, source=self.source
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Version: v2", (installed_skill / "SKILL.md").read_text(encoding="utf-8"))
+        self.assertEqual(self.run_user_operation("validate")[0], 0)
+
+        result, _, error = self.run_user_operation(
+            "install",
+            agents=["codex"],
+            skills=["bootstrap-from-design"],
+            apply=True,
+            source=self.source,
+        )
+        self.assertEqual(result, 2)
+        self.assertIn("unknown Skill", error)
+
+    def test_namespaced_skill_project_install_sync_reference_and_rebind(self) -> None:
+        skill_name = "devconcord-adopt-guidance"
+        source_repo = self.source.parents[1]
+        self.git(source_repo, "remote", "add", "origin", "https://github.com/team/original.git")
+        self.commit_skill(skill_name, "v1")
+
+        result, _, error = self.run_operation(
+            "install", skills=[skill_name], apply=True
+        )
+        self.assertEqual((result, error), (0, ""))
+        installed_skill = self.target / ".agents" / "skills" / skill_name
+        self.assertTrue((installed_skill / "SKILL.md").is_file())
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        records = manifest["packages"][".agents/skills"]["skills"]
+        self.assertEqual(set(records), {skill_name})
+        self.assertEqual(
+            self.run_config(
+                "set-source", source_root=source_repo, replace=False
+            )[0],
+            0,
+        )
+        result, output, error = self.run_reference(
+            path="docs/reference.md",
+            scope="project",
+            target=self.target,
+            skill=skill_name,
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Initial committed guidance.", output)
+        self.assertEqual(self.run_validation()[0], 0)
+
+        fork = self.root / "namespaced-fork"
+        self.git(self.root, "clone", "-q", str(source_repo), str(fork))
+        self.git(fork, "config", "user.email", "test@example.invalid")
+        self.git(fork, "config", "user.name", "Test")
+        self.git(fork, "remote", "set-url", "origin", "git@github.com:team/fork.git")
+        fork_skill = fork / ".agents" / "skills" / skill_name
+        fork_skill.joinpath("SKILL.md").write_text(
+            fork_skill.joinpath("SKILL.md").read_text(encoding="utf-8").replace(
+                "Version: v1", "Version: v2"
+            ),
+            encoding="utf-8",
+        )
+        self.git(fork, "add", ".")
+        self.git(fork, "commit", "-qm", "namespaced fork update")
+        self.source = fork / ".agents" / "skills"
+
+        result, _, error = self.run_operation("sync", apply=True)
+        self.assertEqual(result, 2)
+        self.assertIn("source identity changed", error.lower())
+        result, output, error = self.run_operation("rebind-source", apply=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("explicitly accepts", output.lower())
+        self.assertIn("Version: v2", (installed_skill / "SKILL.md").read_text(encoding="utf-8"))
+        self.assertEqual(self.run_validation()[0], 0)
 
     def test_user_scope_installs_under_home_and_preserves_unrelated_skills(self) -> None:
         unrelated = self.user_home / ".agents" / "skills" / "my-private-skill"

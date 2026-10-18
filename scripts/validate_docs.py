@@ -534,9 +534,13 @@ def main() -> int:
     errors.extend(check_privacy_hygiene(files))
     errors.extend(check_conventions(files))
     if __package__:
-        from .agent_skills import validate_repository_skills
+        from .agent_skills import (
+            validate_official_skill_names,
+            validate_repository_skills,
+        )
     else:
-        from agent_skills import validate_repository_skills
+        from agent_skills import validate_official_skill_names, validate_repository_skills
+    errors.extend(validate_official_skill_names(ROOT / ".agents" / "skills"))
     errors.extend(validate_repository_skills(ROOT))
     return fail(errors)
 

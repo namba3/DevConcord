@@ -22,6 +22,7 @@ if __package__:
     from .agent_skills import (
         DISCOVERY_PATHS,
         skill_directories,
+        validate_official_skill_names,
         validate_repository_skills,
         validate_skill_directory,
         validate_skill_roots,
@@ -30,6 +31,7 @@ else:
     from agent_skills import (
         DISCOVERY_PATHS,
         skill_directories,
+        validate_official_skill_names,
         validate_repository_skills,
         validate_skill_directory,
         validate_skill_roots,
@@ -1892,6 +1894,8 @@ def _run(args: argparse.Namespace) -> int:
             print(f"ERROR: no Agent Skills found in {root}", file=sys.stderr)
             return 1
         errors = validate_skill_roots([root])
+        if root == DEFAULT_SOURCE.resolve():
+            errors.extend(validate_official_skill_names(root))
         if errors:
             for error in errors:
                 print(f"ERROR: {error}", file=sys.stderr)

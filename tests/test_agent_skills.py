@@ -6,7 +6,11 @@ import unittest
 from pathlib import Path
 
 from scripts import agent_skills
-from scripts.agent_skills import validate_repository_skills, validate_skill_directory
+from scripts.agent_skills import (
+    validate_official_skill_names,
+    validate_repository_skills,
+    validate_skill_directory,
+)
 
 
 class AgentSkillValidationTests(unittest.TestCase):
@@ -45,6 +49,29 @@ description: Use this Skill for a focused task.
         skill_dir = self.make_skill("sample-skill")
 
         self.assertEqual(validate_skill_directory(skill_dir), [])
+
+    def test_official_skill_set_uses_devconcord_namespace(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skills_root = repository_root / ".agents" / "skills"
+        skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
+
+        self.assertEqual(len(skill_dirs), 10)
+        self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
+        self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
+        self.assertEqual(validate_official_skill_names(skills_root), [])
+        self.assertEqual(validate_repository_skills(repository_root), [])
+
+    def test_official_prefix_is_not_required_for_generic_external_skills(self) -> None:
+        external_skill = self.make_skill("sample-skill")
+        self.assertEqual(validate_skill_directory(external_skill), [])
+
+        duplicate_prefix = self.make_skill("devconcord-devconcord-example")
+        self.assertEqual(validate_skill_directory(duplicate_prefix), [])
+
+        self.assertEqual(validate_repository_skills(self.root), [])
+        errors = validate_official_skill_names(self.skills_root)
+        self.assertTrue(any("must start with 'devconcord-'" in error for error in errors))
+        self.assertTrue(any("must not repeat" in error for error in errors))
 
     def test_documentation_architecture_skill_is_valid_and_discoverable(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
