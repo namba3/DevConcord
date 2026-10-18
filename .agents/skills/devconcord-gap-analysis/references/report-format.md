@@ -14,6 +14,9 @@ fill a template.
 - Working-tree state:
 - Date:
 - Mode: Full / Incremental
+- Previous target commit and working-tree state (Incremental, when known):
+- Current target commit and working-tree state:
+- Previous and current DevConcord criteria identity/revision (Incremental, when known):
 - Scope and exclusions:
 - DevConcord source identity and reference commit(s):
 - Criteria documents actually read:
@@ -51,6 +54,10 @@ fill a template.
 - Verification method and evidence still needed:
 - Related REQ / ADR / issue / risk IDs:
 - Confidence and limitations:
+- Prior finding/report reference (Incremental, when applicable):
+- Identity: Same / Different / Uncertain, with semantic basis (Incremental):
+- Previous state and transition evidence (Incremental):
+- Unverified items and next review (when applicable):
 
 ## 5. Improvement roadmap
 
@@ -65,6 +72,23 @@ fill a template.
 
 ## 9. Items for the next assessment
 ```
+
+For an Incremental Assessment, compare findings by the underlying problem or
+contract using evidence such as user task, requirement/design invariant,
+expected and observed behavior, trigger, impact, formal issue ID, implementation,
+documentation, and history. Do not infer identity from path, line, or local GAP
+label alone. Separate identity (Same / Different / Uncertain) from state
+(New / Resolved / Improved but open / Unchanged / Worsened / Requires
+reassessment). Explain file moves, renames, and one-to-many or many-to-one
+relationships instead of forcing a one-to-one mapping. Missing prior evidence
+or an unknown baseline stays unknown.
+
+Mark a finding Resolved only with evidence that its cause was fixed and its
+contract is satisfied, its feature was rationally retired, or its requirement/
+design contract was explicitly and validly changed. Distinguish retirement or
+contract change from a fix. Added tests alone are not proof that implementation
+behavior is corrected. A DevConcord criteria revision may prompt reassessment;
+it is not itself evidence of target regression.
 
 `GAP-001` and similar labels are local report references only. These local GAP
 labels do not replace formal issue IDs. Do not create a DevConcord-specific numerical score

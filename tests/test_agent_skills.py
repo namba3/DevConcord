@@ -105,6 +105,11 @@ description: Use this Skill for a focused task.
             "full or incremental quality gap assessments",
             "Full Assessment",
             "Incremental Assessment",
+            "Finding identity and lifecycle",
+            "Same**, **Different**, or **Uncertain",
+            "Mark a finding **Resolved** only when evidence",
+            "relationships need not be one-to-one",
+            "criteria revision change can require",
             "Requirements, domain, and architecture",
             "Performance:",
             "Robustness:",
@@ -133,6 +138,10 @@ description: Use this Skill for a focused task.
             "Verification method and evidence still needed:",
             "ten-axis weighted system",
             "do not replace formal issue IDs",
+            "Previous target commit and working-tree state",
+            "Previous and current DevConcord criteria identity/revision",
+            "one-to-many or many-to-one",
+            "Added tests alone are not proof",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, report_text)
@@ -186,6 +195,20 @@ description: Use this Skill for a focused task.
             "既存課題との重複検出",
             "DevConcord共通参照を取得できない場合",
             "未コミット変更を含む対象",
+            "問題のあるファイル移動",
+            "関数名変更",
+            "同じ場所の別問題",
+            "実際の修正",
+            "テスト追加のみ",
+            "機能の廃止",
+            "要求・設計契約の変更",
+            "一つの問題が複数へ分割",
+            "複数問題が一つへ統合",
+            "前回レポートなし",
+            "対象commit不明",
+            "DevConcord基準のrevision変更",
+            "同一性を確定できない",
+            "既存課題IDあり",
         )
         for expected in expected_scenarios:
             with self.subTest(scenario=expected):

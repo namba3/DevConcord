@@ -159,11 +159,44 @@ requirement/issue IDs, and commit SHAs where available; never invent evidence.
 - **Full Assessment:** assess the major applicable areas across the repository
   and report scope limits. Do not imply every file or feature was inspected.
 - **Incremental Assessment:** compare the requested baseline or prior report
-  with the target state. Classify findings as new, resolved, improved but open,
-  unchanged, worsened, or requiring reassessment. Follow changed code into
-  affected requirements, design, tests, and documentation. If no prior report
-  exists, do not invent one; limit comparison to an explicitly available Git
-  baseline.
+  with the target state. Establish the previous and current target commit,
+  previous and current working-tree state, and the DevConcord criteria source
+  identity/revision used for each assessment. Treat unknown baseline details
+  as unknown; do not infer them. A criteria revision change can require
+  reassessment, but is not evidence that the target regressed. If no prior
+  report exists, do not invent one; limit comparison to an explicitly
+  available Git baseline.
+
+#### Finding identity and lifecycle
+
+Finding identity describes whether two reports refer to the same underlying
+problem or unmet contract. It is separate from the finding's current state.
+Compare the meaning of the issue using relevant evidence such as the affected
+user task or function, REQ/NFR/ADR/invariant, expected-versus-observed behavior,
+triggering conditions and impact, existing issue ID, implementation or
+documentation, and history. A path, line number, or local `GAP-###` label alone
+does not establish identity.
+
+Record identity as **Same**, **Different**, or **Uncertain**, then classify the
+current state as **New**, **Resolved**, **Improved but open**, **Unchanged**,
+**Worsened**, or **Requires reassessment**. Explain the evidence for both
+judgments. File moves and function renames do not by themselves create a new
+finding or resolve an old one; reassess the behavior and contract. New tests
+alone do not prove that an implementation gap is fixed.
+
+Mark a finding **Resolved** only when evidence shows that its cause was fixed
+and the relevant contract is satisfied, the feature was rationally retired, or
+the applicable requirement/design contract was explicitly and validly changed.
+For retirement or contract change, distinguish that basis from an
+implementation fix and cite its rationale and evidence. Do not call a finding
+resolved merely because evidence is missing or its location changed.
+
+Finding relationships need not be one-to-one. One earlier finding may split
+into multiple current findings, or multiple earlier findings may merge into
+one. Describe the relationship and each resulting state; if evidence cannot
+support a mapping, use **Requires reassessment** rather than forcing a match.
+Prefer existing formal issue IDs when they track the problem; local GAP labels
+are report references and are not a persistent ledger.
 
 Use the user's stated purpose and change scope to choose a mode. Broad periodic
 or pre-release review usually calls for Full; a specified change or prior
@@ -234,10 +267,11 @@ target remained unchanged unless a separately authorized scope changed it.
 
 When a canonical reference is needed, use `devconcord-reference` if available.
 Identify this Skill as the requester and pass only the needed
-repository-relative path. If it cannot be selected, use the direct
-`scripts/manage_skills.py reference` fallback above. For Project Scope, also
-pass `--scope project --target <target-repository>`. If the common Skill cannot be selected,
-run the same CLI directly with the requesting Skill name. Do not silently switch revisions or
-claim unread material was applied. If a required reference cannot be read, stop safely.
-if it is optional, report the failure and continue only within the remaining evidence. If required
-criteria are unavailable, report the limitation and reduce the assessment claim.
+repository-relative path. If it cannot be selected, use the direct CLI fallback
+above. For Project Scope, also pass `--scope project --target
+<target-repository>`. If the common Skill cannot be selected, run the same CLI
+directly with the requesting Skill name. Do not silently switch revisions or
+claim unread material was applied. If a required reference cannot be read, stop
+safely; if it is optional, report the failure and continue only within the
+remaining evidence. If required criteria are unavailable, report the
+limitation and reduce the assessment claim.
