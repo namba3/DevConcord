@@ -18,6 +18,29 @@ description: >
 5. Map important invariants to boundary/property/state-machine/concurrency/fault-injection/recovery/resource-exhaustion/regression tests as risk and cost warrant. Verify both “state is not corrupted” and “failure is accurately observable.”
 6. Connect requirements, ADRs and follow-up work to existing IDs/registers; report untested guarantees as unverified.
 
+## Evaluate verification evidence
+
+When reviewing existing tests or failure-test results, start from the stated
+failure contract and invariant rather than from the test names or mechanisms
+used. For each important invariant, check that the evidence identifies the
+triggered fault or transition, the state and observable result, the expected
+failure guarantee, and—where recovery is part of the contract—the state after
+retry, restart, rollback, or resumption. Select only the failure conditions
+that matter to the operation and its impact.
+
+Distinguish a proposed test, a test present in the repository, a test actually
+executed, its result, and the failure modes it covers. A Fault Injection,
+State Machine, Property-Based, or concurrency test does not by itself show
+that all important invariants hold. Check that the fixture can trigger the
+intended condition, that the observation would detect the prohibited state,
+and that the test does not merely reproduce implementation assumptions. If
+evidence is missing or narrow, state the uncovered condition and a proportionate
+next verification. Do not report unexecuted failure behavior as tested.
+
+Use `devconcord-test-design` when the independent test cases or expected
+observations need a dedicated design; this Skill remains responsible for the
+failure contract and invariant being assessed.
+
 ## Completion
 
 For each critical operation, state the normal contract, important failure outcomes, preserved invariants, recovery/retry semantics, observable diagnostics and concrete verification evidence.

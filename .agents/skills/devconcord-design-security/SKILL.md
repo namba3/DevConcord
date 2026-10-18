@@ -21,6 +21,30 @@ Use this workflow for design and change planning. Scale the analysis to the affe
 6. **Plan independent verification.** Connect each important invariant to suitable review, unit/integration/negative tests, static or dynamic analysis, dependency/secrets/configuration scanning, deployment checks, or manual assessment. Record scope, tool/version/configuration, exceptions, and untested areas. A scanner or test covers only its stated scope.
 7. **Record decisions and residual risk.** Use existing requirements (`REQ`/`NFR`), ADRs, risk records, and issue register. Track implementation, investigation, and verification work in the existing issue register. Do not create a second security ledger or quality score. Revisit analysis when assets, boundaries, dependencies, deployment, or threat assumptions change.
 
+## Compare security requirements with implementation evidence
+
+When assessing an existing change or security posture, trace material threat
+scenarios to the security requirement or invariant, the intended control, its
+implementation and configuration, and evidence that exercises it. Select
+only threats relevant to the changed assets, trust boundaries, deployment,
+and attacker capabilities. Check where responsibility is enforced, how
+failure or denial is observed, and whether a negative test exercises the
+relevant boundary rather than a mock that bypasses it.
+
+Report each link's status separately: **required**, **designed**,
+**implemented/configured**, **test or analysis present**, **executed and
+passed/failed**, and **adequately verified for the stated threat**. These
+statuses are not interchangeable. A control described in an ADR is not
+implementation evidence; a test file is not an executed result; a passing
+scanner or negative test covers only its stated scope and configuration.
+Identify missing links, exceptions, test environment limits, and residual
+risks without treating unknowns as safe or claiming complete threat coverage.
+
+Use `devconcord-test-design` when independent security test cases or expected
+denial behavior need dedicated design. Keep this Skill focused on threat
+scenarios, controls, and security invariants; use Repository Review for
+concrete code defects and do not turn this into a general-purpose code review.
+
 ## Completion
 
 For each material change, report the assets and relevant boundaries, selected threats or reason for limited analysis, requirements/invariants, chosen controls and tradeoffs, verification evidence and limits, and residual risks or follow-up issue IDs. When security analysis is not applicable, state the change facts supporting that decision.

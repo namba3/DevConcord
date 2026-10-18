@@ -18,6 +18,14 @@ description: >
 5. Define a representative benchmark/profile/regression strategy with data, environment, run procedure, acceptable variation and evidence. Do not claim measured performance before running it.
 6. Record consequential tradeoffs in ADRs; preserve correctness, security, robustness and understandable code.
 
+## Evaluate performance evidence
+
+When benchmark, profile, or production measurement results are available, connect them to the performance requirement and design decision they are meant to assess. Separate target, estimate, observed result, and interpretation. Before comparing results, check workload and data size, input distribution, software/build configuration, hardware and runtime environment, warmup, repetitions, measurement tool, and any other condition material to comparability. Note variation and noise instead of drawing conclusions from one number when repeated measurements are available.
+
+Use profiling to identify where measured time or resource use was observed; a benchmark change alone does not prove its cause. Check whether the evidence exercises the relevant path and scale, whether the result meets the stated acceptance range, and what regression comparison or follow-up measurement remains. If evidence is insufficient, propose the smallest useful measurement rather than declaring a bottleneck or regression. A passing benchmark is limited to its workload, environment, and measured dimensions; it does not establish general performance.
+
+For each material claim, report the requirement or baseline, comparison conditions, measured result and variation, interpretation, evidence source, and unmeasured dimensions. Keep proposed design, implemented optimization, executed measurement, and accepted performance outcome distinct.
+
 ## Completion
 
 Show workload evidence → design choice → acceptance/measurement condition → actual result or unverified status. Avoid post-hoc “make it fast” directives and unsupported claims.
