@@ -22,6 +22,7 @@ Infer the mode from the user's request. If it is ambiguous, work only on the cle
 - Ground current-state statements and commands in the target's actual source, manifests, tests, CI, and documentation. Mark unknowns as unverified; do not invent functionality, guarantees, licenses, or checks.
 - Preserve valid existing instructions, project-specific rules, issue/requirement IDs, and unrelated edits. Integrate changes instead of replacing unexamined files.
 - Keep `AGENTS.md` concise and operational; keep repository-specific review findings in `REVIEWS.md`. Do not copy a generic rulebook or add unsupported vendor-specific invocation syntax.
+- Preserve the distinction between applying relevant design principles, recommending a specialist Skill, and executing it. Derive any AGENTS.md guidance from the target's actual design risks and verified Skill availability; never require every Skill or imply an unavailable Skill is installed. In REVIEWS.md, tie an optional Skill recommendation to a concrete finding and impact, without substituting it for the finding or its remediation.
 - Do not change source code, settings, or tests as a side effect. Report checks actually run and those not run.
 
 ## Workflow

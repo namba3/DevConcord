@@ -461,6 +461,68 @@ description: Use this Skill for a focused task.
         self.assertIn("状態と候補の判断基準", skills_guide)
         self.assertIn("Bootstrap / Adoption後の専門Skill推奨", docs_index)
 
+    def test_agent_guidance_connects_risk_based_principles_and_specialist_skills(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        agents = (repository_root / "AGENTS.md").read_text(encoding="utf-8")
+        reviews = (repository_root / "REVIEWS.md").read_text(encoding="utf-8")
+        skill_root = (
+            repository_root
+            / ".agents"
+            / "skills"
+            / "devconcord-generate-agent-guidance"
+        )
+        skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        agents_procedure = (skill_root / "references" / "agents-md.md").read_text(
+            encoding="utf-8"
+        )
+        reviews_procedure = (skill_root / "references" / "reviews-md.md").read_text(
+            encoding="utf-8"
+        )
+        adoption = (
+            repository_root / ".agents" / "skills" / "devconcord-adopt-guidance"
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+        skills_guide = (repository_root / "docs" / "agent-skills.md").read_text(
+            encoding="utf-8"
+        )
+        integration = (
+            repository_root / "tests" / "integration" / "README.md"
+        ).read_text(encoding="utf-8")
+
+        for text, label in (
+            (agents, "AGENTS"),
+            (reviews, "REVIEWS"),
+            (agents_procedure, "AGENTS procedure"),
+            (reviews_procedure, "REVIEWS procedure"),
+        ):
+            with self.subTest(guidance=label):
+                self.assertIn("利用可能", text)
+                self.assertIn("原則", text)
+        self.assertIn("design principles", skill)
+        self.assertIn("verified Skill availability", skill)
+        self.assertIn("具体的な根拠と影響", reviews)
+        self.assertIn("User Scope", agents_procedure)
+        self.assertIn("Project Scope", agents_procedure)
+        self.assertIn("Security by Designを同格", adoption)
+        self.assertIn("Gap Analysis", skills_guide)
+        self.assertIn("devconcord-repository-review", skills_guide)
+        for expected in (
+            "READMEの軽微な誤字修正",
+            "大量ファイル処理の設計変更",
+            "途中失敗を伴う永続データ更新",
+            "UIフレームワークの交換",
+            "認証・権限・信頼境界の変更",
+            "GUI操作フローの大幅変更",
+            "文書構造の大規模再編",
+            "全体的な品質不足の調査依頼",
+            "特定PRの不具合レビュー",
+            "専門Skillが未導入",
+            "User ScopeのSkillが確認できない",
+            "既に十分な詳細設計が存在する",
+        ):
+            with self.subTest(scenario=expected):
+                self.assertIn(expected, integration)
+
     def test_sync_workflow_reference_separates_document_and_skill_updates(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skill = repository_root / ".agents" / "skills" / "devconcord-sync-guidance"

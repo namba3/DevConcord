@@ -38,3 +38,7 @@
 ## 指摘の基準
 
 実際の不整合、誤用、データ損失、検証漏れにつながる具体的な影響を示します。好みの文体や規約の追加だけを欠陥として指摘せず、変更の規模とリスクに応じて確認範囲を絞ります。
+
+重要な設計不足が見つかった場合は、まず具体的な根拠と影響を指摘し、詳細な設計判断に価値があるときだけ対応する専門Skillを改善候補として示します。原則を考慮することとSkillを実行することは別であり、Skillの推奨は指摘や修正・検証の代用になりません。利用可能と確認できないSkillは実行可能と断定せず、軽微な変更や既に十分な根拠がある領域では追加分析を求めません。
+
+候補は問題の性質に合わせます。利用者タスクや機能フローは `devconcord-ux-functional-design`、ワークロードや資源制約は `devconcord-design-performance`、失敗時の契約・整合性・回復は `devconcord-design-robustness`、交換価値のある依存境界は `devconcord-design-replaceability`、資産・権限・信頼境界は `devconcord-design-security`、文書の正本・構造・導線は `devconcord-documentation-architecture` を検討します。具体的な欠陥・回帰リスクのレビューには `devconcord-repository-review`、複数領域にまたがる原則適用状況と改善ロードマップには `devconcord-gap-analysis` を使い分けます。Skillを実行しただけで問題が解消した、または品質が保証されたとは扱いません。
