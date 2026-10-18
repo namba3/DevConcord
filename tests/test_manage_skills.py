@@ -35,6 +35,21 @@ class SkillManagementTests(unittest.TestCase):
         source_repo.joinpath("docs", "reference.md").write_text(
             "# Versioned reference\n\nInitial committed guidance.\n", encoding="utf-8"
         )
+        source_repo.joinpath("docs", "subdir").mkdir()
+        source_repo.joinpath("docs", "subdir", "nested.md").write_text(
+            "Nested fixture.\n", encoding="utf-8"
+        )
+        for name in ("README.md", "AGENTS.md", "REVIEWS.md"):
+            source_repo.joinpath(name).write_text(
+                f"# {name}\n\nRoot reference fixture.\n", encoding="utf-8"
+            )
+        source_repo.joinpath("LICENSE.md").write_text(
+            "Not an allowlisted root reference.\n", encoding="utf-8"
+        )
+        source_repo.joinpath("prompts").mkdir()
+        source_repo.joinpath("prompts", "bootstrap-from-design.md").write_text(
+            "Historical prompt content.\n", encoding="utf-8"
+        )
         self.git(source_repo, "init", "-q")
         self.git(source_repo, "config", "user.email", "test@example.invalid")
         self.git(source_repo, "config", "user.name", "Test")
@@ -197,6 +212,30 @@ Version: {version}
 
     def run_config(self, command: str, **kwargs: object) -> tuple[int, str, str]:
         args = SimpleNamespace(command="config", config_command=command, **kwargs)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def run_reference(
+        self,
+        *,
+        path: str,
+        revision: str = "installed",
+        scope: str = "user",
+        target: Path | None = None,
+        skill: str = "sample-skill",
+    ) -> tuple[int, str, str]:
+        args = SimpleNamespace(
+            command="reference",
+            skill=skill,
+            path=path,
+            revision=revision,
+            scope=scope,
+            target=target,
+        )
         stdout = io.StringIO()
         stderr = io.StringIO()
         with patch.object(Path, "home", return_value=self.user_home):
@@ -589,6 +628,180 @@ Version: {version}
                 result = manage_skills._run(args)
         self.assertEqual(result, 0)
         self.assertIn("Committed after Skill installation.", stdout.getvalue())
+
+    def test_reference_reads_allowlisted_root_files_and_rejects_other_root_paths(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+
+        for filename in ("README.md", "AGENTS.md", "REVIEWS.md"):
+            with self.subTest(filename=filename):
+                result, output, error = self.run_reference(path=filename)
+                self.assertEqual((result, error), (0, ""))
+                self.assertIn("Root reference fixture.", output)
+
+        result, _output, error = self.run_reference(path="LICENSE.md")
+        self.assertEqual(result, 2)
+        self.assertIn("must be under docs/", error)
+        result, _output, error = self.run_reference(path="docs/subdir")
+        self.assertEqual(result, 2)
+        self.assertIn("is not a file", error)
+
+    def test_reference_path_rejects_traversal_absolute_and_invalid_roots(self) -> None:
+        for path in (
+            "",
+            "../outside.md",
+            "docs/../../outside.md",
+            "/etc/passwd",
+            "C:/Windows/win.ini",
+            "docs\\reference.md",
+            "docs//reference.md",
+            "docs/./reference.md",
+            "LICENSE.md",
+            "scripts/manage_skills.py",
+        ):
+            with self.subTest(path=path):
+                with self.assertRaises(manage_skills.SkillManagementError):
+                    manage_skills._safe_reference_path(path)
+
+        self.assertEqual(manage_skills._safe_reference_path("docs/reference.md"), "docs/reference.md")
+        self.assertEqual(manage_skills._safe_reference_path(".agents/skills/sample/SKILL.md"), ".agents/skills/sample/SKILL.md")
+        self.assertEqual(manage_skills._safe_reference_path("prompts/old.md"), "prompts/old.md")
+        self.assertEqual(manage_skills._safe_reference_path("REVIEWS.md"), "REVIEWS.md")
+
+    def test_reference_reads_deleted_prompt_from_installed_commit_only(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        self.git(repository, "rm", "-r", "prompts")
+        self.git(repository, "commit", "-qm", "remove current prompts")
+
+        result, output, error = self.run_reference(
+            path="prompts/bootstrap-from-design.md", revision="installed"
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Historical prompt content.", output)
+
+        result, _output, error = self.run_reference(
+            path="prompts/bootstrap-from-design.md", revision="head"
+        )
+        self.assertEqual(result, 2)
+        self.assertIn("does not exist at Git commit", error)
+
+    def test_reference_scope_manifests_are_independent(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_operation(
+                "install", agents=["codex"], skills=["sample-skill"], apply=True
+            )[0],
+            0,
+        )
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+
+        user_result, user_output, user_error = self.run_reference(
+            path="docs/reference.md", scope="user"
+        )
+        project_result, project_output, project_error = self.run_reference(
+            path="docs/reference.md", scope="project", target=self.target
+        )
+        self.assertEqual((user_result, user_error), (0, ""))
+        self.assertEqual((project_result, project_error), (0, ""))
+        self.assertIn("Initial committed guidance.", user_output)
+        self.assertIn("Initial committed guidance.", project_output)
+
+        user_record = self.user_home / ".devconcord/skills-manifest.json"
+        user_manifest = json.loads(user_record.read_text(encoding="utf-8"))
+        user_skill = user_manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
+        user_skill["source_repository"] = "https://example.invalid/other-source.git"
+        user_record.write_text(json.dumps(user_manifest), encoding="utf-8")
+
+        result, _output, error = self.run_reference(path="docs/reference.md", scope="user")
+        self.assertEqual(result, 2)
+        self.assertIn("source identity differs", error)
+        result, output, error = self.run_reference(
+            path="docs/reference.md", scope="project", target=self.target
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Initial committed guidance.", output)
+
+    def test_reference_rejects_missing_installed_source_commit(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        manifest_path = self.user_home / ".devconcord/skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        record = manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
+        record["source_commit"] = "f" * 40
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+        result, _output, error = self.run_reference(path="docs/reference.md")
+
+        self.assertEqual(result, 2)
+        self.assertIn("required Git commit", error)
+        self.assertIn("not available", error)
+
+    @unittest.skipIf(os.name == "nt", "symlink behavior is platform-specific")
+    def test_reference_working_tree_refuses_symlink_escape(self) -> None:
+        repository = self.source.parents[1]
+        outside = self.root / "outside.md"
+        outside.write_text("outside content\n", encoding="utf-8")
+        link = repository / "docs" / "outside-link.md"
+        link.symlink_to(outside)
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+
+        result, _output, error = self.run_reference(
+            path="docs/outside-link.md", revision="working-tree"
+        )
+
+        self.assertEqual(result, 2)
+        self.assertIn("symlinked local reference path", error)
 
     def test_doctor_reports_user_project_name_collisions_without_modifying_either_scope(self) -> None:
         self.assertEqual(

@@ -20,11 +20,11 @@ The default `installed` revision verifies that the configured repository has the
 
 Useful paths include:
 
-- Bootstrap: `prompts/bootstrap-from-design.md`, `docs/application-design/templates/requirements.md`, `docs/common/ai-assisted-development.md`
-- Adoption: `prompts/adopt-guidance.md`, `docs/common/documentation-design.md`, `docs/README.md`
-- Synchronization and Skills: `prompts/sync-guidance.md`, `docs/agent-skills.md`, `docs/work-management/issue-tracking.md`
+- Bootstrap: `docs/application-design/templates/requirements.md`, `docs/common/ai-assisted-development.md`
+- Adoption: `docs/common/documentation-design.md`, `docs/README.md`
+- Synchronization and Skills: `docs/agent-skills.md`, `docs/work-management/issue-tracking.md`
 - Documentation architecture: `docs/common/documentation-design.md`
-- Agent guidance: `prompts/create-agents-md.md`, `prompts/create-reviews-md.md`
+- Agent guidance: `REVIEWS.md`
 - UI/UX: `docs/application-design/ui-ux-guide.md`, `docs/application-design/ui-ux-quick-reference.md`
 - Performance and robustness: `docs/common/ai-assisted-development.md`, `docs/application-design/templates/requirements.md`
 - Replaceability: `docs/application-design/templates/adr.md`

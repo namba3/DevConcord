@@ -2218,17 +2218,24 @@ def _validate_user_installation(home: Path) -> list[str]:
 
 def _safe_reference_path(value: str) -> str:
     path = Path(value)
-    allowed_roots = {"docs", "prompts", ".agents"}
+    parts = value.split("/")
+    # Retain prompts/ for version-pinned reads of files in older Skill commits.
+    allowed_directory_roots = {"docs", ".agents", "prompts"}
+    allowed_root_files = {"README.md", "AGENTS.md", "REVIEWS.md"}
     if (
         not value
         or path.is_absolute()
         or "\\" in value
         or "\0" in value
-        or any(part in {"", ".", ".."} for part in value.split("/"))
-        or value.split("/", maxsplit=1)[0] not in allowed_roots
+        or any(part in {"", ".", ".."} for part in parts)
+        or not (
+            (len(parts) == 1 and parts[0] in allowed_root_files)
+            or (len(parts) > 1 and parts[0] in allowed_directory_roots)
+        )
     ):
         raise SkillManagementError(
-            "reference path must be a repository-relative file under docs/, prompts/, or .agents/"
+            "reference path must be under docs/, .agents/, historical prompts/, "
+            "or one of README.md, AGENTS.md, and REVIEWS.md"
         )
     return path.as_posix()
 
@@ -2297,7 +2304,7 @@ def _reference_command(args: argparse.Namespace) -> int:
                 ]
                 if not records:
                     raise SkillManagementError(
-                        f"Skill {args.skill!r} is not installed in User Scope"
+                        f"Skill {args.skill!r} is not installed in {scope.title()} Scope"
                     )
                 baselines = {
                     (record["source_commit"], record["source_repository"])
@@ -2359,12 +2366,16 @@ def _reference_command(args: argparse.Namespace) -> int:
                 raise SkillManagementError(
                     f"required Git commit {commit} is not available in the configured local repository"
                 )
-            file_check = _git(
-                source_root, "cat-file", "-e", f"{commit}:{relative}", check=False
+            file_type = _git(
+                source_root, "cat-file", "-t", f"{commit}:{relative}", check=False
             )
-            if file_check.returncode:
+            if file_type.returncode:
                 raise SkillManagementError(
                     f"reference {relative!r} does not exist at Git commit {commit}"
+                )
+            if file_type.stdout.strip() != "blob":
+                raise SkillManagementError(
+                    f"reference {relative!r} is not a file at Git commit {commit}"
                 )
             result = _git(
                 source_root, "show", f"{commit}:{relative}", check=False
@@ -2532,7 +2543,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="print a local DevConcord document for the installed Skill version",
     )
     reference.add_argument("--skill", required=True, help="installed User Scope Skill name")
-    reference.add_argument("--path", required=True, help="repository-relative docs/, prompts/, or .agents/ path")
+    reference.add_argument(
+        "--path",
+        required=True,
+        help="path under docs/, .agents/, historical prompts/, or README.md, AGENTS.md, REVIEWS.md",
+    )
     reference.add_argument(
         "--scope",
         choices=("user", "project"),
