@@ -892,6 +892,7 @@ Version: {version}
         result, _output, error = self.run_reference(path="docs/reference.md", scope="user")
         self.assertEqual(result, 2)
         self.assertIn("source identity differs", error)
+        self.assertEqual(_output, "")
         result, output, error = self.run_reference(
             path="docs/reference.md", scope="project", target=self.target
         )
@@ -995,8 +996,110 @@ Version: {version}
         result, _output, error = self.run_reference(path="docs/reference.md")
 
         self.assertEqual(result, 2)
-        self.assertIn("required Git commit", error)
-        self.assertIn("not available", error)
+        self.assertIn("recorded source commit is missing", error)
+        self.assertEqual(_output, "")
+
+    def test_reference_installed_verifies_source_commit_and_hash_in_each_scope(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_operation("install", skills=["sample-skill"], apply=True)[0], 0
+        )
+        repository = self.source.parents[1]
+        pinned_commit = self.git(repository, "rev-parse", "HEAD")
+        reference = repository / "docs" / "reference.md"
+        reference.write_text("new committed guidance\n", encoding="utf-8")
+        (self.source / "sample-skill" / "SKILL.md").write_text(
+            "---\nname: sample-skill\ndescription: Updated fixture Skill.\n---\n\nChanged.\n",
+            encoding="utf-8",
+        )
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "change reference only")
+        later_commit = self.git(repository, "rev-parse", "HEAD")
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+
+        for scope, target in (("user", None), ("project", self.target)):
+            with self.subTest(scope=scope):
+                manifest_path = (
+                    self.user_home / ".devconcord/skills-manifest.json"
+                    if scope == "user"
+                    else self.target / ".devconcord/skills-manifest.json"
+                )
+                installed_skill = (
+                    self.user_home / ".agents/skills/sample-skill"
+                    if scope == "user"
+                    else self.target / ".agents/skills/sample-skill"
+                )
+                original_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                record = original_manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
+                installed_before = manage_skills._recorded_package_digest(
+                    installed_skill, record
+                )
+
+                for changed_field, changed_value, diagnostic in (
+                    ("source_commit", later_commit, "source_tree_sha256"),
+                    ("source_tree_sha256", "0" * 64, "source_tree_sha256"),
+                ):
+                    changed = json.loads(json.dumps(original_manifest))
+                    changed_record = changed["packages"][".agents/skills"]["skills"]["sample-skill"]
+                    changed_record[changed_field] = changed_value
+                    manifest_path.write_text(json.dumps(changed), encoding="utf-8")
+                    manifest_before = manifest_path.read_bytes()
+
+                    result, output, error = self.run_reference(
+                        path="docs/reference.md", scope=scope, target=target
+                    )
+
+                    self.assertEqual(result, 2)
+                    self.assertIn(diagnostic, error)
+                    self.assertEqual(output, "")
+                    self.assertEqual(manifest_path.read_bytes(), manifest_before)
+                    self.assertEqual(
+                        manage_skills._recorded_package_digest(installed_skill, record),
+                        installed_before,
+                    )
+                manifest_path.write_text(json.dumps(original_manifest), encoding="utf-8")
+                self.assertEqual(record["source_commit"], pinned_commit)
+
+    def test_reference_installed_rejects_dirty_source_and_local_skill_edits(self) -> None:
+        source_repo = self.source.parents[1]
+        ignored = self.source / "sample-skill" / "ignored.local"
+        (source_repo / ".gitignore").write_text("*.local\n", encoding="utf-8")
+        self.git(source_repo, "add", ".gitignore")
+        self.git(source_repo, "commit", "-qm", "ignore local files")
+        ignored.write_text("uncommitted source content\n", encoding="utf-8")
+        self.assertEqual(
+            self.run_operation(
+                "install", skills=["sample-skill"], apply=True, allow_dirty_source=True
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_config("set-source", source_root=source_repo, replace=False)[0], 0
+        )
+        result, output, error = self.run_reference(path="docs/reference.md", scope="project", target=self.target)
+        self.assertEqual(result, 2)
+        self.assertIn("source was dirty", error)
+        self.assertEqual(output, "")
+
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        record = manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
+        record["source_dirty"] = False
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        installed = self.target / ".agents/skills/sample-skill/SKILL.md"
+        installed.write_text("local edit\n", encoding="utf-8")
+        result, output, error = self.run_reference(path="docs/reference.md", scope="project", target=self.target)
+        self.assertEqual(result, 2)
+        self.assertIn("locally modified", error)
+        self.assertEqual(output, "")
 
     @unittest.skipIf(os.name == "nt", "symlink behavior is platform-specific")
     def test_reference_working_tree_refuses_symlink_escape(self) -> None:
@@ -1191,6 +1294,15 @@ Version: {version}
         record["installed_tree_sha256"] = manage_skills.tree_digest(skill_dir)
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
         self.assertEqual(self.run_validation()[0], 0)
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        result, output, error = self.run_reference(
+            path="docs/reference.md", scope="project", target=self.target
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Initial committed guidance.", output)
 
         result, _, error = self.run_operation("sync", apply=True)
 

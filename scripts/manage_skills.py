@@ -2329,6 +2329,12 @@ def _reference_command(args: argparse.Namespace) -> int:
                         "installed Skill has no Git commit baseline; use --revision head "
                         "or --revision working-tree"
                     )
+                if any(record.get("source_dirty") for _path, record in records):
+                    raise SkillManagementError(
+                        "installed Skill source was dirty; strict installed reference cannot "
+                        "prove an exact Git version; choose --revision head or working-tree "
+                        "explicitly if that version is intended"
+                    )
                 revision, _dirty, current_repository = current_source_revision(
                     source_root / ".agents" / "skills"
                 )
@@ -2342,6 +2348,7 @@ def _reference_command(args: argparse.Namespace) -> int:
                         "configured source identity differs from the installed Skill; "
                         "review the source and use rebind-source only if the change is intentional"
                     )
+                _validate_history(source_root, commit, revision)
                 for package_path, record in records:
                     skill_dir = installation_root / package_path / args.skill
                     if skill_dir.is_symlink() or not skill_dir.is_dir():
@@ -2351,6 +2358,22 @@ def _reference_command(args: argparse.Namespace) -> int:
                     if _recorded_package_digest(skill_dir, record) != record["installed_tree_sha256"]:
                         raise SkillManagementError(
                             f"installed Skill was locally modified: {package_path}/{args.skill}"
+                        )
+                    try:
+                        source_digest = _git_skill_digest(
+                            source_root / ".agents" / "skills",
+                            commit,
+                            args.skill,
+                            legacy=record.get("hash_version", 1) == 1,
+                        )
+                    except SkillManagementError as error:
+                        raise SkillManagementError(
+                            f"cannot verify installed Skill source baseline: {error}"
+                        ) from error
+                    if source_digest != record["source_tree_sha256"]:
+                        raise SkillManagementError(
+                            "installed Skill source baseline does not match the recorded "
+                            "source_tree_sha256 at source_commit"
                         )
                 if not _full_commit_id(commit):
                     raise SkillManagementError("installed Skill source commit is invalid")
