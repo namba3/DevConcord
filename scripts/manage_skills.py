@@ -2276,6 +2276,8 @@ def _reference_command(args: argparse.Namespace) -> int:
         current_source_revision = (
             _user_source_revision if scope == "user" else source_revision
         )
+        source_identity: str
+        source_head: str
         for parent in (source_path, *source_path.parents):
             if parent == source_root.parent:
                 break
@@ -2286,6 +2288,9 @@ def _reference_command(args: argparse.Namespace) -> int:
             if not source_path.is_file():
                 raise SkillManagementError(f"local reference does not exist: {relative}")
             content = source_path.read_text(encoding="utf-8")
+            source_head, _source_dirty, source_identity = current_source_revision(
+                source_root / ".agents" / "skills"
+            )
             changed = _git(
                 source_root, "status", "--porcelain", "--", relative, check=False
             )
@@ -2353,11 +2358,14 @@ def _reference_command(args: argparse.Namespace) -> int:
                     f"Reference: installed Skill {args.skill} source commit {commit}"
                     f" (current source HEAD {revision})"
                 )
+                source_identity = current_repository
+                source_head = revision
             else:
-                revision, _dirty, _repository = current_source_revision(
+                revision, _dirty, source_identity = current_source_revision(
                     source_root / ".agents" / "skills"
                 )
                 commit = revision
+                source_head = revision
                 print(f"Reference: configured source HEAD {commit}; uncommitted edits excluded")
             commit_check = _git(
                 source_root,
@@ -2389,6 +2397,8 @@ def _reference_command(args: argparse.Namespace) -> int:
                     f"Git could not read reference {relative!r} at commit {commit}"
                 )
             content = result.stdout
+        print(f"Reference path: {relative}")
+        print(f"Source identity: {source_identity}; source HEAD {source_head}")
         sys.stdout.write(content)
         if content and not content.endswith("\n"):
             sys.stdout.write("\n")

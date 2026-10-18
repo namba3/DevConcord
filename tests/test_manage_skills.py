@@ -726,6 +726,8 @@ Version: {version}
         self.assertEqual((result, stderr.getvalue()), (0, ""))
         self.assertIn("Initial committed guidance.", stdout.getvalue())
         self.assertIn("source commit", stdout.getvalue())
+        self.assertIn("Reference path: docs/reference.md", stdout.getvalue())
+        self.assertIn("Source identity:", stdout.getvalue())
 
         reference_file = repository / "docs" / "reference.md"
         reference_file.write_text("# Versioned reference\n\nWorking tree guidance.\n", encoding="utf-8")
@@ -744,6 +746,7 @@ Version: {version}
         self.assertEqual(result, 0)
         self.assertIn("Working tree guidance.", stdout.getvalue())
         self.assertIn("uncommitted", stdout.getvalue())
+        self.assertIn("Source identity:", stdout.getvalue())
 
         head_only = repository / "docs" / "head-only.md"
         head_only.write_text("Committed after Skill installation.\n", encoding="utf-8")
@@ -764,6 +767,7 @@ Version: {version}
                 result = manage_skills._run(args)
         self.assertEqual(result, 0)
         self.assertIn("Committed after Skill installation.", stdout.getvalue())
+        self.assertIn("Source identity:", stdout.getvalue())
 
     def test_reference_reads_allowlisted_root_files_and_rejects_other_root_paths(self) -> None:
         self.assertEqual(
