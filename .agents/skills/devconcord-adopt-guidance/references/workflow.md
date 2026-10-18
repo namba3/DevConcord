@@ -15,7 +15,7 @@ This distributable reference contains the detailed execution contract for `devco
 
 資料集のREADME、`docs/README.md`、`docs/agent-skills.md`を読み、利用可能な資料と相対リンクの前提を確認してください。
 
-`AGENTS.md` と `REVIEW.md` の有無も確認し、両方がない場合や片方だけの場合は、`devconcord-generate-agent-guidance` Skillを使って不足分を整備します。旧名 `REVIEWS.md` がある対象の移行と競合判断も同Skillへ委ね、Adoptionに別の移行処理を作りません。両方がない場合は `REVIEW.md` を先に作成し、その後 `AGENTS.md` を作成してレビュー前に読む指示を含めます。既存ファイルがある場合は生成時にもその内容を調査し、有効なルールを維持して統合します。利用者が指示ファイルの生成を今回の対象外とした場合は、未作成ファイルと使用するSkillを報告し、`AGENTS.md` から `REVIEW.md` への参照を確認済みと扱いません。
+`AGENTS.md` と `REVIEW.md` の有無も確認し、両方がない場合や片方だけの場合は、`devconcord-generate-agent-guidance` Skillを使って不足分を整備します。AGENTS.mdの生成・更新では、低リスクやSkill可用性未確認でも省略しないDevConcord原則の簡潔な説明と、必要に応じたDevConcord系Skill推奨を含む同Skillの必須生成契約に従います。詳細分析・実行はリスクに応じて選びます。旧名 `REVIEWS.md` がある対象の移行と競合判断も同Skillへ委ね、Adoptionに別の移行処理を作りません。両方がない場合は `REVIEW.md` を先に作成し、その後 `AGENTS.md` を作成してレビュー前に読む指示を含めます。既存ファイルがある場合は生成時にもその内容を調査し、有効なルールを維持して統合します。利用者が指示ファイルの生成を今回の対象外とした場合は、未作成ファイルと使用するSkillを報告し、`AGENTS.md` から `REVIEW.md` への参照を確認済みと扱いません。
 
 ## 2. 適用内容の選択
 

@@ -1,9 +1,9 @@
 # DevConcord リポジトリ作業指示
 
 - リポジトリの目的と入口は `README.md`、資料体系は `docs/README.md` と `docs/agent-skills.md` を確認してください。
-- DDD、SDD、TDD、DbC、Self-documenting Code、Doc Comments、Annotation Comments、Performance by Design、Robustness by Design、Replaceability by Design、Security by Design等の原則と、課題表を作業管理の正本とする運用を維持してください。UI/UXは機能要求を方向付ける人間中心設計の入力として扱います。
+- DDD、SDD、TDD、DbC、Self-documenting Code、UX-Driven Functional Design、Performance / Robustness / Replaceability / Security by Design、Documentation by Designの基本原則を維持してください。各原則は変更に関係する範囲で適用し、UI/UXは利用者の目的・タスクから機能を導く人間中心設計の入力として扱います。Doc Comments・Annotation Commentsと、課題表を作業管理の正本とする運用も維持してください。
 - 要求・設計では、必要に応じて利用者の目的/タスク、受け入れ条件、性能ワークロード、異常時の契約・状態整合性・回復方法、交換価値のある技術依存境界、資産・脅威・信頼境界・セキュリティ不変条件・検証を接続してください。脅威と変更影響に応じて分析範囲を選び、交換性のために全依存を抽象化せず、費用対効果を考慮します。
-- 変更に関係するDevConcordの設計原則は常に考慮し、重要な設計判断や未解決リスクがある場合は、利用可能なDevConcord系専門Skills（`devconcord-design-*`、`devconcord-ux-functional-design`、`devconcord-documentation-architecture`等）の活用を検討してください。独立した期待値から検証方法を定める必要がある場合は、Project Scope / User Scopeで利用可能性を確認したうえで`devconcord-test-design`、複雑な変更を検証可能な実装単位へ整理する必要がある場合は`devconcord-implementation-planning`も候補です。推奨・利用時は対象、理由、期待成果物を明確にし、軽微な変更や十分な設計根拠がある領域へ一律に適用しません。`devconcord-repository-review`と`devconcord-gap-analysis`は横断評価用Skillsとして区別し、`devconcord-*`全体を専門設計Skillとみなさず、ほかの有用なSkillsも排除しません。原則の適用、Skillの推奨、実行を区別し、自動インストールや実行を前提にしません。
+- 重要な設計判断や未解決リスクには、利用可能性を確認してDevConcord系専門Skills（`devconcord-design-*`、`devconcord-ux-functional-design`、`devconcord-documentation-architecture`等）の利用を検討してください。独立した検証設計には`devconcord-test-design`、複雑な変更の段階的計画には`devconcord-implementation-planning`も候補です。これらの原則と必要に応じたSkillsの案内は、変更リスクが低い場合やSkillの利用可否が未確認の場合もAGENTS.mdに簡潔に記載しますが、全原則の詳細分析やSkill実行を一律に要求しません。Project Scope / User Scopeを確認し、未導入・未確認のSkillを利用可能と断定しないでください。`devconcord-repository-review`と`devconcord-gap-analysis`は専門設計Skillsと異なる評価用Skillsです。他の提供元の有用なSkillsも排除せず、自動インストールや実行を前提にしません。
 - 品質評価では既存の完成度10軸・重みを維持し、UI/UX・性能・堅牢性を関連する既存軸へ、交換可能性は主に設計・アーキテクチャとコード品質・保守性へ反映してください。新しい軸や課題・リスクの二重台帳は追加しません。
 - 資料を変更するときは、関連するガイド、テンプレート、Skills、READMEの用語とリンクを確認し、必要な範囲だけを更新してください。
 - コード・仕様・設定の変更では関連文書への影響を確認し、対象読者・正本・既存導線を保って必要な資料だけ更新してください。文書設計の詳細は[共通ガイド](docs/common/documentation-design.md)を参照し、大きな文書体系のレビュー・改善には利用可能なら `devconcord-documentation-architecture` Skillを使います。

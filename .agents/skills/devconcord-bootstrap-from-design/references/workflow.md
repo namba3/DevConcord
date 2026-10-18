@@ -96,7 +96,7 @@ Markdownと通常のテキストは直接読みます。PDF/DOCX等は、現在�
 
 要求仕様は `SKILL.md`のDevConcord References手順で取得した版固定の`docs/application-design/templates/requirements.md` を基準にし、入力設計書の出典・節からTASK/REQ/NFR、ADR、初期構造、課題、受け入れ条件・検証へ必要な範囲で追跡できるようにします。出典パスと版等は要求仕様の関連資料欄や要求行、ADRの関連欄へ記録し、専用台帳は複数文書の管理上必要な場合だけ設けます。既存の課題管理方式があれば優先し、完成度10軸とSDSの重み・独立性を維持します。初期化だけを理由に完成度を高く評価しません。
 
-`AGENTS.md` と `REVIEW.md` は `devconcord-generate-agent-guidance` Skill の調査・記述方針を再利用してください。旧名 `REVIEWS.md` の移行と競合判断も同Skillへ委ね、Bootstrapに別の移行処理を作りません。実装済みの事実と設計上の将来制約を分け、実在しない機能・テスト・保証を記載しません。既存内容がある場合は置換せず統合します。`AGENTS.md` からレビュー前に `REVIEW.md` を読む指示を保ちます。
+`AGENTS.md` と `REVIEW.md` は `devconcord-generate-agent-guidance` Skill の調査・記述方針を再利用してください。AGENTS.mdを生成する場合は、低リスクやSkill可用性未確認でも省略しないDevConcord原則の簡潔な説明と、必要に応じたDevConcord系Skill推奨を含む同Skillの必須生成契約に従います。詳細分析や実行はリスクに応じて選びます。旧名 `REVIEWS.md` の移行と競合判断も同Skillへ委ね、Bootstrapに別の移行処理を作りません。実装済みの事実と設計上の将来制約を分け、実在しない機能・テスト・保証を記載しません。既存内容がある場合は置換せず統合します。`AGENTS.md` からレビュー前に `REVIEW.md` を読む指示を保ちます。
 
 初期化範囲の扱い:
 

@@ -20,6 +20,11 @@ This distributable reference contains the detailed procedure for its selected ou
 ## 記載方針
 
 - `AGENTS.md` は日常の変更作業に常時適用する、短く実行可能なルールを記載します。
+- **必須記載事項:** `agents` / `both`モードで生成・更新するすべての`AGENTS.md`には、DevConcordの基本原則の簡潔な説明と、DevConcord系Skillsの必要に応じた利用推奨を必ず含めます。対象リスクが低い場合やSkillの利用可否が未確認の場合も、この2点への言及自体は省略しません。言及を必須とすることは、全原則の詳細分析やSkillの実行を必須にする意味ではありません。
+- 原則の説明には、DDD、SDD、TDD、DbC、Self-documenting Code、UX-Driven Functional Design、Performance / Robustness / Replaceability / Security by Design、Documentation by Designを短く含めます。詳細な説明は導入済みの共通ガイド等へ委ね、対象に関係しない分析を強制しません。
+- Skill推奨は、`devconcord-design-*`、`devconcord-ux-functional-design`、`devconcord-documentation-architecture`等の専門設計Skillsを明示し、重要な判断時に利用を検討するルールにします。独立した検証設計には`devconcord-test-design`、複雑な変更の計画には`devconcord-implementation-planning`も候補として案内します。Project Scope / User Scopeを確認し、利用可否が不明・未導入ならその状態を明記して候補扱いにとどめます。`devconcord-repository-review`と`devconcord-gap-analysis`は評価用Skillsとして専門設計Skillsと区別し、他の提供元の有用なSkillsも排除しません。
+- 既存の同等記述を再利用して重複を避け、対象プロジェクト固有の規約・テストコマンド・既存Skill指示・レビュー基準への参照を保ちます。
+- `reviews`モードでは、移行に必要な許可済み参照修正を除き、`AGENTS.md`の開発原則やSkill推奨を変更しません。
 - プロジェクト概要やコード構成の説明を大量に複製せず、必要な資料への相対リンクを使います。
 - 変更前に読むべき資料、編集上の制約、検証コマンド、生成物の扱い、報告事項を、根拠がある範囲で記載します。
 - 変更規模・リスクに応じた影響確認と、共通DoDの適用を短く実行可能なルールにします。全作業に重い手順を課さず、既存の課題表・要求仕様・ADR・リスク記録を管理元として参照し、同じ情報の別台帳を追加しません。

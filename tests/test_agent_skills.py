@@ -629,6 +629,71 @@ description: Use this Skill for a focused task.
             with self.subTest(scenario=expected):
                 self.assertIn(expected, integration)
 
+    def test_agent_guidance_generation_requires_compact_devconcord_baseline(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        agents = (repository_root / "AGENTS.md").read_text(encoding="utf-8")
+        skill_root = repository_root / ".agents" / "skills" / "devconcord-generate-agent-guidance"
+        skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        procedure = (skill_root / "references" / "agents-md.md").read_text(
+            encoding="utf-8"
+        )
+        bootstrap = (
+            repository_root / ".agents" / "skills" / "devconcord-bootstrap-from-design"
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+        adoption = (
+            repository_root / ".agents" / "skills" / "devconcord-adopt-guidance"
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+
+        required_principles = (
+            "DDD",
+            "SDD",
+            "TDD",
+            "DbC",
+            "Self-documenting Code",
+            "UX-Driven Functional Design",
+            "Performance",
+            "Robustness",
+            "Replaceability",
+            "Security by Design",
+            "Documentation by Design",
+        )
+        for principle in required_principles:
+            with self.subTest(principle=principle):
+                self.assertIn(principle, agents)
+                self.assertIn(principle, procedure)
+
+        for text in (agents, skill, procedure):
+            for skill_name in (
+                "devconcord-design-*",
+                "devconcord-ux-functional-design",
+                "devconcord-documentation-architecture",
+                "devconcord-test-design",
+                "devconcord-implementation-planning",
+                "devconcord-repository-review",
+                "devconcord-gap-analysis",
+            ):
+                with self.subTest(skill=skill_name):
+                    self.assertIn(skill_name, text)
+        for expected in (
+            "Required `AGENTS.md` content",
+            "UX-Driven Functional Design",
+            "Documentation by Design",
+            "devconcord-test-design",
+            "devconcord-repository-review",
+            "low or Skill availability is unconfirmed",
+            "detailed analysis or execution",
+            "`agents` and `both`",
+            "`reviews` mode",
+            "Do not add or revise unrelated `AGENTS.md` guidance in this mode",
+            "Project Scope or User Scope",
+            "exclude useful non-DevConcord Skills",
+        ):
+            self.assertIn(expected, skill)
+        self.assertIn("同Skillの必須生成契約", bootstrap)
+        self.assertIn("同Skillの必須生成契約", adoption)
+
     def test_sync_workflow_reference_separates_document_and_skill_updates(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skill = repository_root / ".agents" / "skills" / "devconcord-sync-guidance"
@@ -700,7 +765,7 @@ description: Use this Skill for a focused task.
             if line.startswith("|") and not line.startswith("|---")
         ]
 
-        self.assertEqual(len(table_rows) - 1, 26)
+        self.assertEqual(len(table_rows) - 1, 27)
         for expected in (
             "小規模CLI",
             "GUI中心",
