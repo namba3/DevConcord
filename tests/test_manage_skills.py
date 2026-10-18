@@ -549,6 +549,8 @@ Version: {version}
 
         fork = self.root / "fork"
         self.git(self.root, "clone", "-q", str(source_repo), str(fork))
+        self.git(fork, "config", "user.email", "test@example.invalid")
+        self.git(fork, "config", "user.name", "Test")
         self.git(fork, "remote", "set-url", "origin", "git@github.com:team/fork.git")
         fork_skills = fork / ".agents" / "skills"
         (fork_skills / "sample-skill" / "SKILL.md").write_text(
