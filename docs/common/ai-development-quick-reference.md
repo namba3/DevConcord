@@ -16,6 +16,7 @@
 - 変更規模とリスクに応じ、利用者の目的/タスク、依存関係・公開API・データ・状態・異常時の保証/回復・セキュリティ境界・対象環境・関連資料への影響を確認する。局所的な変更は限定的と判断した根拠を短く残す。
 - 曖昧さや不足情報は事実のように補わず、仮定・未確認事項として示す。
 - 振る舞いを変える作業では、観測可能な受け入れ条件と検証方法を定める。
+- 実装前の具体的な影響評価、独立した期待値に基づくテスト設計、複雑な作業の段階化が必要な場合は、それぞれ対応する任意のSkillを選ぶ。軽微な変更へ一律に適用せず、提案・実装・実行・合格を区別する。
 
 ## 設計・実装
 
@@ -63,6 +64,7 @@
 | SDD、要求仕様 | [AI支援開発ガイド §4](ai-assisted-development.md#4-sdd仕様駆動開発) |
 | 契約設計 | [AI支援開発ガイド §5](ai-assisted-development.md#5-dbc契約による設計) |
 | BDD、ATDD、TDD、テスト独立性 | [AI支援開発ガイド §6–7](ai-assisted-development.md#6-bddatdd振る舞いと受け入れの設計) |
+| 変更影響評価、テスト設計、実装計画 | [`devconcord-repository-review`](../../.agents/skills/devconcord-repository-review/SKILL.md)、[`devconcord-test-design`](../../.agents/skills/devconcord-test-design/SKILL.md)、[`devconcord-implementation-planning`](../../.agents/skills/devconcord-implementation-planning/SKILL.md) |
 | ADR | [AI支援開発ガイド §8](ai-assisted-development.md#8-adr設計判断の記録) |
 | 課題管理・完成度評価 | [課題管理規約](../work-management/issue-tracking.md) |
 | Self-documenting Code、SDS | [開発ガイド §2.1](ai-assisted-development.md#21-self-documenting-codeへの貢献)、[課題管理規約 §3.5](../work-management/issue-tracking.md#35-self-documenting-scoresds) |

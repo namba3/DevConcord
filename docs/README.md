@@ -44,6 +44,9 @@
 | 性能・堅牢性・依存境界・セキュリティを検討する | [設計原則](common/ai-assisted-development.md)と個別の `devconcord-design-performance`、`devconcord-design-robustness`、`devconcord-design-replaceability`、`devconcord-design-security` [Skills](agent-skills.md#skills) |
 | READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`devconcord-documentation-architecture` Skill](../.agents/skills/devconcord-documentation-architecture/SKILL.md) |
 | DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](../.agents/skills/devconcord-gap-analysis/SKILL.md) |
+| 提案された変更の実装前影響を評価する | [`devconcord-repository-review` Skill](../.agents/skills/devconcord-repository-review/SKILL.md)のChange Impact Assessment |
+| 要求・契約から独立したテストを設計する | [`devconcord-test-design` Skill](../.agents/skills/devconcord-test-design/SKILL.md) |
+| 複雑な変更を検証可能な実装単位へ計画する | [`devconcord-implementation-planning` Skill](../.agents/skills/devconcord-implementation-planning/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
 | レビュー基準を作る・調べる | [`devconcord-generate-agent-guidance` Skill](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEW.md) |
 | 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`devconcord-bootstrap-from-design` Skill](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |
@@ -54,7 +57,7 @@
 
 ## 選択と適用
 
-これらの資料は適用先に合わせて選びます。README、公開サイト、ディレクトリ構造、既存規約を調査し、必要な部分だけを導入してください。Bootstrapは設計書から新規構成を作る手順、Adoptionは既存成果物を保護した初回導入、資料Synchronizationは導入済み共通資料の差分更新です。Bootstrap / Adoption後の専門Skill推奨は、確認済みの設計状況や未解決事項に基づく任意の次作業であり、一律実行ではありません。これらのSkillワークフローと、`manage_skills.py sync` によるAgent Skillsパッケージの同期は別操作です。具体的な作業場所・コマンド・検証は[はじめての導入と運用](getting-started.md)、Skillsの詳細契約は[Agent Skills運用ガイド](agent-skills.md)を参照してください。
+これらの資料は適用先に合わせて選びます。README、公開サイト、ディレクトリ構造、既存規約を調査し、必要な部分だけを導入してください。Bootstrapは設計書から新規構成を作る手順、Adoptionは既存成果物を保護した初回導入、資料Synchronizationは導入済み共通資料の差分更新です。変更提案の実装前影響評価、テスト設計、実装計画もそれぞれ目的に応じた任意の作業です。Bootstrap / Adoption後の専門Skill推奨は、確認済みの設計状況や未解決事項に基づき一律実行しません。これらのSkillワークフローと、`manage_skills.py sync` によるAgent Skillsパッケージの同期は別操作です。具体的な作業場所・コマンド・検証は[はじめての導入と運用](getting-started.md)、Skillsの詳細契約は[Agent Skills運用ガイド](agent-skills.md)を参照してください。
 
 要求IDからADR・実装・検証・課題への参照は変更リスクに応じて設けます。設計書の出典と共通資料の `guidance-provenance.md` を区別し、未確認事項を確定仕様にしません。課題表を作業管理の正本とし、リスク対応作業の別台帳は追加しません。完成度は既存10軸で評価し、SDSは独立した補助指標として総合完成度へ加算しません。新しい品質評価軸は追加しません。
 

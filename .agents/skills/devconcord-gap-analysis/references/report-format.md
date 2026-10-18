@@ -91,6 +91,13 @@ conditions in `docs/common/ai-assisted-development.md` §17.3. Leave this sectio
 out when no specialist Skill adds value. Recommendations are not a second task
 ledger and do not authorize Skill execution or installation. A recommendation
 or unreviewed Skill output alone does not resolve a finding.
+
+For a concrete proposed change, `devconcord-repository-review` can assess
+pre-implementation impact; `devconcord-test-design` can derive independent
+verification from an existing contract; and `devconcord-implementation-planning`
+can sequence a complex change into verifiable increments. Recommend these only
+when the report's evidence supports that specific need; do not imply automatic
+handoff or add another issue, risk, or recommendation ledger.
 ```
 
 For an Incremental Assessment, compare findings by the underlying problem or

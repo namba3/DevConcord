@@ -1127,7 +1127,7 @@ repository/
 
 BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、後続作業として専門Skillが有用かを判断する。推奨だけのために対象全体を再調査せず、Bootstrapが実施した初期設計を繰り返さない。対象プロジェクトの実態と、今回の作業で実際に確認できた根拠から、次の関係を説明できる候補だけを示す。
 
-ここでいう設計専門SkillはDevConcord系の `devconcord-design-*`、`devconcord-ux-functional-design`、`devconcord-documentation-architecture`です。`devconcord-repository-review`と`devconcord-gap-analysis`は、それぞれ具体的な欠陥レビューと横断評価を担う関連評価Skillです。Bootstrap / Adoption / Sync / Generate / Referenceの運用Skillとは役割を分けます。これらの区分は他の提供元の有用なSkillを排除せず、利用義務や自動実行を意味しません。
+ここでいう設計専門SkillはDevConcord系の `devconcord-design-*`、`devconcord-ux-functional-design`、`devconcord-documentation-architecture`です。`devconcord-repository-review`と`devconcord-gap-analysis`は具体的なレビュー/変更影響評価と横断評価を担う関連評価Skillです。`devconcord-test-design`は既存契約から独立検証を設計し、`devconcord-implementation-planning`は複雑な変更を検証可能な実装単位へ分割する任意の作業Skillです。Bootstrap / Adoption / Sync / Generate / Referenceの運用Skillとは役割を分けます。これらの区分は他の提供元の有用なSkillを排除せず、利用義務や自動実行を意味しません。
 
 > 確認済みの特徴または未解決事項 → 設計上の影響 → 必要な専門的検討 → Skill → 期待成果物と検証
 
@@ -1155,8 +1155,10 @@ BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、
 | `devconcord-design-security` | 機密情報、外部入力、ネットワーク、権限境界、信頼を越えるデータ/制御フロー、攻撃面、セキュリティ不変条件に重要な未整理事項がある。脅威に応じ分析深度を選ぶ |
 | `devconcord-documentation-architecture` | 読者・目的が複数ある、文書の重複や矛盾、公開API/CLIの案内、正本・導線・更新責務、設計と実装の整合に有意な問題がある。小規模な対象に複雑な階層を求めない |
 | `devconcord-gap-analysis` | Adoption後などに複数領域の現状・要求/設計/実装/検証の関係が未評価で、横断的なFull Assessmentに価値がある。既存の有効なレポートがあれば無条件に再実行せず、Incremental Assessmentまたは該当Skillを検討する |
+| `devconcord-test-design` | 受け入れ条件・契約はあるが、独立した期待値、代表的な境界/失敗ケース、適切な検証方法が未整理である |
+| `devconcord-implementation-planning` | 複数領域・依存関係を含む変更で、順序・検証可能な実装単位・既存課題との関係が不明確である |
 
-具体的なコード欠陥や変更の回帰リスクが詳しい調査を必要とする場合は `devconcord-repository-review` を後続候補にできる。これは設計Skill推奨の一律対象ではない。
+具体的なコード欠陥や変更の回帰リスクが詳しい調査を必要とする場合は `devconcord-repository-review` を後続候補にできる。実装前の提案なら影響評価モード、既存コードや差分ならレビューとして扱う。これは設計Skill推奨の一律対象ではない。
 
 #### 推奨の出力と境界
 

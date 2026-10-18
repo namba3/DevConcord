@@ -4,6 +4,8 @@ DevConcordのAgent Skillsは **User Scope（ユーザー単位）** が標準で
 
 DevConcord公式Skill名には `devconcord-` が付きます。旧名Skillを導入済みの環境は自動変更されないため、新名で導入した後も既存Skillを確認し、必要なら利用者が別途整理してください。
 
+変更を実装する前に影響範囲を整理したい場合は`devconcord-repository-review`のChange Impact Assessment、要求から独立した検証方法を設計したい場合は`devconcord-test-design`、複雑な作業を段階化したい場合は`devconcord-implementation-planning`を使えます。いずれも必要な場合だけ選ぶSkillで、自動実行・自動引継ぎは前提にしません。
+
 Bootstrap / Adoption / 資料Synchronizationは、導入先リポジトリを作業コンテキストとして実行します。DevConcordは読み取り専用の参照元です。Agent Skills管理CLIは別操作で、User Scopeではユーザー環境、Project Scopeでは `--target` に指定したリポジトリを変更します。
 
 ## 1. DevConcordをcloneしてローカル参照を登録する
