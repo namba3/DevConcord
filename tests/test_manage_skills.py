@@ -865,6 +865,7 @@ Version: {version}
         symlink.symlink_to("reference.md")
         self.git(repository, "add", ".")
         self.git(repository, "commit", "-qm", "add reference entry types")
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
         for path, expected in (
             ("docs/reference with space 日本語.md", "unicode and space path"),
             ("docs/executable.md", "executable regular file"),
@@ -874,7 +875,31 @@ Version: {version}
                 self.assertEqual((result, error), (0, ""))
                 self.assertIn(expected, output)
 
-        for path in ("docs/symlink.md", "docs/subdir", "docs/not-present.md"):
+        symlink.unlink()
+        symlink.write_text("working tree regular file\n", encoding="utf-8")
+        result, output, error = self.run_reference(
+            path="docs/symlink.md", revision="working-tree"
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("working tree regular file", output)
+        for revision in ("installed", "head"):
+            if revision == "installed":
+                result, _output, error = self.run_reference(
+                    path="docs/symlink.md",
+                    revision=revision,
+                    scope="project",
+                    target=self.target,
+                )
+            else:
+                result, _output, error = self.run_reference(
+                    path="docs/symlink.md", revision=revision
+                )
+            self.assertEqual(result, 2)
+            self.assertIn("not a regular Git file", error)
+
+        symlink.unlink()
+        symlink.symlink_to("reference.md")
+        for path in ("docs/subdir", "docs/not-present.md"):
             with self.subTest(path=path):
                 result, _output, error = self.run_reference(path=path, revision="head")
                 self.assertEqual(result, 2)
