@@ -26,7 +26,7 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 
 ## Agent Skillsの決定的な配布・検証テスト
 
-[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、相対リンク、権限frontmatter、探索先の名前衝突、明示許可のmanifest記録を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリと一時ユーザーホームに対してdry-run、7通りのagent組み合わせ、段階的agent追加と全体重複状態、許可記録の再実行保持、片側同期拒否・複数側の一括同期、schema 1移行、選択インストール、HTTPS/SSH表記切替、同履歴の別remote拒否、比較基準Git treeとsource hash、前進/巻き戻し/分岐/欠落履歴、dirty source、ローカル編集保護を検査します。User Scopeではdry-runのホーム無変更、他ユーザーSkillsの保護、configの置換・破損・symlink、source checkout移動後の版固定参照と同期、衝突診断、User Scope独立のrecoverも確認します。recover系は複数パッケージ中断、後続対象の外部変更による全体preflight拒否、破損backup、manifest書込後の完了判定、I/O失敗後の再試行を確認し、preflight拒否時の既存Skill・manifest不変をアサートします。テストは実際の `Path.home()` を変更せず、`Path.home()` を一時ディレクトリへ差し替えます。
+[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、配布内リンク、各業務Skillの参照対象と直接CLIフォールバック、重複参照ファイルの不在、探索先の名前衝突を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリと一時ユーザーホームに対してdry-run、7通りのagent組み合わせ、段階的agent追加と全体重複状態、許可記録の再実行保持、片側同期拒否・複数側の一括同期、schema 1移行、選択インストール、HTTPS/SSH表記切替、同履歴の別remote拒否、比較基準Git treeとsource hash、前進/巻き戻し/分岐/欠落履歴、dirty source、ローカル編集保護を検査します。User Scopeではdry-runのホーム無変更、他ユーザーSkillsの保護、configの置換・破損・symlink、source checkout移動後の版固定参照と同期、衝突診断、User Scope独立のrecoverも確認します。recover系は複数パッケージ中断、後続対象の外部変更による全体preflight拒否、破損backup、manifest書込後の完了判定、I/O失敗後の再試行を確認し、preflight拒否時の既存Skill・manifest不変をアサートします。テストは実際の `Path.home()` を変更せず、`Path.home()` を一時ディレクトリへ差し替えます。
 
 ```sh
 python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v

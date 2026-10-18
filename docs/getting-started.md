@@ -205,7 +205,7 @@ python3 ~/projects/devconcord/scripts/manage_skills.py reference \
   --path docs/common/documentation-design.md
 ```
 
-`--revision head` は現在のコミット、`--revision working-tree` は意図的に未コミット変更を含む参照です。既定のinstalled revisionはネットワークを使いません。設定したcloneが移動した場合は、検証後 `config set-source --replace --source-root <新しい絶対パス>` で更新します。詳細な意味と失敗時の扱いは[Skill内のローカル参照手順](../.agents/skills/devconcord-documentation-architecture/references/local-devconcord.md)を確認してください。
+`--revision head` は現在のコミット、`--revision working-tree` は意図的に未コミット変更を含む参照です。既定のinstalled revisionはネットワークを使いません。設定したcloneが移動した場合は、検証後 `config set-source --replace --source-root <新しい絶対パス>` で更新します。共通参照Skillと直接CLIの役割、Scopeごとの参照方法は[Agent Skills運用ガイド](agent-skills.md#ローカルdevconcord資料の参照)を確認してください。
 
 ## 10. よくあるエラーと対処
 

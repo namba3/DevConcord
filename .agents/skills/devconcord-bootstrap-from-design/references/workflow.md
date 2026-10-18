@@ -1,6 +1,6 @@
 # Bootstrap Workflow Reference
 
-This distributable reference contains the detailed execution contract for `devconcord-bootstrap-from-design`. The `SKILL.md` remains the entry point and preserves mandatory safety checks. DevConcord guides and templates are separate optional references: use `references/local-devconcord.md` and its `reference` helper to read a specific file at the installed Skill's source commit. Do not assume the source checkout is available.
+This distributable reference contains the detailed execution contract for `devconcord-bootstrap-from-design`. The `SKILL.md` remains the entry point and preserves mandatory safety checks. DevConcord guides and templates are separate optional references: use the direct CLI fallback described in this Skill's `SKILL.md` DevConcord References section to read a specific file at this Skill's installed source commit. Do not assume the source checkout is available.
 
 あなたは設計書に基づいて新規ソフトウェアプロジェクトのリポジトリを初期化します。コードを大量生成することではなく、根拠ある要求・責務・契約・品質特性を反映し、開発可能かつ検証可能な初期状態を作ることが目的です。
 
@@ -62,7 +62,7 @@ Markdownと通常のテキストは直接読みます。PDF/DOCX等は、現在�
 
 ## 3.1 ドキュメント体系を初期設計する
 
-the version-pinned `docs/common/documentation-design.md` from `references/local-devconcord.md`を参照し、入力設計書と実際の初期成果物から、読者・目的に必要な文書だけを選びます。少なくとも次を判断し、根拠のない情報は未確認として残します。
+`SKILL.md`のDevConcord References手順で版固定参照した`docs/common/documentation-design.md`を使い、入力設計書と実際の初期成果物から、読者・目的に必要な文書だけを選びます。少なくとも次を判断し、根拠のない情報は未確認として残します。
 
 1. 想定読者と主要タスク、利用者向け・開発者向け・運用者向け情報の違い
 2. READMEに示すプロジェクトの目的、実装済みの特徴、対象環境、確認済みの利用・開発手順と詳細資料への導線
@@ -93,7 +93,7 @@ the version-pinned `docs/common/documentation-design.md` from `references/local-
 - `AGENTS.md` と `REVIEWS.md`（必要な場合）
 - 指定範囲に応じた最小エントリーポイント、コア型/ユースケース、技術Adapter、スモークテスト
 
-要求仕様は `references/local-devconcord.md`の手順で取得した版固定の`docs/application-design/templates/requirements.md` を基準にし、入力設計書の出典・節からTASK/REQ/NFR、ADR、初期構造、課題、受け入れ条件・検証へ必要な範囲で追跡できるようにします。出典パスと版等は要求仕様の関連資料欄や要求行、ADRの関連欄へ記録し、専用台帳は複数文書の管理上必要な場合だけ設けます。既存の課題管理方式があれば優先し、完成度10軸とSDSの重み・独立性を維持します。初期化だけを理由に完成度を高く評価しません。
+要求仕様は `SKILL.md`のDevConcord References手順で取得した版固定の`docs/application-design/templates/requirements.md` を基準にし、入力設計書の出典・節からTASK/REQ/NFR、ADR、初期構造、課題、受け入れ条件・検証へ必要な範囲で追跡できるようにします。出典パスと版等は要求仕様の関連資料欄や要求行、ADRの関連欄へ記録し、専用台帳は複数文書の管理上必要な場合だけ設けます。既存の課題管理方式があれば優先し、完成度10軸とSDSの重み・独立性を維持します。初期化だけを理由に完成度を高く評価しません。
 
 `AGENTS.md` と `REVIEWS.md` は `devconcord-generate-agent-guidance` Skill の調査・記述方針を再利用してください。実装済みの事実と設計上の将来制約を分け、実在しない機能・テスト・保証を記載しません。既存内容がある場合は置換せず統合します。`AGENTS.md` からレビュー前に `REVIEWS.md` を読む指示を保ちます。
 

@@ -188,21 +188,37 @@ description: Use this Skill for a focused task.
         self.assertIn("## Skills", skills_guide)
         self.assertIn("## Skills非対応環境で手動利用", skills_guide)
 
-    def test_local_reference_guidance_is_compact_and_skill_specific(self) -> None:
+    def test_business_skills_keep_reference_paths_and_cli_fallback(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skills_root = repository_root / ".agents" / "skills"
         for skill_dir in sorted(
             path
             for path in skills_root.iterdir()
-            if path.is_dir() and path.name != "devconcord-reference"
+            if path.is_dir()
+            and path.name != "devconcord-reference"
         ):
             with self.subTest(skill=skill_dir.name):
-                reference = skill_dir / "references" / "local-devconcord.md"
-                text = reference.read_text(encoding="utf-8")
-                self.assertLessEqual(len(text.splitlines()), 20)
+                text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+                self.assertIn("## DevConcord References", text)
+                self.assertIn("`devconcord-reference`", text)
                 self.assertIn(f"--skill {skill_dir.name}", text)
-                self.assertIn("installed", text)
-                self.assertNotIn("prompts/", text)
+                self.assertIn("--revision installed", text)
+                self.assertIn("--scope project --target", text)
+                self.assertFalse(
+                    (skill_dir / "references" / "local-devconcord.md").exists()
+                )
+
+        self.assertFalse(any(skills_root.glob("*/references/local-devconcord.md")))
+        for skill_name, reference_name in (
+            ("devconcord-adopt-guidance", "workflow.md"),
+            ("devconcord-bootstrap-from-design", "workflow.md"),
+            ("devconcord-sync-guidance", "workflow.md"),
+            ("devconcord-generate-agent-guidance", "agents-md.md"),
+            ("devconcord-generate-agent-guidance", "reviews-md.md"),
+        ):
+            self.assertTrue(
+                (skills_root / skill_name / "references" / reference_name).is_file()
+            )
 
     def test_common_reference_skill_uses_requesting_skill_identity(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]

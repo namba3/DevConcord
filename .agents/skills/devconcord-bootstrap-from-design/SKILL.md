@@ -25,7 +25,19 @@ Read [the detailed Bootstrap workflow](references/workflow.md) before carrying o
 
 Use the **Foundation**, **Scaffold** (default), or **Initial Implementation** scope requested by the user. Implement only the agreed scope; a Bootstrap result does not imply feature completion.
 
-When detailed DevConcord guidance is needed, use [the version-pinned local reference procedure](references/local-devconcord.md). The workflow remains usable without that checkout; do not claim an unread guide was applied.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `README.md`
+- `docs/README.md`
+- `docs/common/ai-assisted-development.md`
+- `docs/common/documentation-design.md`
+- `docs/application-design/templates/requirements.md`
+- `docs/application-design/templates/adr.md`
+- `docs/work-management/issue-tracking.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-bootstrap-from-design --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## Completion report
 

@@ -1,6 +1,6 @@
 # Adoption Workflow Reference
 
-This distributable reference contains the detailed execution contract for `devconcord-adopt-guidance`. The `SKILL.md` is the entry point and keeps mandatory protection and provenance rules visible. When this workflow needs a DevConcord guide, template, shared document, or test procedure, use `references/local-devconcord.md` and its `reference` helper to read the needed path at the installed Skill's source commit. Do not assume the source checkout is available.
+This distributable reference contains the detailed execution contract for `devconcord-adopt-guidance`. The `SKILL.md` is the entry point and keeps mandatory protection and provenance rules visible. When this workflow needs a DevConcord guide, template, shared document, or test procedure, use the direct CLI fallback described in this Skill's `SKILL.md` DevConcord References section to read the needed path at this Skill's installed source commit. Do not assume the source checkout is available.
 
 あなたは既存ソフトウェアプロジェクトへ共通開発資料を導入します。
 
@@ -11,7 +11,7 @@ This distributable reference contains the detailed execution contract for `devco
 
 ## 1. 対象プロジェクトの調査
 
-作業前に対象リポジトリの作業ツリーを確認し、README、`AGENTS.md`、`REVIEWS.md`、`docs/`、主要コード、依存・ビルド・テスト・CI設定、既存の課題管理方法を調べてください。既存文書との重複、矛盾、リンク関係を把握します。文書の読者・用途、文書公開/生成基盤、主要ナビゲーション、正本、プロジェクト固有の文書規約と検証方法も調べ、必要に応じて`references/local-devconcord.md`の版固定手順で`docs/common/documentation-design.md`を参照し、有用な場合だけ適用候補として評価してください。
+作業前に対象リポジトリの作業ツリーを確認し、README、`AGENTS.md`、`REVIEWS.md`、`docs/`、主要コード、依存・ビルド・テスト・CI設定、既存の課題管理方法を調べてください。既存文書との重複、矛盾、リンク関係を把握します。文書の読者・用途、文書公開/生成基盤、主要ナビゲーション、正本、プロジェクト固有の文書規約と検証方法も調べ、必要に応じて、このSkillの`SKILL.md`にあるDevConcord ReferencesのCLI手順で`docs/common/documentation-design.md`を参照し、有用な場合だけ適用候補として評価してください。
 
 資料集のREADME、`docs/README.md`、`docs/agent-skills.md`を読み、利用可能な資料と相対リンクの前提を確認してください。
 

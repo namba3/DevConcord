@@ -6,6 +6,7 @@
 
 | Skill | 用途 |
 |---|---|
+| [`devconcord-reference`](../.agents/skills/devconcord-reference/SKILL.md) | ローカルDevConcordの資料を要求元Skillの版に合わせて参照 |
 | [`devconcord-bootstrap-from-design`](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) | 設計要求から新規リポジトリのFoundation/Scaffold/Initial Implementationを構築 |
 | [`devconcord-adopt-guidance`](../.agents/skills/devconcord-adopt-guidance/SKILL.md) | 既存プロジェクトへ共通資料を選択導入 |
 | [`devconcord-sync-guidance`](../.agents/skills/devconcord-sync-guidance/SKILL.md) | 導入済み資料・Skillsをローカル変更を保護しながら同期 |
@@ -60,17 +61,20 @@ Copilot CLIが公式にサポートする`~/.copilot/skills/`は別の個人探�
 
 ### ローカルDevConcord資料の参照
 
-各Skillには配布単位内で参照が完結するよう、タスクに必要な資料パスと短い呼び出し手順を記した `references/local-devconcord.md` を同梱します。参照コマンドの設定、revision、Scope、失敗時の扱いはこの節を正本とし、各Skill側では重複する詳細説明を省きます。helperはユーザー設定から `source_root` を解決し、既定ではインストール済みSkillのmanifestに記録されたコミットから資料を読みます。
+`devconcord-reference` はAIエージェント向けの共通参照インターフェースです。各業務Skillは必要な資料パスと、その資料が必須か任意かを決めます。別Skillの自動選択・呼び出しはエージェント間で保証されないため、共通Skillを利用できない場合は各業務Skillに記載された短い直接CLI手順を使います。各業務Skillは自身のSkill名を渡します。
 
 ```sh
 python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
   --skill devconcord-documentation-architecture \
-  --path docs/common/documentation-design.md
+  --path docs/common/documentation-design.md \
+  --revision installed
 ```
 
-`--revision head` はcheckoutの現在のコミット、`--revision working-tree` は指定したcheckoutの作業ツリー（未コミット・未追跡内容を含む）を明示的に参照します。いずれもネットワークから取得しません。通常は `installed` を優先し、最新版や未コミット変更へ切り替える場合は版差を報告します。
+CLIは `~/.devconcord/config.json` の `source_root` を使い、設定されたローカルcheckoutから資料を読みます。`installed` は `--skill` で指定した要求元Skillのmanifest記録を使います。共通参照Skill自身や別Skillのコミットへ代替してはいけません。User Scopeでは `--target` なしが既定です。Project Scopeでは `--scope project --target <target-repository>` を追加し、そのプロジェクトのmanifestを使います。各Scopeのmanifestは独立しています。
 
-設定、source identity、必要コミット、参照ファイル、ファイルアクセス、ネットワーク有無は別々の状態です。ローカル参照に失敗した場合、読んだことにしてはいけません。修正方法または明示的に許可された代替版を確認し、根拠資料が不可欠なら作業を止めます。Skill単体の基本ワークフローはローカル参照が不要な作業で利用可能なままです。
+`--revision head` はcheckoutの現在のコミット、`--revision working-tree` は指定したcheckoutの作業ツリー（未コミット・未追跡内容を含む）を明示的に参照します。いずれもネットワークから取得しません。working-treeを使った場合は未コミット内容を含む可能性を報告します。CLIは設定、source identity、manifest、導入Skillの未変更状態、コミット、参照パスとファイルを検証して、成功時に参照元と版を出力します。
+
+設定ファイル欠落・不正、checkoutやスクリプトの欠落、要求元Skillの未導入、壊れたmanifest、ローカルSkill編集、source identity不一致、コミット欠落、ファイル欠落、権限不足、無効なパス、またはローカルファイルへアクセスできない実行環境では参照に失敗します。HEADやオンライン最新版へ黙って切り替えず、取得していない資料を読んだと主張してはいけません。必須資料なら安全に停止し、任意資料なら失敗を報告して自己完結したワークフローを続けられるか判断します。CLIの具体的な診断と設定手順は `manage_skills.py` とこのガイドを参照してください。
 
 ## 配置とエージェントの共用
 
@@ -210,4 +214,4 @@ Claude Code・Codex・Copilotでの実際の発見・呼び出し動作は各エ
 
 ## Skills非対応環境で手動利用
 
-以前の汎用プロンプトを使っていた場合も、該当するSkillの `SKILL.md` とタスクに必要な `references/` の全文を読み、対象エージェントへ渡します。AGENTS/REVIEWS生成では依頼内容に応じたreferenceを選びます。Skillの本文だけ、あるいは共通ガイドだけで必要な詳細手順を読んだことにしないでください。ローカル共通資料が必要な場合は `references/local-devconcord.md` の手順で版固定参照します。
+以前の汎用プロンプトを使っていた場合も、該当するSkillの `SKILL.md` とタスクに必要な `references/` の全文を読み、対象エージェントへ渡します。AGENTS/REVIEWS生成では依頼内容に応じたreferenceを選びます。Skillの本文だけ、あるいは共通ガイドだけで必要な詳細手順を読んだことにしないでください。ローカル共通資料が必要な場合は、該当Skillの `DevConcord References` セクションにある共通Skill利用または直接CLI手順を使います。

@@ -23,7 +23,15 @@ This workflow applies document changes to an existing target repository. It does
 
 Read [the detailed synchronization workflow](references/workflow.md) before applying changes. It covers provenance rows, per-file history checks, rename handling, conflict classes, selective updates, validation, and reporting.
 
-For exact DevConcord source documents, use [the version-pinned local reference procedure](references/local-devconcord.md). Do not assume that a local checkout or the required source commit is available.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `docs/agent-skills.md`
+- `docs/README.md`
+- `docs/work-management/issue-tracking.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-sync-guidance --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## Completion report
 

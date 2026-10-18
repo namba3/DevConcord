@@ -22,7 +22,14 @@ description: >
 
 Document the dependency, reason to isolate it, boundary/semantic contract, allowed migration scope, abstraction costs and verification evidence. Do not promise zero-change replacement.
 
-When the task requires DevConcord's detailed design principles or ADR template, use the [version-pinned local reference procedure](references/local-devconcord.md). The local repository remains an optional reference for general replaceability analysis.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `docs/common/ai-assisted-development.md`
+- `docs/application-design/templates/adr.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-design-replaceability --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## References
 

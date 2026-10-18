@@ -22,7 +22,15 @@ description: >
 
 For each critical operation, state the normal contract, important failure outcomes, preserved invariants, recovery/retry semantics, observable diagnostics and concrete verification evidence.
 
-When the task requires DevConcord's detailed robustness guidance or issue-management rules, use the [version-pinned local reference procedure](references/local-devconcord.md). Do not let missing local references block general robustness analysis.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `docs/common/ai-assisted-development.md`
+- `docs/application-design/templates/requirements.md`
+- `docs/work-management/issue-tracking.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-design-robustness --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## References
 

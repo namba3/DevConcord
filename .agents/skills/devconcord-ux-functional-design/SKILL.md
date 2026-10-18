@@ -22,7 +22,16 @@ description: >
 
 The output must explain why a user need implies a function or behavior, how success/failure is observable, and how the acceptance condition can be verified. Naming usability theories without a resulting design decision is insufficient.
 
-When detailed DevConcord UI/UX guidance or requirement templates are needed, use the [version-pinned local reference procedure](references/local-devconcord.md); do not make the local checkout a prerequisite for general task analysis.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `docs/application-design/ui-ux-guide.md`
+- `docs/application-design/ui-ux-quick-reference.md`
+- `docs/application-design/templates/requirements.md`
+- `docs/common/ai-assisted-development.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-ux-functional-design --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## References
 

@@ -34,7 +34,14 @@ Improve documentation around real reader tasks while preserving the project's ex
 
 Prioritize reader task completion, correctness, discoverability, information hierarchy, single-source ownership, consistency with implementation, stable navigation, traceability where needed, and ease of future updates. Do not equate more pages, shorter documents, or a numeric score with better documentation. Keep necessary constraints, edge cases and technical detail even when simplifying prose.
 
-For the canonical DevConcord documentation-design guide, use the [version-pinned local reference procedure](references/local-devconcord.md) when available. This is optional for general documentation tasks; report unavailable local guidance rather than silently switching to a different version.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `docs/common/documentation-design.md`
+- `docs/README.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-documentation-architecture --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## References
 

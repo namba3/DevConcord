@@ -22,7 +22,14 @@ description: >
 
 Show workload evidence → design choice → acceptance/measurement condition → actual result or unverified status. Avoid post-hoc “make it fast” directives and unsupported claims.
 
-When the task requires DevConcord's detailed performance guidance or requirements template, use the [version-pinned local reference procedure](references/local-devconcord.md). This Skill remains self-contained for general workload-based design.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `docs/common/ai-assisted-development.md`
+- `docs/application-design/templates/requirements.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-design-performance --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## References
 

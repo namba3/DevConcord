@@ -23,7 +23,17 @@ Use this workflow for first-time adoption into an existing project. Use `devconc
 
 Read [the detailed Adoption workflow](references/workflow.md) before making changes. It covers target and source inspection, selective adoption, link and provenance handling, test evidence, and reporting. Use `devconcord-generate-agent-guidance` when AGENTS.md or REVIEWS.md generation is in scope.
 
-For detailed DevConcord guidance or templates, use [the version-pinned local reference procedure](references/local-devconcord.md). If the local checkout or required commit cannot be read, report that and do not claim to have applied its contents.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `docs/README.md`
+- `docs/agent-skills.md`
+- `docs/common/documentation-design.md`
+- `docs/work-management/issue-tracking.md`
+- `docs/application-design/templates/requirements.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-adopt-guidance --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## Completion report
 

@@ -21,7 +21,15 @@ description: >
 
 Summarize scope and evidence, prioritized findings, checks performed and limitations. Do not treat a score or successful CI as proof of correctness.
 
-For detailed DevConcord review criteria or templates, use the [version-pinned local reference procedure](references/local-devconcord.md) when relevant. Do not depend on local checkout access for general repository reviews.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `REVIEWS.md`
+- `docs/common/ai-assisted-development.md`
+- `docs/work-management/issue-tracking.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-repository-review --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## References
 

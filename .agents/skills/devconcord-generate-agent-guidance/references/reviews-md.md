@@ -1,6 +1,6 @@
 # REVIEWS.md Generation Procedure
 
-This distributable reference contains the detailed procedure for its selected output mode. Use `references/local-devconcord.md` only when optional shared DevConcord guidance is needed; do not assume access to the source checkout.
+This distributable reference contains the detailed procedure for its selected output mode. Use the direct CLI fallback described in this Skill's `SKILL.md` DevConcord References section only when optional shared DevConcord guidance is needed; do not assume access to the source checkout.
 
 あなたはこのリポジトリのコードレビュー基準を整備します。リポジトリの実装・テスト・設定・CIを調査し、根拠に基づく `REVIEWS.md` を作成または更新してください。
 

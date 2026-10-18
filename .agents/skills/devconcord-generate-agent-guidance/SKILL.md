@@ -28,7 +28,15 @@ Infer the mode from the user's request. If it is ambiguous, work only on the cle
 
 Read [the AGENTS.md generation procedure](references/agents-md.md) and/or [the REVIEWS.md generation procedure](references/reviews-md.md) for the selected mode. Use both references in `both` mode and create the review criteria first.
 
-For optional DevConcord documentation guidance, use [the version-pinned local reference procedure](references/local-devconcord.md). The generation procedures remain usable without this checkout.
+## DevConcord References
+
+When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
+
+- `REVIEWS.md`
+- `docs/common/ai-assisted-development.md`
+- `docs/common/documentation-design.md`
+
+If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-generate-agent-guidance --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
 ## Completion report
 
