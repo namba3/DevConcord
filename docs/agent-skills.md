@@ -16,8 +16,18 @@
 | [`devconcord-design-replaceability`](../.agents/skills/devconcord-design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |
 | [`devconcord-design-security`](../.agents/skills/devconcord-design-security/SKILL.md) | 資産・信頼境界・脅威・不変条件に応じてセキュリティ要求と検証を設計 |
 | [`devconcord-repository-review`](../.agents/skills/devconcord-repository-review/SKILL.md) | 実装・設計・テスト・CI・運用記録を根拠にレビュー |
+| [`devconcord-gap-analysis`](../.agents/skills/devconcord-gap-analysis/SKILL.md) | DevConcord原則への適合・ギャップ・未検証領域・改善優先度を横断評価 |
 | [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEWS.md` の作成・更新 |
 | [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
+
+`devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を整理します。具体的なコード上の欠陥を詳しく調べる `devconcord-repository-review` や、文書体系を設計する `devconcord-documentation-architecture` の手順を複製しません。詳細な設計作業や共通規約の導入・更新が必要な場合は該当Skillを次の作業として選べます。エージェント間の自動Skill呼び出しは前提にしません。
+
+依頼例:
+
+- **全体診断:** 「このリポジトリをDevConcordの設計・開発・ドキュメント原則から全体評価し、根拠付きのギャップ分析と優先順位付き改善計画を作成してください。」
+- **差分診断:** 「前回のギャップ分析以降の変更を確認し、解消した課題、新しいギャップ、残存リスクを整理してください。」
+- **特定領域:** 「Performance / Robustness / Security by Designの観点から現行アーキテクチャのギャップを分析してください。」
+- **課題との照合:** 「分析結果を既存の課題表と照合し、重複を避けて追加候補を提示してください。課題表は変更しないでください。」
 
 ## 公式Skill名と既存インストール
 

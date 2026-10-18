@@ -43,6 +43,7 @@
 | 利用者タスクから機能を設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md) |
 | 性能・堅牢性・依存境界・セキュリティを検討する | [設計原則](common/ai-assisted-development.md)と個別の `devconcord-design-performance`、`devconcord-design-robustness`、`devconcord-design-replaceability`、`devconcord-design-security` [Skills](agent-skills.md#skills) |
 | READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`devconcord-documentation-architecture` Skill](../.agents/skills/devconcord-documentation-architecture/SKILL.md) |
+| DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](../.agents/skills/devconcord-gap-analysis/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
 | レビュー基準を作る・調べる | [`devconcord-generate-agent-guidance` Skill](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEWS.md) |
 | 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`devconcord-bootstrap-from-design` Skill](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |

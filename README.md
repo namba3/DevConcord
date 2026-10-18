@@ -13,6 +13,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | はじめてDevConcordを使う | [導入と運用ガイド](docs/getting-started.md) |
 | 設計書から新しいプロジェクトを始める | [`devconcord-bootstrap-from-design` Skill](.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |
 | 既存プロジェクトへ規約を選んで導入する | [`devconcord-adopt-guidance` Skill](.agents/skills/devconcord-adopt-guidance/SKILL.md) |
+| DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](.agents/skills/devconcord-gap-analysis/SKILL.md) |
 | 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
 | 資産・脅威・信頼境界からセキュリティ設計する | [`devconcord-design-security` Skill](.agents/skills/devconcord-design-security/SKILL.md)と[Security by Design](docs/common/ai-assisted-development.md#97-security-by-design) |
@@ -28,7 +29,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 - DDD、Self-documenting Code、SDD、DbC、TDD、Performance / Robustness / Replaceability / Security by Design等の開発・設計ガイド
 - 要求仕様、ADR、課題管理、リスク管理、完成度評価の規約とテンプレート
 - READMEを含む文書設計、導入、更新、検証のための共通指針
-- `AGENTS.md`・`REVIEWS.md`生成、Bootstrap、Adoption、Synchronization用Agent Skills
+- `AGENTS.md`・`REVIEWS.md`生成、Bootstrap、Adoption、Synchronization、品質ギャップ分析用Agent Skills
 - 複数エージェントで再利用するAgent Skillsと、安全な配布・同期スクリプト
 
 ## 適用方針
