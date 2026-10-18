@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from html.parser import HTMLParser
@@ -78,11 +79,21 @@ def fail(errors: list[str]) -> int:
     return 0
 
 
-def relative_path(path: Path) -> str:
+def _relative_to_root(path: Path, root: Path) -> Path | None:
     try:
-        return str(path.relative_to(ROOT))
+        absolute_path = os.path.abspath(path)
+        absolute_root = os.path.abspath(root)
+        common = os.path.commonpath((absolute_path, absolute_root))
     except ValueError:
-        return str(path)
+        return None
+    if os.path.normcase(common) != os.path.normcase(absolute_root):
+        return None
+    return Path(os.path.relpath(absolute_path, absolute_root))
+
+
+def relative_path(path: Path) -> str:
+    relative = _relative_to_root(path, ROOT)
+    return relative.as_posix() if relative is not None else str(path)
 
 
 def read_utf8(path: Path, purpose: str, errors: list[str]) -> str | None:
@@ -211,41 +222,42 @@ def anchors_for_target(path: Path, text: str) -> set[str]:
 def check_links(files: list[Path]) -> list[str]:
     errors: list[str] = []
     cache: dict[Path, tuple[str, set[str]]] = {}
+    repository_root = ROOT.resolve()
 
     for source in files:
+        source_label = relative_path(source)
         source_text = read_utf8(source, "Markdown links", errors)
         if source_text is None:
             continue
         destinations, unresolved = markdown_link_destinations(source_text)
         for label in unresolved:
-            errors.append(f"{source.relative_to(ROOT)}: undefined link reference {label!r}")
+            errors.append(f"{source_label}: undefined link reference {label!r}")
         for destination in destinations:
             try:
                 parsed = urlsplit(destination)
             except ValueError:
                 errors.append(
-                    f"{source.relative_to(ROOT)}: invalid link destination {destination!r}"
+                    f"{source_label}: invalid link destination {destination!r}"
                 )
                 continue
             if parsed.scheme or parsed.netloc:
                 continue
 
-            relative_path = unquote(parsed.path)
+            link_path = unquote(parsed.path)
             try:
-                target = (source.parent / relative_path).resolve() if relative_path else source
+                target = (source.parent / link_path).resolve() if link_path else source
             except (OSError, RuntimeError) as error:
                 errors.append(
-                    f"{source.relative_to(ROOT)}: cannot resolve link target "
+                    f"{source_label}: cannot resolve link target "
                     f"{destination!r} ({type(error).__name__})"
                 )
                 continue
-            try:
-                target.relative_to(ROOT)
-            except ValueError:
-                errors.append(f"{source.relative_to(ROOT)}: link escapes repository {destination}")
+            target_relative = _relative_to_root(target, repository_root)
+            if target_relative is None:
+                errors.append(f"{source_label}: link escapes repository {destination}")
                 continue
             if not target.exists():
-                errors.append(f"{source.relative_to(ROOT)}: missing link target {destination}")
+                errors.append(f"{source_label}: missing link target {destination}")
                 continue
             if not parsed.fragment:
                 continue
@@ -258,8 +270,8 @@ def check_links(files: list[Path]) -> list[str]:
                     cache[target] = (text, anchors_for_target(target, text))
             if target in cache and unquote(parsed.fragment) not in cache[target][1]:
                 errors.append(
-                    f"{source.relative_to(ROOT)}: missing anchor {parsed.fragment!r} in "
-                    f"{target.relative_to(ROOT)}"
+                    f"{source_label}: missing anchor {parsed.fragment!r} in "
+                    f"{target_relative.as_posix()}"
                 )
     return errors
 

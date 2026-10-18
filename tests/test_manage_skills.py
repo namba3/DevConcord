@@ -16,6 +16,12 @@ from unittest.mock import patch
 from scripts import agent_skills, manage_skills
 
 
+def paths_equal(left: Path, right: Path) -> bool:
+    return os.path.normcase(os.path.abspath(left)) == os.path.normcase(
+        os.path.abspath(right)
+    )
+
+
 class SkillManagementTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -299,7 +305,7 @@ Version: {version}
         real_write = manage_skills._write_atomically
 
         def interrupt_manifest(path: Path, text: str) -> None:
-            if path == manifest_path:
+            if paths_equal(path, manifest_path):
                 raise KeyboardInterrupt()
             real_write(path, text)
 
@@ -678,7 +684,7 @@ Version: {version}
         real_write = manage_skills._write_atomically
 
         def interrupt_manifest(path: Path, text: str) -> None:
-            if path == manifest_path:
+            if paths_equal(path, manifest_path):
                 raise KeyboardInterrupt()
             real_write(path, text)
 
@@ -1052,7 +1058,7 @@ Version: {version}
         original_read_text = Path.read_text
 
         def denied_reference(path: Path, *args, **kwargs):
-            if path == reference_path:
+            if paths_equal(path, reference_path):
                 raise PermissionError("injected permission denial")
             return original_read_text(path, *args, **kwargs)
 
@@ -2047,7 +2053,7 @@ Version: {version}
         write_atomically = manage_skills._write_atomically
 
         def fail_manifest_write(path: Path, text: str) -> None:
-            if path == manifest_file:
+            if paths_equal(path, manifest_file):
                 raise OSError("simulated manifest failure")
             write_atomically(path, text)
 
@@ -2088,7 +2094,7 @@ Version: {version}
         real_replace = manage_skills.os.replace
 
         def interrupt_replace(source: Path, destination: Path) -> None:
-            if Path(destination) == installed_file.parent:
+            if paths_equal(Path(destination), installed_file.parent):
                 raise KeyboardInterrupt()
             real_replace(source, destination)
 
@@ -2123,7 +2129,7 @@ Version: {version}
         real_write = manage_skills._write_atomically
 
         def interrupt_manifest(path: Path, text: str) -> None:
-            if path == manifest_path:
+            if paths_equal(path, manifest_path):
                 raise KeyboardInterrupt()
             real_write(path, text)
 
@@ -2204,7 +2210,7 @@ Version: {version}
 
         def interrupt_after_manifest(path: Path, text: str) -> None:
             real_write(path, text)
-            if path == manifest_path:
+            if paths_equal(path, manifest_path):
                 raise KeyboardInterrupt()
 
         with patch.object(manage_skills, "_write_atomically", side_effect=interrupt_after_manifest):

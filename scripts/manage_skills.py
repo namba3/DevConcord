@@ -547,6 +547,7 @@ def _git(root: Path, *arguments: str, check: bool = True) -> subprocess.Complete
             ["git", "-C", str(root), *arguments],
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False,
         )
     except OSError as error:
