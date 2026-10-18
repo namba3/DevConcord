@@ -41,4 +41,4 @@ If the common Skill cannot be selected, run the configured source checkout's `sc
 
 ## Completion report
 
-Report the actual target start state, input files and unread portions, assumptions and conflicts, scope, changed outputs, checks run and results, checks not run, and unresolved issues. Preserve the target's Git and worktree state except for the requested additions.
+Report the actual target start state, input files and unread portions, assumptions and conflicts, scope, changed outputs, checks run and results, checks not run, and unresolved issues. When unresolved design work warrants it, include scoped follow-up Skill recommendations under the contract in `docs/common/ai-assisted-development.md` §17.3. This recommendation is outside Bootstrap scope and does not run or install a Skill. Preserve the target's Git and worktree state except for the requested additions.

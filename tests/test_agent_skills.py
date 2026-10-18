@@ -331,6 +331,9 @@ description: Use this Skill for a focused task.
         workflow_text = (skill / "references" / "workflow.md").read_text(
             encoding="utf-8"
         )
+        common_guidance = (
+            repository_root / "docs" / "common" / "ai-assisted-development.md"
+        ).read_text(encoding="utf-8")
 
         self.assertIn("Required safety checks", skill_text)
         self.assertIn("references/workflow.md", skill_text)
@@ -339,6 +342,36 @@ description: Use this Skill for a focused task.
         self.assertIn("guidance-provenance.md", workflow_text)
         self.assertIn("完成度10軸とSDS", workflow_text)
         self.assertIn("同じ入力・範囲で再実行", workflow_text)
+        for expected in (
+            "実施推奨",
+            "後続フェーズで推奨",
+            "現状で十分",
+            "対象外",
+            "判断保留",
+            "devconcord-ux-functional-design",
+            "devconcord-design-performance",
+            "devconcord-design-robustness",
+            "devconcord-design-replaceability",
+            "devconcord-design-security",
+            "devconcord-documentation-architecture",
+            "devconcord-gap-analysis",
+            "自動実行・自動インストール",
+            "専門Skillの実行結果を確認するまでは",
+        ):
+            with self.subTest(common_recommendation_contract=expected):
+                self.assertIn(expected, common_guidance)
+        for expected in (
+            "後続の設計Skillを判断する",
+            "§17.3",
+            "Foundation / Scaffold / Initial Implementation",
+            "Bootstrap中に分析します",
+            "Bootstrap範囲外",
+            "期待成果物・検証",
+            "自動実行・自動インストール",
+        ):
+            with self.subTest(bootstrap_recommendation=expected):
+                self.assertIn(expected, workflow_text)
+        self.assertIn("§17.3", skill_text)
 
     def test_adoption_workflow_reference_preserves_provenance_and_existing_records(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
