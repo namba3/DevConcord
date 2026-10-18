@@ -72,7 +72,15 @@ python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
 
 CLIは `~/.devconcord/config.json` の `source_root` を使い、設定されたローカルcheckoutから資料を読みます。`installed` は `--skill` で指定した要求元Skillのmanifest記録を使います。共通参照Skill自身や別Skillのコミットへ代替してはいけません。User Scopeでは `--target` なしが既定です。Project Scopeでは `--scope project --target <target-repository>` を追加し、そのプロジェクトのmanifestを使います。各Scopeのmanifestは独立しています。
 
-`--revision head` はcheckoutの現在のコミット、`--revision working-tree` は指定したcheckoutの作業ツリー（未コミット・未追跡内容を含む）を明示的に参照します。いずれもネットワークから取得しません。working-treeを使った場合は未コミット内容を含む可能性を報告します。CLIは設定、source identity、manifest、導入Skillの未変更状態、コミット、参照パスとファイルを検証して、成功時に参照元と版を出力します。
+| revision | 参照内容と保証 |
+|---|---|
+| `installed`（既定） | 要求元Skillのmanifestに記録されたコミットから読みます。導入先Skillのハッシュと、そのコミットのGit Skillツリーハッシュをmanifestと照合し、clean sourceであること、source identity、Git履歴を検証します。`source_dirty=true`は厳密な版固定を証明できないため拒否します。 |
+| `head` | 設定済みcheckoutの現在のコミットから読みます。未コミット変更を含まず、導入済みSkillとの版一致は保証しません。 |
+| `working-tree` | checkoutの現在の作業ツリーから読みます。未コミット・未追跡の内容を含むことがあります。導入済みSkillとの版一致は保証しません。 |
+
+全モードで設定とパス許可範囲を検証し、参照元のsource identityを出力します。`installed`ではmanifestのidentityを設定済みsourceと照合します。Gitコミットを読むモードは、そのコミットのtreeで `100644` / `100755` の通常ファイルだけを許可し、symlink・submodule・directoryを拒否します。`working-tree`はファイルシステム上のsymlinkとcheckout外への脱出を拒否します。どのモードもネットワークから資料を取得しません。成功時のstdoutには参照元・版・パス・本文が含まれます。失敗時は非ゼロ終了とstderrの診断を返し、stdoutに成功メタデータや部分本文を出しません。
+
+この照合はmanifest、導入先Skill、設定済みローカルGit履歴の内部整合性を確認します。manifest全体とその記録を協調して改ざんする攻撃者への暗号学的な真正性保証ではありません。また `source_tree_sha256` はSkillツリーの内容を照合するため、Skill本体が同じで資料だけが異なる複数コミットを区別しません。manifestの `source_commit` とGit履歴検証がコミット選択の記録となりますが、manifest自体を信頼できない場合はこの参照機構の保証範囲外です。
 
 設定ファイル欠落・不正、checkoutやスクリプトの欠落、要求元Skillの未導入、壊れたmanifest、ローカルSkill編集、source identity不一致、コミット欠落、ファイル欠落、権限不足、無効なパス、またはローカルファイルへアクセスできない実行環境では参照に失敗します。HEADやオンライン最新版へ黙って切り替えず、取得していない資料を読んだと主張してはいけません。必須資料なら安全に停止し、任意資料なら失敗を報告して自己完結したワークフローを続けられるか判断します。CLIの具体的な診断と設定手順は `manage_skills.py` とこのガイドを参照してください。
 

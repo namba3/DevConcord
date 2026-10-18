@@ -24,15 +24,29 @@ source, manifest, revision, and path validation; do not reproduce those checks.
    Do not assume the current working directory is the source checkout.
 3. Pass the requesting Skill's name to `--skill`. Never substitute
    `devconcord-reference` or another Skill to obtain a missing installation
-   record. The requesting Skill's installed commit is the default source
-   revision, even when this Skill was installed from a different commit.
+   record. The `installed` revision uses the requesting Skill's recorded
+   source commit, even when this Skill was installed from a different commit.
+   The CLI checks the installed Skill against its manifest and the Git Skill
+   tree at that commit. Dirty-source installations cannot prove an exact
+   committed version and are rejected for `installed`; select `head` or
+   `working-tree` explicitly only when that different basis is intended.
+   `head` and `working-tree` do not promise a match with the installed Skill.
 4. Return the CLI's verified source identity, commit or working-tree status,
    requested path, and retrieved contents. For `working-tree`, report that
-   uncommitted or untracked source content may be included.
+   uncommitted or untracked source content may be included. Git revisions
+   allow only regular files in the selected commit tree; `working-tree`
+   rejects symlinks and paths that escape the configured checkout.
 5. On failure, report the actual diagnostic. Do not claim the document was
    read, silently switch to `head`, another Skill's commit, or an online copy.
-   Tell the requesting Skill whether the missing material is required or
-   optional so it can stop safely or continue its self-contained workflow.
+   The CLI returns no document content or success metadata on failure. Tell
+   the requesting Skill whether the missing material is required or optional
+   so it can stop safely or continue its self-contained workflow.
+
+The CLI verifies consistency between the manifest, installed Skill, and local
+Git history; this is not cryptographic authentication of a fully altered
+manifest. A Skill tree hash also cannot distinguish commits that contain the
+same Skill tree but different documents. See `docs/agent-skills.md` in the
+configured source checkout for the exact guarantees and limits.
 
 Example for a Bootstrap request:
 
