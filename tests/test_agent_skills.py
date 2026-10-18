@@ -413,6 +413,51 @@ description: Use this Skill for a focused task.
             with self.subTest(adoption_follow_up=expected):
                 self.assertIn(expected, workflow_text)
 
+    def test_post_bootstrap_adoption_skill_recommendation_scenarios_are_documented(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        integration = (
+            repository_root / "tests" / "integration" / "README.md"
+        ).read_text(encoding="utf-8")
+        getting_started = (
+            repository_root / "docs" / "getting-started.md"
+        ).read_text(encoding="utf-8")
+        skills_guide = (
+            repository_root / "docs" / "agent-skills.md"
+        ).read_text(encoding="utf-8")
+        docs_index = (repository_root / "docs" / "README.md").read_text(
+            encoding="utf-8"
+        )
+
+        for expected in (
+            "Bootstrap / Adoption後の設計Skill推奨シナリオ",
+            "小規模オフラインCLI",
+            "GUI中心のデスクトップアプリ",
+            "大量データ処理アプリ",
+            "ファイル操作アプリ",
+            "UI交換予定のアプリ",
+            "認証・機密情報を扱うサービス",
+            "ドキュメント主体のリポジトリ",
+            "既に設計が整理されたプロジェクト",
+            "Adoption直後で適用状況が不明",
+            "有効な既存Gap Analysisレポートあり",
+            "Bootstrap中に重大な設計課題",
+            "専門Skillを実行できない環境",
+            "課題表・リスク台帳・provenanceに推奨記録を追加しない",
+            "実際のエージェント評価を決定的なユニットテストと別に記録",
+        ):
+            with self.subTest(recommendation_scenario=expected):
+                self.assertIn(expected, integration)
+
+        for document_name, text in (
+            ("getting-started", getting_started),
+            ("agent-skills", skills_guide),
+            ("docs-index", docs_index),
+        ):
+            with self.subTest(document=document_name):
+                self.assertIn("AI支援開発ガイド", text)
+        self.assertIn("状態と候補の判断基準", skills_guide)
+        self.assertIn("Bootstrap / Adoption後の専門Skill推奨", docs_index)
+
     def test_sync_workflow_reference_separates_document_and_skill_updates(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skill = repository_root / ".agents" / "skills" / "devconcord-sync-guidance"

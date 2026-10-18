@@ -90,6 +90,8 @@ cat ~/projects/devconcord/.agents/skills/devconcord-bootstrap-from-design/refere
 
 **期待する成果物:** 合意した範囲のREADME、設計・要求資料、最小限の実装骨格・検証資産などです。Git初期化や技術スタックは設計と対象の状態に基づき判断します。生成された記述が設計書・実装と一致するか、人が確認してください。
 
+Bootstrap完了時には、既に行った初期設計を繰り返さず、解決できなかった重要な設計事項がある場合だけ後続Skillを根拠付きで提案します。後から直すと危険・高コストになる設計判断は後続へ先送りせずBootstrap中に扱います。推奨Skillは自動実行・インストールされません。共通の判断条件は[AI支援開発ガイド](common/ai-assisted-development.md)を参照してください。
+
 ## 4. 既存リポジトリへAdoptionする（Codex CLI）
 
 **前提:** `my-app/` を既存チェックアウトとして用意し、未コミット変更を確認して保持します。既存プロジェクトにはBootstrapではなくAdoptionを使います。
@@ -111,6 +113,8 @@ cat ~/projects/devconcord/.agents/skills/devconcord-adopt-guidance/references/wo
 ```
 
 **期待する成果物:** 調査と合意に基づく必要最小限の共通資料、`AGENTS.md` / `REVIEWS.md`、採用内容を示すprovenance等です。DevConcordのSkills manifestと対象の `guidance-provenance.md` は別の記録です。適用後に差分、既存規約、リンク、provenance、対象固有の検証を確認します。
+
+共通規約の採用は、対象の要求・設計・実装がその原則に適合していることを意味しません。Adoption時に実際に確認したギャップから、必要なら横断評価用の`devconcord-gap-analysis`または専門Skillを提案します。既に有効なギャップ分析がある場合、Full Assessmentを無条件に繰り返しません。未調査の実装品質は適合・不適合とせず、追加評価が必要ならその範囲を示します。推奨Skillは自動実行・インストールされません。判断基準は[AI支援開発ガイド](common/ai-assisted-development.md)を参照してください。
 
 ## 5. VS Code + Codex拡張でBootstrap / Adoptionする
 
