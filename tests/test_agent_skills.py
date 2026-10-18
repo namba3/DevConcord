@@ -64,6 +64,22 @@ description: Use this Skill for a focused task.
         self.assertIn("documentation-architecture", prompts_index)
         self.assertIn("documentation-design.md", docs_index)
 
+    def test_bootstrap_workflow_reference_preserves_safety_and_scope_contracts(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill = repository_root / ".agents" / "skills" / "bootstrap-from-design"
+        skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
+        workflow_text = (skill / "references" / "workflow.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("Required safety checks", skill_text)
+        self.assertIn("references/workflow.md", skill_text)
+        self.assertIn("unborn HEAD", workflow_text)
+        self.assertIn("Git初期化済みで履歴または既存成果物がある", workflow_text)
+        self.assertIn("guidance-provenance.md", workflow_text)
+        self.assertIn("完成度10軸とSDS", workflow_text)
+        self.assertIn("同じ入力・範囲で再実行", workflow_text)
+
     def test_reader_navigation_connects_quick_start_and_skill_operations(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         readme = (repository_root / "README.md").read_text(encoding="utf-8")

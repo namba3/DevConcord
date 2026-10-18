@@ -5,44 +5,24 @@ description: "Initialize a new software repository from design documents, requir
 
 # Design-to-Repository Bootstrap
 
-## Purpose
+Build a small, verifiable repository foundation from design inputs. Use for a new project; use `adopt-guidance` for an existing project's first guidance adoption and `sync-guidance` for updates to guidance already adopted.
 
-Turn design inputs into a small, buildable and verifiable repository foundation. This is not a code-generation dump or an existing-project guidance adoption.
+## Required safety checks
 
-## When to use / not use
-
-- Use for a new repository initialized from requirements, architecture, UI/UX, quality, or technical-selection documents.
-- Do not use to add common rules to an existing project; use the repository's `adopt-guidance` skill/workflow.
-- Do not use to update already adopted shared guidance; use `sync-guidance`.
-- If the target already contains meaningful source or project records, inspect and preserve them; stop before conflicting or destructive changes.
-
-## Inputs
-
-Identify all design-document paths, target directory, project name and constraints when known, bootstrap scope, and user-specific instructions. Bootstrap scope defaults to **Scaffold**: the smallest meaningful buildable/testable skeleton. The available scopes are **Foundation** (development foundation only), **Scaffold**, and **Initial Implementation** (only explicitly requested initial features).
+- Inspect the target, its files, Git history, index, remotes, and worktree before editing. Distinguish an empty directory, explicitly listed design files, verified DevConcord Skills, an unborn repository, and a repository with history or implementation.
+- Preserve existing files, design inputs, history, remotes, and user changes. Never reinitialize an existing Git repository, push, create a remote, or commit unless explicitly requested. If the start state or a conflict is uncertain, stop before destructive work.
+- A preinstalled Skill alone does not make a target an existing project only when its schema 2 manifest and every package hash validate, there are no other files or unlisted Skills, and any Git repository has no history, remotes, or unrelated changes. Otherwise preserve and stop or work additively without treating it as empty.
+- Do not invent requirements, technical choices, licenses, commands, numeric targets, implemented features, tests, or guarantees. Do not claim to have read inaccessible design inputs or references.
+- Keep design-input provenance separate from shared-guidance provenance. Do not copy design inputs without permission and redistribution rights.
 
 ## Workflow
 
-1. Inspect target files, Git state, remotes, and existing rules before editing. Distinguish an empty uninitialized directory; a directory containing only explicitly listed, readable design-input files; verified DevConcord Skills only; those Skills plus only the listed design inputs; an unborn Git repository; a repository with history; and an implemented project. Preserve all inputs, files, history, staged/working changes, and remotes. Run `git init` only for an empty uninitialized target or when explicitly authorized; never reinitialize an existing `.git`, push, create a hosted repository, or commit without explicit instruction. A preinstalled DevConcord Skill is not by itself a reason to reject a new target: treat it as a safe bootstrap state only when a valid schema 2 `.devconcord/skills-manifest.json` accounts for every file under `.agents/skills/` and `.claude/skills/`, all recorded tree hashes match, no other project files or untracked Skills exist beyond explicitly listed design inputs, and any `.git` has no history, remotes, or unrelated staged/working changes. Design-input-only files must be preserved and never overwritten, moved, or removed. An unborn repository may be used additively only when it has no remotes or staged/unrelated changes. A repository with existing commits is never an empty target; preserve it and make only non-conflicting additions, otherwise stop. If any condition is uncertain, preserve the target and stop; prefer bootstrapping before installing Skills or running the Skill from an external work context.
-2. Read each input using available tools. For PDF/DOCX or image-based material, report what was actually extracted and what remains unread; do not invent content or install an extractor without approval. Record source filename, version/date/commit and section/page where available. Keep design-source provenance distinct from shared-guidance provenance. Do not copy design documents without permission to redistribute and store them.
-3. Analyze purpose/scope, users and tasks, platform/toolchain, selected technology, use cases/domain, contracts/invariants, dependencies, quality and security requirements, verification/release conditions, contradictions, unknowns, assumptions and risks. Preserve source references. Resolve document precedence only when the documents state it. Ask about consequential contradictions; proceed only with reversible foundation work where safe.
-4. Convert evidence into a lightweight trace: source section → TASK/REQ/NFR → architecture/ADR → initial modules and tasks → acceptance criteria → tests/evidence. Use existing project tables and avoid a second tracking ledger. Do not choose an unprovided license or invent numeric targets.
-5. Shape the initial structure to the selected stack and scope. Keep core use cases independently testable. Isolate UI/OS/storage/network dependencies only where change value justifies the abstraction; preserve semantic contracts. Avoid unused interfaces, duplicate implementations, and one-to-one wrappers.
-6. Apply user-centered functional design to actual user touchpoints (GUI, CLI, service, library): derive operations, state/feedback, asynchronous progress/cancellation, errors/recovery and accessibility only as relevant. Design performance around workload and resource flow. Design robustness around invariants, partial failure, atomicity, idempotency, cancellation and recovery. State what is a future constraint versus an implemented behavior.
-7. Design the documentation set as part of the initial architecture: identify readers and tasks; decide which user, developer, API, operations, requirements and decision documents are needed; define the README's role and verified information; respect the project's publishing, language and naming conventions; identify canonical sources, update triggers and checks. Keep a small project in a small set of pages; add audience-specific navigation or reference pages only when useful. Do not invent functionality, commands, license, documentation site, or unverified claims.
-8. Create only in-scope outputs: build/development setup, README based on the actual scaffold and verified commands, requirements/ADR/project notes, the existing issue register, CI/test setup, `AGENTS.md` / `REVIEWS.md` as useful, and the smallest meaningful entry point and smoke test for Scaffold. Never make a stub report success for an unimplemented feature. Reuse existing repository-specific instruction/review generation workflows when available.
-9. Validate changed paths, source links, build/syntax, tests, dependency boundaries and configuration as applicable. Check reader entry points, internal links, references to actual commands/features, and any existing docs-site build. Re-run against the same inputs and ensure it creates no unnecessary differences or duplicate records. Report executed checks separately from future checks.
+Read [the detailed Bootstrap workflow](references/workflow.md) before carrying out the task. Follow its input review, scope selection, requirement traceability, documentation architecture, minimal implementation, validation, rerun, and reporting steps. Read additional reference files only when needed.
 
-## Safety and completion
+Use the **Foundation**, **Scaffold** (default), or **Initial Implementation** scope requested by the user. Implement only the agreed scope; a Bootstrap result does not imply feature completion.
 
-Stop before destructive changes or consequential unresolved design decisions. Preserve existing Git history and worktree. Report inputs and unread portions, starting state, decisions/assumptions, changed outputs, checks and results, unresolved issues and residual risks. Bootstrap completion does not imply feature completion or verified quality claims.
+When detailed DevConcord guidance is needed, use [the version-pinned local reference procedure](references/local-devconcord.md). The workflow remains usable without that checkout; do not claim an unread guide was applied.
 
-When detailed DevConcord templates or rationale are needed, follow the [version-pinned local reference procedure](references/local-devconcord.md). The bootstrap workflow remains usable without that checkout; do not claim an unread guide was applied.
+## Completion report
 
-## References
-
-- [Bootstrap workflow prompt](https://github.com/namba3/DevConcord/blob/main/prompts/bootstrap-from-design.md)
-- [Requirements template](https://github.com/namba3/DevConcord/blob/main/docs/application-design/templates/requirements.md)
-- [Issue tracking and quality rules](https://github.com/namba3/DevConcord/blob/main/docs/work-management/issue-tracking.md)
-- [Documentation design guide](https://github.com/namba3/DevConcord/blob/main/docs/common/documentation-design.md)
-
-The links below follow `main` and can be newer than this installed Skill. For version-matched detail, read this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` in the DevConcord links with that full SHA. These optional references may require network access and do not replace the self-contained workflow above; if the revision is unavailable, do not assume the linked guide matches.
+Report the actual target start state, input files and unread portions, assumptions and conflicts, scope, changed outputs, checks run and results, checks not run, and unresolved issues. Preserve the target's Git and worktree state except for the requested additions.
