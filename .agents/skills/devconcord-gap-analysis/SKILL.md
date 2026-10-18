@@ -64,10 +64,38 @@ python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
 ```
 
 Pass one repository-relative document path per CLI invocation. Do not silently
-switch revisions or use online content as a substitute. If a key criterion
-cannot be retrieved, limit the assessment claim and report the missing
-criterion and affected areas as unassessed. Do not claim comprehensive
-DevConcord alignment without the relevant source material.
+switch revisions or use online content as a substitute. Choose required
+criteria from the requested assessment claims and target areas; material that
+is optional for one scope may be essential for another. For example, a
+performance-only assessment need not retrieve detailed UI/UX guidance, while a
+completion assessment needs the authoritative existing ten-axis definitions.
+Do not reconstruct unavailable formal criteria from memory or general
+practice.
+
+Separate a DevConcord conformance judgment from factual observations about the
+target. Apply these failure rules:
+
+- If all criteria required for the requested scope are available, assess
+  normally. If only optional references fail, record the failure and continue.
+- If required criteria for one area are unavailable, do not judge that area's
+  DevConcord conformance. Continue other areas whose criteria and evidence are
+  available.
+- If core criteria needed for a comprehensive assessment are unavailable, do
+  not present a comprehensive DevConcord assessment. You may still report
+  safely collected target facts, completed investigations, and unassessed
+  areas.
+- If source identity, recorded commit, or reference verification fails, stop
+  that reference operation. Do not fall back to `HEAD`, a working tree,
+  GitHub `main`, or another Skill's commit. If safe reading cannot be
+  established, stop the unsafe read and report diagnostics.
+
+For a limited assessment, state which criteria were obtained and which failed,
+the failure reason and affected areas, which areas could and could not receive
+conformance judgments, what target investigations were and were not performed,
+and what additional information or recovery is needed. Label a missing
+assessment **Not assessed**; do not call it a gap or nonconformance. Limit the
+overall conclusion to the evaluated scope and never present a partial result as
+a complete assessment.
 
 Select reference material by scope. Typical sources include:
 
@@ -272,6 +300,7 @@ above. For Project Scope, also pass `--scope project --target
 <target-repository>`. If the common Skill cannot be selected, run the same CLI
 directly with the requesting Skill name. Do not silently switch revisions or
 claim unread material was applied. If a required reference cannot be read, stop
-safely; if it is optional, report the failure and continue only within the
-remaining evidence. If required criteria are unavailable, report the
-limitation and reduce the assessment claim.
+that reference operation and follow the partial-assessment contract in
+**Retrieve only relevant DevConcord criteria**. If source verification fails or
+safe reading cannot be established, stop the unsafe operation. Do not silently
+change revision, source, or Skill commit.

@@ -22,6 +22,9 @@ fill a template.
 - Criteria documents actually read:
 - Checks actually run:
 - Constraints and unassessed areas:
+- Partial reference assessment (when applicable): criteria obtained/missing,
+  failure reason, affected areas, conformance judgments available/unavailable,
+  investigations performed/not performed, recovery or information needed:
 
 ## 2. Executive summary
 
@@ -67,6 +70,12 @@ fill a template.
 ## 6. Strengths and evidence of conformance
 
 ## 7. Unassessed areas and residual risks
+
+If reference failures limit the assessment, distinguish unavailable DevConcord
+criteria from target facts already observed. Name the missing references and
+reasons, affected areas, areas assessed and not assessed, work performed and
+omitted, and next recovery step. Do not label unassessed areas as gaps or
+nonconformance, and limit the overall conclusion to the evaluated scope.
 
 ## 8. Checks performed and results
 

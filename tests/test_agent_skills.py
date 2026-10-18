@@ -110,6 +110,11 @@ description: Use this Skill for a focused task.
             "Mark a finding **Resolved** only when evidence",
             "relationships need not be one-to-one",
             "criteria revision change can require",
+            "If only optional references fail",
+            "do not judge that area's",
+            "core criteria needed for a comprehensive assessment",
+            "Do not fall back to `HEAD`, a working tree",
+            "**Not assessed**; do not call it a gap",
             "Requirements, domain, and architecture",
             "Performance:",
             "Robustness:",
@@ -142,6 +147,8 @@ description: Use this Skill for a focused task.
             "Previous and current DevConcord criteria identity/revision",
             "one-to-many or many-to-one",
             "Added tests alone are not proof",
+            "Partial reference assessment",
+            "Do not label unassessed areas as gaps",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, report_text)
@@ -209,6 +216,18 @@ description: Use this Skill for a focused task.
             "DevConcord基準のrevision変更",
             "同一性を確定できない",
             "既存課題IDあり",
+            "任意資料の取得失敗",
+            "特定領域の必須基準欠落",
+            "中核基準の取得失敗",
+            "参照元rootの欠落",
+            "manifestに要求元Skillがない",
+            "記録commitの欠落",
+            "source identity不一致",
+            "Project Scope参照失敗",
+            "CLIフォールバック",
+            "異なるrevisionへの暗黙切替禁止",
+            "未評価とギャップの区別",
+            "限定評価の保証範囲",
         )
         for expected in expected_scenarios:
             with self.subTest(scenario=expected):
@@ -390,9 +409,14 @@ description: Use this Skill for a focused task.
                 self.assertIn("--revision installed", text)
                 self.assertIn("--scope project --target", text)
                 self.assertIn("If the common Skill cannot be selected", text)
-                self.assertIn("Do not silently switch revisions", text)
-                self.assertIn("If a required reference cannot be read, stop", text)
-                self.assertIn("if it is optional", text)
+                if skill_dir.name == "devconcord-gap-analysis":
+                    self.assertIn("Do not silently switch revisions", text)
+                    self.assertIn("stop\nthat reference operation", text)
+                    self.assertIn("partial-assessment contract", text)
+                else:
+                    self.assertIn("Do not silently switch revisions", text)
+                    self.assertIn("If a required reference cannot be read, stop", text)
+                    self.assertIn("if it is optional", text)
                 self.assertFalse(
                     (skill_dir / "references" / "local-devconcord.md").exists()
                 )
