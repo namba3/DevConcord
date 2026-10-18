@@ -12,7 +12,7 @@ description: >
 Choose the smallest mode that matches the request:
 
 - `agents`: create or update only `AGENTS.md`.
-- `reviews`: create or update only `REVIEWS.md`.
+- `reviews`: create or update `REVIEWS.md`. Read `AGENTS.md` to preserve its contract; do not change it as a side effect. If it lacks the required instruction to read `REVIEWS.md` before reviewing, make only that narrow safety correction and report it.
 - `both`: create or update both files consistently, writing `REVIEWS.md` first and ensuring `AGENTS.md` tells reviewers to read it.
 
 Infer the mode from the user's request. If it is ambiguous, work only on the clearly requested file and report the other as out of scope.
@@ -23,6 +23,8 @@ Infer the mode from the user's request. If it is ambiguous, work only on the cle
 - Preserve valid existing instructions, project-specific rules, issue/requirement IDs, and unrelated edits. Integrate changes instead of replacing unexamined files.
 - Keep `AGENTS.md` concise and operational; keep repository-specific review findings in `REVIEWS.md`. Do not copy a generic rulebook or add unsupported vendor-specific invocation syntax.
 - Preserve the distinction between applying relevant design principles, recommending a specialist Skill, and executing it. Derive any AGENTS.md guidance from the target's actual design risks and verified Skill availability; never require every Skill or imply an unavailable Skill is installed. In REVIEWS.md, tie an optional Skill recommendation to a concrete finding and impact, without substituting it for the finding or its remediation.
+- Check Project Scope Skill files in the target's actual discovery locations. Check User Scope only through the current environment's verifiable agent discovery locations and installed state; installed files alone do not prove an agent discovers or selects them, and availability in one user environment does not apply to CI or other users. Never install Skills as part of guidance generation.
+- A DevConcord source update does not update existing target guidance. Report that users need to install or synchronize the updated generator Skill and invoke it in the target repository to regenerate or integrate guidance; never mutate target repositories outside the requested scope.
 - Do not change source code, settings, or tests as a side effect. Report checks actually run and those not run.
 
 ## Workflow

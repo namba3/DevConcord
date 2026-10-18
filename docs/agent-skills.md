@@ -24,6 +24,8 @@
 
 リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用とSkill活用判断、`REVIEWS.md` は具体的な品質基準と根拠付き指摘を担います。原則を考慮してもSkill実行は自動的に必要にならず、詳細検討が有益な未解決事項がある場合に、利用可能性を確認した専門Skillを候補にできます。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
 
+導入先の `AGENTS.md` / `REVIEWS.md` は `devconcord-generate-agent-guidance` の `agents` / `reviews` / `both` モードで対象リポジトリ上から生成・更新できます。DevConcord本体や生成Skillを更新しても、既存導入先の指示ファイルは自動更新されません。更新された生成手順を使う場合は、必要なScopeへSkillをインストールまたは同期した後、対象リポジトリで明示的に生成Skillを実行してください。Skillの配置だけで対象文書を書き換えることはありません。
+
 Bootstrap後は初期設計で解決できなかった重要事項に限り、Adoption後は既に確認した証拠からGap Analysisまたは関連する専門Skillを必要に応じて推奨します。実施状態、対象、理由、時期、期待成果物を根拠とともに示し、推奨だけでSkillを実行・導入したり、作業範囲を拡張したりしません。状態と候補の判断基準は[AI支援開発ガイドの§17.3](common/ai-assisted-development.md)を参照してください。
 
 依頼例:

@@ -554,12 +554,52 @@ description: Use this Skill for a focused task.
         for mode in ("`agents`", "`reviews`", "`both`"):
             self.assertIn(mode, skill_text)
         self.assertIn("writing `REVIEWS.md` first", skill_text)
+        self.assertIn("do not change it as a side effect", skill_text)
+        self.assertIn("only that narrow safety correction", skill_text)
+        self.assertIn("Never install Skills as part of guidance generation", skill_text)
+        self.assertIn("A DevConcord source update does not update existing target guidance", skill_text)
         self.assertIn("## コードレビュー", agents_text)
         self.assertIn("REVIEWS.md", agents_text)
         self.assertIn("レビュー開始前", reviews_text)
         self.assertIn("AGENTS.md", reviews_text)
         self.assertIn("実装済み", agents_text)
         self.assertIn("未確認", reviews_text)
+
+    def test_guidance_generation_scenarios_cover_project_and_user_scope(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        integration = (
+            repository_root / "tests" / "integration" / "README.md"
+        ).read_text(encoding="utf-8")
+        section_start = integration.index(
+            "## Generate Agent Guidanceの手動評価シナリオ"
+        )
+        section_end = integration.index("\n## ", section_start + 1)
+        section = integration[section_start:section_end]
+        table_rows = [
+            line
+            for line in section.splitlines()
+            if line.startswith("|") and not line.startswith("|---")
+        ]
+
+        self.assertEqual(len(table_rows) - 1, 14)
+        for expected in (
+            "小規模CLI",
+            "GUI中心",
+            "大量データ",
+            "ファイル更新",
+            "UI交換",
+            "認証",
+            "ドキュメント主体",
+            "User Scope",
+            "Project Scope",
+            "既存`AGENTS.md`",
+            "既存`REVIEWS.md`",
+            "同じ生成を再実行",
+            "軽微な変更",
+            "専門Skill未導入",
+        ):
+            with self.subTest(generation_scenario=expected):
+                self.assertIn(expected, section)
 
     def test_reader_navigation_connects_quick_start_and_skill_operations(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
@@ -586,6 +626,8 @@ description: Use this Skill for a focused task.
         self.assertIn("自動呼び出しは保証されない", getting_started)
         self.assertIn("## 中断した操作の回復", skills_guide)
         self.assertIn("## 検証とトラブルシューティング", skills_guide)
+        self.assertIn("DevConcord本体や生成Skillを更新しても", skills_guide)
+        self.assertIn("対象リポジトリで明示的に生成Skillを実行", skills_guide)
         self.assertIn("(agent-skills.md)", docs_index)
         self.assertIn("## Skills", skills_guide)
         self.assertIn("## Skills非対応環境で手動利用", skills_guide)
