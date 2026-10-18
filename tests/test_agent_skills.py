@@ -91,6 +91,106 @@ description: Use this Skill for a focused task.
         self.assertIn("devconcord-documentation-architecture", skills_guide)
         self.assertIn("documentation-design.md", docs_index)
 
+    def test_gap_analysis_skill_covers_evidence_scope_and_read_only_contract(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill_dir = repository_root / ".agents" / "skills" / "devconcord-gap-analysis"
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        report_text = (skill_dir / "references" / "report-format.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertEqual(validate_skill_directory(skill_dir), [])
+        for expected in (
+            "name: devconcord-gap-analysis",
+            "full or incremental quality gap assessments",
+            "Full Assessment",
+            "Incremental Assessment",
+            "Requirements, domain, and architecture",
+            "Performance:",
+            "Robustness:",
+            "Replaceability:",
+            "Security:",
+            "User experience and function:",
+            "Documentation:",
+            "Development and assurance:",
+            "Conforms",
+            "Partially conforms",
+            "Not applicable",
+            "Not assessed",
+            "confirmed defect",
+            "verification gap",
+            "Do not edit the target",
+            "Do not silently switch revisions",
+            "--skill devconcord-gap-analysis",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, skill_text)
+        for expected in (
+            "## 1. Assessment overview",
+            "## 3. Area assessment",
+            "## 4. Prioritized findings",
+            "Acceptance conditions:",
+            "Verification method and evidence still needed:",
+            "ten-axis weighted system",
+            "do not replace formal issue IDs",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, report_text)
+
+    def test_gap_analysis_is_documented_and_manual_scenarios_cover_contract(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        readme = (repository_root / "README.md").read_text(encoding="utf-8")
+        docs_index = (repository_root / "docs" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        skills_guide = (repository_root / "docs" / "agent-skills.md").read_text(
+            encoding="utf-8"
+        )
+        scenarios = (
+            repository_root / "tests" / "integration" / "README.md"
+        ).read_text(encoding="utf-8")
+
+        for expected in (
+            "devconcord-gap-analysis",
+            "全体/差分診断",
+        ):
+            with self.subTest(document="README", expected=expected):
+                self.assertIn(expected, readme)
+            with self.subTest(document="docs index", expected=expected):
+                self.assertIn(expected, docs_index)
+        for expected in (
+            "devconcord-gap-analysis",
+            "devconcord-repository-review",
+            "devconcord-documentation-architecture",
+            "全体診断",
+            "差分診断",
+            "特定領域",
+            "既存の課題表",
+        ):
+            with self.subTest(document="Skills guide", expected=expected):
+                self.assertIn(expected, skills_guide)
+
+        expected_scenarios = (
+            "小規模CLIの全体診断",
+            "GUIアプリの全体診断",
+            "ネットワークサービスのSecurity分析",
+            "ファイル操作アプリのRobustness分析",
+            "UI技術交換のReplaceability評価",
+            "大量データ処理のPerformance評価",
+            "文書構造と情報の正本",
+            "前回レポートからの差分診断",
+            "DevConcord規約を導入していない対象",
+            "`AGENTS.md`と`REVIEWS.md`がない対象",
+            "適用不要な原則の判断",
+            "証拠不足による未評価",
+            "既存課題との重複検出",
+            "DevConcord共通参照を取得できない場合",
+            "未コミット変更を含む対象",
+        )
+        for expected in expected_scenarios:
+            with self.subTest(scenario=expected):
+                self.assertIn(expected, scenarios)
+
     def test_security_design_skill_is_self_contained_and_covers_security_contract(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skill_dir = repository_root / ".agents" / "skills" / "devconcord-design-security"

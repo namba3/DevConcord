@@ -66,8 +66,8 @@ fill a template.
 ## 9. Items for the next assessment
 ```
 
-`GAP-001` and similar labels are local report references only. They do not
-replace formal issue IDs. Do not create a DevConcord-specific numerical score
+`GAP-001` and similar labels are local report references only. These local GAP
+labels do not replace formal issue IDs. Do not create a DevConcord-specific numerical score
 or quality axis. If the user requests a completion assessment or the target's
 established workflow requires one, use the target's rules and, when applicable,
 the existing DevConcord ten-axis weighted system with its `N/A`, `未評価`,
