@@ -2,9 +2,9 @@
 
 このディレクトリには、複数のソフトウェア開発プロジェクトで再利用する運用ガイドと文書テンプレートを置きます。プロジェクト固有の仕様・設計・運用記録は、それぞれの対象リポジトリへ配置してください。
 
-初回利用では[実行例付きの導入ガイド](getting-started.md)からUser ScopeのSkillsセットアップ、Bootstrap、Adoptionの該当シナリオを選んでください。Agent Skillsはユーザー単位が標準で、Project Scopeはチーム共有・CI等に使う任意の方式です。プロンプト作業は導入先を作業コンテキストとし、DevConcordを参照元として使います。Skillsの出典管理・復旧などの詳細は[Agent Skills運用ガイド](agent-skills.md)が正本です。
+初回利用では[実行例付きの導入ガイド](getting-started.md)からUser ScopeのSkillsセットアップ、Bootstrap、Adoptionの該当シナリオを選んでください。Agent Skillsはユーザー単位が標準で、Project Scopeはチーム共有・CI等に使う任意の方式です。ワークフロー作業は導入先を作業コンテキストとし、DevConcordを参照元として使います。Skillsの出典管理・復旧などの詳細は[Agent Skills運用ガイド](agent-skills.md)が正本です。
 
-作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。Skillsはプロンプトを置き換えるのではなく、選択時に読み込む実行ワークフローです。外部プロジェクトへの配布と同期は [`manage_skills.py`](../scripts/manage_skills.py) を使います。
+作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。既存参照用に残した旧プロンプトURLは短い互換案内であり、作業手順の全文は含みません。Skills非対応環境での手動利用方法は[Skills一覧と旧URL案内](../prompts/README.md)を参照してください。外部プロジェクトへの配布と同期は [`manage_skills.py`](../scripts/manage_skills.py) を使います。
 
 ## 共通
 
@@ -43,16 +43,16 @@
 | 性能・堅牢性・依存境界を検討する | [設計原則](common/ai-assisted-development.md)と個別の `design-performance`、`design-robustness`、`design-replaceability` [Skills](../prompts/README.md#agent-skills) |
 | READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`documentation-architecture` Skill](../.agents/skills/documentation-architecture/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
-| レビュー基準を作る・調べる | [`REVIEWS.md`生成プロンプト](../prompts/create-reviews-md.md)、[レビュー指針](../REVIEWS.md) |
-| 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[Bootstrapプロンプト](../prompts/bootstrap-from-design.md) |
-| 既存プロジェクトへ規約を導入する | [Adoptionの実行例](getting-started.md#4-既存リポジトリへadoptionするcodex-cli)、[Adoptionプロンプト](../prompts/adopt-guidance.md) |
-| 導入済み共通資料を更新する | [資料Synchronizationの実行例](getting-started.md#8-共通ガイドのsynchronization)、[Synchronizationプロンプト](../prompts/sync-guidance.md) |
+| レビュー基準を作る・調べる | [`generate-agent-guidance` Skill](../.agents/skills/generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEWS.md) |
+| 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`bootstrap-from-design` Skill](../.agents/skills/bootstrap-from-design/SKILL.md) |
+| 既存プロジェクトへ規約を導入する | [Adoptionの実行例](getting-started.md#4-既存リポジトリへadoptionするcodex-cli)、[`adopt-guidance` Skill](../.agents/skills/adopt-guidance/SKILL.md) |
+| 導入済み共通資料を更新する | [資料Synchronizationの実行例](getting-started.md#8-共通ガイドのsynchronization)、[`sync-guidance` Skill](../.agents/skills/sync-guidance/SKILL.md) |
 | User ScopeのSkillsを導入・更新・検証する | [Skillsの実行例](getting-started.md#2-agent-skillsをユーザー単位でインストールする)、[Agent Skills運用ガイド](agent-skills.md) |
 | Project Scopeを使ってSkillを共有する | [Project Scopeの実行例](getting-started.md#7-project-scopeでskillsを導入する任意)、[Agent Skills運用ガイド](agent-skills.md) |
 
 ## 選択と適用
 
-これらの資料は適用先に合わせて選びます。README、公開サイト、ディレクトリ構造、既存規約を調査し、必要な部分だけを導入してください。Bootstrapは設計書から新規構成を作る手順、Adoptionは既存成果物を保護した初回導入、資料Synchronizationは導入済み共通資料の差分更新です。これらのプロンプト作業と、`manage_skills.py sync` によるAgent Skillsパッケージの同期は別操作です。具体的な作業場所・コマンド・検証は[はじめての導入と運用](getting-started.md)、Skillsの詳細契約は[Agent Skills運用ガイド](agent-skills.md)を参照してください。
+これらの資料は適用先に合わせて選びます。README、公開サイト、ディレクトリ構造、既存規約を調査し、必要な部分だけを導入してください。Bootstrapは設計書から新規構成を作る手順、Adoptionは既存成果物を保護した初回導入、資料Synchronizationは導入済み共通資料の差分更新です。これらのSkillワークフローと、`manage_skills.py sync` によるAgent Skillsパッケージの同期は別操作です。具体的な作業場所・コマンド・検証は[はじめての導入と運用](getting-started.md)、Skillsの詳細契約は[Agent Skills運用ガイド](agent-skills.md)を参照してください。
 
 要求IDからADR・実装・検証・課題への参照は変更リスクに応じて設けます。設計書の出典と共通資料の `guidance-provenance.md` を区別し、未確認事項を確定仕様にしません。課題表を作業管理の正本とし、リスク対応作業の別台帳は追加しません。完成度は既存10軸で評価し、SDSは独立した補助指標として総合完成度へ加算しません。新しい品質評価軸は追加しません。
 

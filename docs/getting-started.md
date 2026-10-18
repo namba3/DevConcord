@@ -77,10 +77,11 @@ codex
 
 Codexへ「`bootstrap-from-design` Skillを使い、`~/projects/design/requirements.md` からこの空のリポジトリを初期化してください。DevConcordの資料は読み取り専用で参照し、変更先はこのリポジトリだけにしてください。未確認の機能やコマンドを事実として記載しないでください」と依頼します。
 
-Skillが利用できない場合は、別のターミナルで次を表示し、[Bootstrapプロンプト](../prompts/bootstrap-from-design.md)を対象リポジトリで実行中のエージェントへ渡します。
+Skillが利用できない場合は、`bootstrap-from-design` の `SKILL.md` と詳細手順を読み、両方の全文を対象リポジトリで実行中のエージェントへ渡します。
 
 ```sh
-cat ~/projects/devconcord/prompts/bootstrap-from-design.md
+cat ~/projects/devconcord/.agents/skills/bootstrap-from-design/SKILL.md
+cat ~/projects/devconcord/.agents/skills/bootstrap-from-design/references/workflow.md
 ```
 
 **期待する成果物:** 合意した範囲のREADME、設計・要求資料、最小限の実装骨格・検証資産などです。Git初期化や技術スタックは設計と対象の状態に基づき判断します。生成された記述が設計書・実装と一致するか、人が確認してください。
@@ -98,10 +99,11 @@ codex
 
 「`adopt-guidance` Skillを使い、このリポジトリの既存実装・文書・規約・リンク・履歴を調査してください。DevConcordの共通資料はローカル参照から必要な範囲だけ確認し、独自規約や未コミット変更を保護してください。導入・変更はこのリポジトリだけに行い、必要な資料を選択して理由を説明してください」と依頼します。
 
-Skillが利用できない場合は、[`adopt-guidance.md`](../prompts/adopt-guidance.md) を読み、対象コンテキストで使います。
+Skillが利用できない場合は、`adopt-guidance` の `SKILL.md` と詳細手順を読み、両方の全文を対象コンテキストで使います。
 
 ```sh
-cat ~/projects/devconcord/prompts/adopt-guidance.md
+cat ~/projects/devconcord/.agents/skills/adopt-guidance/SKILL.md
+cat ~/projects/devconcord/.agents/skills/adopt-guidance/references/workflow.md
 ```
 
 **期待する成果物:** 調査と合意に基づく必要最小限の共通資料、`AGENTS.md` / `REVIEWS.md`、採用内容を示すprovenance等です。DevConcordのSkills manifestと対象の `guidance-provenance.md` は別の記録です。適用後に差分、既存規約、リンク、provenance、対象固有の検証を確認します。
@@ -113,7 +115,7 @@ VS Codeで開くフォルダーが作業対象です。Bootstrapなら空の `my
 1. **File > Open Folder...** から対象リポジトリを開きます。
 2. Codex拡張のチャットを開きます。グローバルSkillsが利用可能か確認し、BootstrapまたはAdoptionの該当Skillを指定します。
 3. 参照元・変更先・設計書パスを明示し、上記シナリオと同じ指示を渡します。
-4. Skillが使えない場合は、DevConcordの該当プロンプトを開いて内容をチャットへ貼り付けます。DevConcord側のファイルを編集・保存しないでください。
+4. Skillが使えない場合は、DevConcordの該当 `SKILL.md` と `references/` の必要な詳細手順を開いて全文をチャットへ貼り付けます。旧 `prompts/` パスの案内ファイルだけでは手順全文になりません。DevConcord側のファイルを編集・保存しないでください。
 5. 対象リポジトリで差分・リンク・既存のビルド/テストを確認します。
 
 Codex拡張やエージェントがユーザーのホーム・DevConcord cloneへアクセスできるかは、VS Codeの実行環境と権限に依存します。実際のアクセスやSkill実行は実機で確認し、未確認の環境を対応済みとみなしません。
@@ -150,7 +152,7 @@ cd ~/projects/my-app
 codex
 ```
 
-`sync-guidance` Skillまたは [`sync-guidance.md`](../prompts/sync-guidance.md) を使い、ローカル変更を保護し、採用済み資料の必要な差分だけを適用するよう指示します。比較対象のDevConcordコミットやprovenanceを推測で変更しません。適用後は対象の差分、provenance、リンク、既存の文書検証を確認します。
+`sync-guidance` Skillを使い、ローカル変更を保護し、採用済み資料の必要な差分だけを適用するよう指示します。Skillを利用できない場合は `.agents/skills/sync-guidance/SKILL.md` と `references/workflow.md` の全文を対象エージェントへ渡します。比較対象のDevConcordコミットやprovenanceを推測で変更しません。適用後は対象の差分、provenance、リンク、既存の文書検証を確認します。
 
 ## 9. Agent Skillsの同期・検証・復旧
 

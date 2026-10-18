@@ -53,7 +53,7 @@ python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
 
 ## 配置とエージェントの共用
 
-Skillsは作業時に必要な手順だけを選択的に読み込む標準形式のワークフローです。Skillの正本はDevConcordの `.agents/skills/<skill-name>/SKILL.md` に一つだけ置きます。既存プロンプトと `AGENTS.md` / `REVIEWS.md` / `docs/` は引き続き利用でき、Skills非対応環境では従来のプロンプトを使えます。
+Skillsは作業時に必要な手順だけを選択的に読み込む標準形式のワークフローです。Skillの正本はDevConcordの `.agents/skills/<skill-name>/SKILL.md` に一つだけ置きます。旧プロンプトURLは互換案内として保持し、Skills非対応環境ではSkill本体と必要な `references/` の全文を手動でエージェントへ渡します。詳細は[旧プロンプトURLとAgent Skills](../prompts/README.md)を参照してください。
 
 以下の表は **Project Scope** でリポジトリ内にSkillを配置する場合の探索先です。User Scopeの配置先は前節を参照してください。
 

@@ -269,6 +269,7 @@ class ConventionValidationTests(unittest.TestCase):
         repository = Path(__file__).resolve().parents[1]
         shutil.copytree(repository / "docs", self.root / "docs")
         shutil.copytree(repository / "prompts", self.root / "prompts")
+        shutil.copytree(repository / ".agents/skills", self.root / ".agents/skills")
         constants = {
             "ROOT": self.root,
             "ISSUE_RULES": self.root / "docs/work-management/issue-tracking.md",
@@ -287,6 +288,18 @@ class ConventionValidationTests(unittest.TestCase):
 
     def test_canonical_documents_pass(self) -> None:
         self.assertEqual(self.conventions(), [])
+
+    def test_legacy_prompt_shim_must_point_to_canonical_skill(self) -> None:
+        shim = self.root / "prompts/bootstrap-from-design.md"
+        text = shim.read_text(encoding="utf-8").replace(
+            "../.agents/skills/bootstrap-from-design/SKILL.md",
+            "../.agents/skills/missing/SKILL.md",
+        )
+        shim.write_text(text, encoding="utf-8")
+
+        errors = self.conventions()
+
+        self.assertTrue(any("must link to its canonical Skill" in error for error in errors))
 
     def test_invalid_evaluation_axis_is_reported(self) -> None:
         template = self.root / "docs/work-management/templates/issue-register.md"

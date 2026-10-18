@@ -114,7 +114,7 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 1. [`fixtures/existing-project/`](fixtures/existing-project/) を一時ディレクトリへコピーし、対象だけをGitリポジトリとして初期化します。
 2. 既存の `AGENTS.md`、`REVIEWS.md`、`ISS-0042` の完全な行とGit状態、資料集側のHEAD/状態を記録します。
-3. [`adopt-guidance.md`](../../prompts/adopt-guidance.md) を対象エージェントに実行します。
+3. [`adopt-guidance` Skill](../../.agents/skills/adopt-guidance/SKILL.md) を対象エージェントに実行します。Skill非対応環境では `SKILL.md` と [`references/workflow.md`](../../.agents/skills/adopt-guidance/references/workflow.md) の全文を渡します。
 4. 出力に対し、既存指示内容・課題レコードの保持、採用資料だけの配置、相対リンク解決、provenance SHA/状態/適用メモ、資料集側の無変更、説明されない変更がないことを確認します。
 5. 適用した成果物をスナップショットし、同じ入力で同じ導入操作を再実行します。差分が不要なら再実行後の変更ファイルがゼロであることを確認します。
 
@@ -122,7 +122,7 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 1. シナリオAの対象リポジトリで、導入先の規約へ独自変更を加え、適用メモに未反映差分と理由を記録します。課題ID・状態・履歴も維持します。
 2. 資料集の一時作業コピーで対応資料を変更してコミットし、導入先の独自ルールと競合する差分を作ります。
-3. [`sync-guidance.md`](../../prompts/sync-guidance.md) を実行します。安全に適用できる箇所だけ反映し、競合は理由付きで保留します。
+3. [`sync-guidance` Skill](../../.agents/skills/sync-guidance/SKILL.md) を実行します。Skill非対応環境では `SKILL.md` と [`references/workflow.md`](../../.agents/skills/sync-guidance/references/workflow.md) の全文を渡します。安全に適用できる箇所だけ反映し、競合は理由付きで保留します。
 4. 同じ同期を再実行し、既反映差分が複製されず、保留差分・理由と部分適用状態が保持され、独自内容が上書きされないことを確認します。
 5. 検証失敗を意図的に作り、失敗時に資料行を `適用済み` とせず、比較基準SHAを進めないことを確認します。
 
@@ -132,7 +132,7 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 ### Design-to-Repository Bootstrapの手動シナリオ
 
-[`bootstrap-from-design.md`](../../prompts/bootstrap-from-design.md) を対象エージェントへ実行し、開始前後のファイルスナップショット、Git HEAD/状態、対象範囲、実行したコマンドと結果を記録します。次の設計書fixtureを入力として利用できます。
+[`bootstrap-from-design` Skill](../../.agents/skills/bootstrap-from-design/SKILL.md) を対象エージェントへ実行し、開始前後のファイルスナップショット、Git HEAD/状態、対象範囲、実行したコマンドと結果を記録します。Skill非対応環境では `SKILL.md` と [`references/workflow.md`](../../.agents/skills/bootstrap-from-design/references/workflow.md) の全文を渡します。次の設計書fixtureを入力として利用できます。
 
 Bootstrap対象へ先に`bootstrap-from-design` Skillを導入する場合は、manifestがschema 2であること、両Skill探索先の全Skillがmanifestのtree hashと一致すること、探索先に余計なSkill/ファイルがないこと、他の成果物やGit履歴が存在しないことを確認します。いずれか不明なら新規対象として扱わず、既存内容を保護して停止します。比較試験では「空の対象でBootstrap後にSkillを導入」と「Skill導入後にBootstrap」の両順序を一時リポジトリで実施し、既存ファイル・履歴が保護されることを確認します。
 

@@ -511,16 +511,33 @@ def check_conventions(files: list[Path]) -> list[str]:
     if "正式な総合完成度" not in rules or "評価済みカバレッジ" not in rules:
         errors.append("issue-tracking.md: scoring rules must define formal score and evaluation coverage")
 
-    agents_prompt = read_utf8(
-        ROOT / "prompts/create-agents-md.md", "agent prompt conventions", errors
+    skill_references = ROOT / ".agents/skills/generate-agent-guidance/references"
+    agents_guidance = read_utf8(
+        skill_references / "agents-md.md", "AGENTS.md generation guidance", errors
     ) or ""
-    review_instruction = read_utf8(
-        ROOT / "prompts/create-reviews-md.md", "review prompt conventions", errors
+    review_guidance = read_utf8(
+        skill_references / "reviews-md.md", "REVIEWS.md generation guidance", errors
     ) or ""
-    if "## コードレビュー" not in agents_prompt or "REVIEWS.md" not in agents_prompt:
-        errors.append("create-agents-md.md: must require a review-time REVIEWS.md instruction")
-    if "AGENTS.md" not in review_instruction or "レビュー開始前" not in review_instruction:
-        errors.append("create-reviews-md.md: must connect REVIEWS.md to AGENTS.md loading")
+    if "## コードレビュー" not in agents_guidance or "REVIEWS.md" not in agents_guidance:
+        errors.append("generate-agent-guidance/agents-md.md: must require a review-time REVIEWS.md instruction")
+    if "AGENTS.md" not in review_guidance or "レビュー開始前" not in review_guidance:
+        errors.append("generate-agent-guidance/reviews-md.md: must connect REVIEWS.md to AGENTS.md loading")
+
+    legacy_skills = {
+        "bootstrap-from-design.md": "bootstrap-from-design",
+        "adopt-guidance.md": "adopt-guidance",
+        "sync-guidance.md": "sync-guidance",
+        "create-agents-md.md": "generate-agent-guidance",
+        "create-reviews-md.md": "generate-agent-guidance",
+    }
+    for filename, skill_name in legacy_skills.items():
+        shim = read_utf8(ROOT / "prompts" / filename, "legacy prompt compatibility notice", errors)
+        if shim is None:
+            continue
+        if f"../.agents/skills/{skill_name}/SKILL.md" not in shim:
+            errors.append(f"prompts/{filename}: must link to its canonical Skill")
+        if "この案内だけでは作業手順の全文" not in shim:
+            errors.append(f"prompts/{filename}: must identify itself as a compatibility notice, not a full workflow")
     return errors
 
 
