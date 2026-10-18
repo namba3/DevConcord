@@ -98,6 +98,23 @@ description: Use this Skill for a focused task.
         self.assertIn("課題ID・状態・履歴", workflow_text)
         self.assertIn("未実施の確認", workflow_text)
 
+    def test_sync_workflow_reference_separates_document_and_skill_updates(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill = repository_root / ".agents" / "skills" / "sync-guidance"
+        skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
+        workflow_text = (skill / "references" / "workflow.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("does not update the globally installed DevConcord Skills", skill_text)
+        self.assertIn("git merge-base --is-ancestor", workflow_text)
+        self.assertIn("浅い履歴", workflow_text)
+        self.assertIn("比較基準コミット", workflow_text)
+        self.assertIn("部分適用・保留", workflow_text)
+        self.assertIn("Project Scope", workflow_text)
+        self.assertIn("User Scope", workflow_text)
+        self.assertIn("Do not run `manage_skills.py` merely because a shared document changed.", workflow_text)
+
     def test_reader_navigation_connects_quick_start_and_skill_operations(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         readme = (repository_root / "README.md").read_text(encoding="utf-8")

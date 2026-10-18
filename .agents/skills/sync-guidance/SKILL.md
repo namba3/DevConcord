@@ -1,26 +1,26 @@
 ---
 name: sync-guidance
-description: "Safely update previously adopted shared guidance using per-document Git baselines. Use when syncing DevConcord rules, templates, or Skills while preserving local edits and held differences."
+description: "Update shared guidance already adopted by a repository using per-document Git baselines. Use when synchronizing DevConcord rules, templates, or other adopted documentation while preserving local edits and held differences."
 ---
 
 # Sync Adopted Guidance
 
+This workflow applies document changes to an existing target repository. It does not update the globally installed DevConcord Skills. Use `adopt-guidance` for first-time adoption.
+
+## Required safety checks
+
+- Preserve target and source worktrees, history, remotes, and user changes. Never fetch, unshallow, reset, force-update, or rewrite baselines without explicit authorization.
+- Verify full source commit IDs exist and that normal updates move forward from each document's own baseline. Treat same commit as a no-op; distinguish behind, diverged, missing, shallow/incomplete, and Git-error states.
+- Do not overwrite local edits or reapply previously applied changes. Keep partial and held notes until resolved. Update a document's baseline only after its changes and required validation succeed.
+- Keep shared-guidance provenance separate from Skill manifests. Do not run global or project Skill updates unless the user separately requests them.
+- Do not report a check as successful unless it was run. Deterministic helper tests do not establish that an AI agent made a correct adoption decision.
+
 ## Workflow
 
-1. Inspect both worktrees and the existing `docs/guidance-provenance.md`. Preserve target-local changes, per-document baselines, application states and hold notes.
-2. Resolve requested source revisions to full commit IDs in the source repository. Verify both commits exist. For a normal forward sync, require `git merge-base --is-ancestor "$BASE_SHA" "$TARGET_SHA"` to exit `0`. Exit `1` means not ancestor; check reverse ancestry to distinguish behind from diverged. Treat other exit codes as Git errors. A shallow history that cannot prove ancestry is incomplete, not evidence of divergence.
-3. For equal commits, make no content or provenance change. Never fetch, unshallow, reset, rewrite baselines, or update remote configuration without explicit authorization.
-4. Compare each adopted source file from its own recorded baseline to the checked target revision. Review the target's current file and notes before applying: preserve local edits, prior applied changes, and unresolved holds. Do not bulk-copy unrelated or unadopted files.
-5. Classify differences as safe, locally adapted, held, or excluded. Keep partial/held status and reasons. If files change, run relevant validation before updating the baseline or marking applied. A failed or unavailable required check leaves the baseline/state unchanged.
-6. Check links, provenance rows, allowed paths, source-tree immutability and rerun behavior. Report actual source revisions, conflicts, validations and unresolved items.
-7. For documentation-design changes, evaluate relevance to the target's readers, existing information architecture, publishing system, public URLs/anchors and local rules. A shared-rule update does not imply rewriting all target documentation. Apply only relevant differences and keep local adaptations, holds and provenance consistent.
+Read [the detailed synchronization workflow](references/workflow.md) before applying changes. It covers provenance rows, per-file history checks, rename handling, conflict classes, selective updates, validation, and reporting.
 
-## Skill synchronization
+For exact DevConcord source documents, use [the version-pinned local reference procedure](references/local-devconcord.md). Do not assume that a local checkout or the required source commit is available.
 
-When syncing installed Skills as well as documents, use the repository's `scripts/manage_skills.py sync` tool if present. Run its plan/dry-run first. It updates only managed, unchanged copies; local modifications and same-name collisions are reported and preserved. The shared-guidance record and the Skill install manifest track distinct artifacts; do not duplicate or overwrite either record.
+## Completion report
 
-## Safety
-
-Do not resolve uncertain history by guessing. Stop automatic application on missing commits, behind/diverged history, incomplete shallow history, or Git errors. Never silently overwrite local changes or report a partial synchronization as complete.
-
-When exact shared guidance or a prompt is needed, use the [version-pinned local reference procedure](references/local-devconcord.md). The procedure does not replace target-side provenance or this Skill's source-history checks.
+Report source baseline and target commit, documents updated and their new states, differences held or excluded, target changes preserved, validations run and not run, and unresolved history or content conflicts.
