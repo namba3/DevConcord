@@ -63,11 +63,92 @@ description: Use this Skill for a focused task.
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 13)
+        self.assertEqual(len(skill_dirs), 15)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
         self.assertEqual(validate_repository_skills(repository_root), [])
+
+    def test_test_design_and_implementation_planning_skills_are_standalone(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skills_root = repository_root / ".agents" / "skills"
+        docs = [
+            (repository_root / "README.md").read_text(encoding="utf-8"),
+            (repository_root / "docs" / "README.md").read_text(encoding="utf-8"),
+            (repository_root / "docs" / "agent-skills.md").read_text(encoding="utf-8"),
+        ]
+
+        for name, expectations in (
+            (
+                "devconcord-test-design",
+                (
+                    "independent",
+                    "requirements",
+                    "verification",
+                    "proposed",
+                    "executed",
+                    "--skill devconcord-test-design",
+                    "one reference path per invocation",
+                ),
+            ),
+            (
+                "devconcord-implementation-planning",
+                (
+                    "implementation increments",
+                    "existing issue",
+                    "plan only",
+                    "automatic Skill handoff",
+                    "--skill devconcord-implementation-planning",
+                    "one reference path per invocation",
+                ),
+            ),
+        ):
+            skill_dir = skills_root / name
+            skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+            with self.subTest(skill=name):
+                self.assertEqual(validate_skill_directory(skill_dir), [])
+                self.assertFalse((skill_dir / "references").exists())
+                for expected in expectations:
+                    self.assertIn(expected, skill_text)
+                for document in docs:
+                    self.assertIn(name, document)
+
+    def test_change_impact_mode_and_design_evidence_contracts_are_distinct(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skills_root = repository_root / ".agents" / "skills"
+        review = (skills_root / "devconcord-repository-review" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        performance = (skills_root / "devconcord-design-performance" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        robustness = (skills_root / "devconcord-design-robustness" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        security = (skills_root / "devconcord-design-security" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+
+        for skill_name in (
+            "devconcord-repository-review",
+            "devconcord-design-performance",
+            "devconcord-design-robustness",
+            "devconcord-design-security",
+        ):
+            self.assertEqual(validate_skill_directory(skills_root / skill_name), [])
+        for expected in (
+            "Change Impact Assessment",
+            "forecasts and open questions",
+            "does not produce an implementation sequence",
+            "Do not edit source, configuration",
+        ):
+            self.assertIn(expected, review)
+        for expected in ("target, estimate, observed result", "workload", "variation", "unverified status"):
+            self.assertIn(expected, performance)
+        for expected in ("invariant", "executed", "result", "fault"):
+            self.assertIn(expected, robustness)
+        for expected in ("implemented/configured", "executed and", "adequately verified"):
+            self.assertIn(expected, security)
 
     def test_official_prefix_is_not_required_for_generic_external_skills(self) -> None:
         external_skill = self.make_skill("sample-skill")
@@ -165,7 +246,7 @@ description: Use this Skill for a focused task.
             "design problems",
             "regression risks",
             "evidence-based severity",
-            "specific\n  remediation",
+            "specific remediation",
             "repository-wide or incremental",
         ):
             with self.subTest(skill="repository-review", expected=expected):
