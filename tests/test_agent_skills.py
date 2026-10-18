@@ -55,7 +55,7 @@ description: Use this Skill for a focused task.
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 11)
+        self.assertEqual(len(skill_dirs), 12)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
@@ -90,6 +90,28 @@ description: Use this Skill for a focused task.
         )
         self.assertIn("devconcord-documentation-architecture", skills_guide)
         self.assertIn("documentation-design.md", docs_index)
+
+    def test_security_design_skill_is_self_contained_and_covers_security_contract(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill_dir = repository_root / ".agents" / "skills" / "devconcord-design-security"
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertEqual(validate_skill_directory(skill_dir), [])
+        for expected in (
+            "name: devconcord-design-security",
+            "trust boundaries",
+            "least privilege",
+            "safe defaults",
+            "defense in depth",
+            "security invariants",
+            "independent verification",
+            "residual risks",
+            "--skill devconcord-design-security",
+            "one reference path per invocation",
+            "Do not create a second security ledger or quality score",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, skill_text)
 
     def test_bootstrap_workflow_reference_preserves_safety_and_scope_contracts(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
