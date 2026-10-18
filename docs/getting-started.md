@@ -207,7 +207,7 @@ python3 ~/projects/devconcord/scripts/manage_skills.py reference \
   --path docs/common/documentation-design.md
 ```
 
-`installed`（既定）は要求元Skillの記録コミットとmanifest・導入Skillのハッシュを照合します。`head`は現在のコミット、`working-tree`は未コミット変更を含み得るcheckoutを参照します。後者2つは導入済みSkillとの版一致を保証しません。検証失敗時にCLIはstdoutへ成功メタデータや資料の一部を出さず、別revisionへ自動切り替えません。設定したcloneが移動した場合は、検証後 `config set-source --replace --source-root <新しい絶対パス>` で更新します。ファイル種別と保証限界、共通参照Skillと直接CLIの役割、Scopeごとの参照方法は[Agent Skills運用ガイド](agent-skills.md#ローカルdevconcord資料の参照)を確認してください。
+`installed`（既定）は要求元Skillの記録コミットとmanifest・導入Skillのハッシュを照合します。記録コミットは設定済みclone内に存在すればよく、現在のHEADとの祖先関係や無関係なSkillの状態には依存しません。`head`は現在のコミット、`working-tree`は未コミット変更を含み得るcheckoutを参照します。後者2つは導入済みSkillとの版一致を保証しません。検証失敗時にCLIはstdoutへ成功メタデータや資料の一部を出さず、別revisionへ自動切り替えません。設定したcloneが移動した場合は、検証後 `config set-source --replace --source-root <新しい絶対パス>` で更新します。ファイル種別と保証限界、共通参照Skillと直接CLIの役割、Scopeごとの参照方法は[Agent Skills運用ガイド](agent-skills.md#ローカルdevconcord資料の参照)を確認してください。
 
 ## 10. よくあるエラーと対処
 

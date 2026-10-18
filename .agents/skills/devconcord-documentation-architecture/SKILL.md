@@ -45,6 +45,6 @@ If the common Skill cannot be selected, run the configured source checkout's `sc
 
 ## References
 
-The detailed reusable principles are maintained in the DevConcord documentation-design guide. These optional links may require network access and may follow a newer revision than this Skill. For version-matched guidance, read `source_commit` for this Skill in `.devconcord/skills-manifest.json` and replace `main` in the URL with that full SHA. The workflow above is self-contained if the reference is unavailable.
+The detailed reusable principles are maintained in the DevConcord documentation-design guide. The GitHub `main` link below is for browsing and may show newer material than this Skill. Use the `DevConcord References` CLI flow above for authoritative, version-pinned guidance; online content is not an automatic fallback.
 
 - [Documentation design guide](https://github.com/namba3/DevConcord/blob/main/docs/common/documentation-design.md)

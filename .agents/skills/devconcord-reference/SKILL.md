@@ -30,7 +30,9 @@ source, manifest, revision, and path validation; do not reproduce those checks.
    tree at that commit. Dirty-source installations cannot prove an exact
    committed version and are rejected for `installed`; select `head` or
    `working-tree` explicitly only when that different basis is intended.
-   `head` and `working-tree` do not promise a match with the installed Skill.
+   The recorded commit must exist locally; it need not be an ancestor of the
+   current HEAD, and unrelated current Skills do not block this read. `head`
+   and `working-tree` do not promise a match with the installed Skill.
 4. Return the CLI's verified source identity, commit or working-tree status,
    requested path, and retrieved contents. For `working-tree`, report that
    uncommitted or untracked source content may be included. Git revisions

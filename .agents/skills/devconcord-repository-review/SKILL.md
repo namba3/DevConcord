@@ -33,7 +33,7 @@ If the common Skill cannot be selected, run the configured source checkout's `sc
 
 ## References
 
-The links below follow `main` and can be newer than this installed Skill. For version-matched detail, read this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` in the DevConcord links with that full SHA. If no commit is recorded or the revision is unavailable, do not assume the linked guide matches; the workflow above remains the usable baseline.
+The GitHub `main` links below are for browsing and may show newer material than this Skill. Use the `DevConcord References` CLI flow above for authoritative, version-pinned guidance; online content is not an automatic fallback.
 
 - [DevConcord review criteria](https://github.com/namba3/DevConcord/blob/main/REVIEWS.md)
 - [Repository review workflow](https://github.com/namba3/DevConcord/blob/main/docs/README.md)
