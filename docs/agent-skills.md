@@ -17,6 +17,12 @@
 | [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEWS.md` の作成・更新 |
 | [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
 
+## 公式Skill名と既存インストール
+
+DevConcord公式Skillは `devconcord-` 接頭辞を付けます。User Scopeで他の提供元のSkillと識別しやすくし、名前の衝突を減らすための命名規則です。接頭辞自体はSkillの役割や安全性を保証しません。ほかの提供元のSkillは別々に管理され、同名Skillが見つかった場合は既存の競合検出が適用されます。
+
+旧Skill名との互換性や自動移行はありません。既存のユーザー環境・プロジェクトにある旧名SkillはDevConcordが自動削除・書き換えしません。新しい名前で導入する場合、旧名のSkillは必要性と参照元を確認し、利用者が別途整理してください。
+
 ## User Scope
 
 User Scopeは、個人のローカル環境でSkillsを複数プロジェクトから使う標準方式です。Skillをインストールしても個々のプロジェクトへファイルやmanifestを作りません。
