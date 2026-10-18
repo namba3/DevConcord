@@ -55,7 +55,7 @@ description: Use this Skill for a focused task.
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 10)
+        self.assertEqual(len(skill_dirs), 11)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
@@ -191,7 +191,11 @@ description: Use this Skill for a focused task.
     def test_local_reference_guidance_is_compact_and_skill_specific(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skills_root = repository_root / ".agents" / "skills"
-        for skill_dir in sorted(path for path in skills_root.iterdir() if path.is_dir()):
+        for skill_dir in sorted(
+            path
+            for path in skills_root.iterdir()
+            if path.is_dir() and path.name != "devconcord-reference"
+        ):
             with self.subTest(skill=skill_dir.name):
                 reference = skill_dir / "references" / "local-devconcord.md"
                 text = reference.read_text(encoding="utf-8")
@@ -199,6 +203,19 @@ description: Use this Skill for a focused task.
                 self.assertIn(f"--skill {skill_dir.name}", text)
                 self.assertIn("installed", text)
                 self.assertNotIn("prompts/", text)
+
+    def test_common_reference_skill_uses_requesting_skill_identity(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill_dir = repository_root / ".agents" / "skills" / "devconcord-reference"
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("name: devconcord-reference", skill_text)
+        self.assertIn("scripts/manage_skills.py reference", skill_text)
+        self.assertIn("--skill", skill_text)
+        self.assertIn("requesting Skill's name", skill_text)
+        self.assertIn("Never substitute", skill_text)
+        self.assertIn("does not identify which Skill revision", skill_text)
+        self.assertFalse((skill_dir / "references").exists())
 
     def test_rejects_invalid_metadata_and_name_mismatch(self) -> None:
         skill_dir = self.make_skill(
