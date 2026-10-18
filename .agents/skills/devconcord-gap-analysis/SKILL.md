@@ -200,11 +200,12 @@ new issue candidate; do not edit the target's tracker by default.
 
 ### 7. Report and close
 
-Provide an assessment overview, scope, applicable-area states, prioritized
-findings with evidence and actions, strengths, unassessed areas, residual risks,
-checks actually performed and their results, and items to revisit. Tailor the
-report to scope rather than mechanically filling a template. The report is an
-assessment artifact, not a new source of truth for issues or risks.
+Use the assessment and report conventions in
+[`references/report-format.md`](references/report-format.md). Tailor detail to
+scope rather than mechanically filling every field. Include good practices,
+unassessed areas, residual risks, checks actually performed and their results,
+and items to revisit. The report is an assessment artifact, not a new source of
+truth for issues or risks.
 
 By default, deliver the report in the conversation. Save it in the target only
 when explicitly requested. Do not edit source, documents, `AGENTS.md`,
