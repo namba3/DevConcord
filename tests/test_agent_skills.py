@@ -504,10 +504,10 @@ description: Use this Skill for a focused task.
             (reviews_procedure, "REVIEW procedure"),
         ):
             with self.subTest(guidance=label):
-                self.assertIn("利用可能", text)
+                self.assertTrue("利用可能" in text or "可用性" in text)
                 self.assertIn("原則", text)
         self.assertIn("design principles", skill)
-        self.assertIn("verified Skill availability", skill)
+        self.assertIn("Verify Project Scope or User Scope availability", skill)
         self.assertIn("具体的な根拠と影響", reviews)
         self.assertIn("User Scope", agents_procedure)
         self.assertIn("Project Scope", agents_procedure)
@@ -565,21 +565,26 @@ description: Use this Skill for a focused task.
         self.assertIn("`agents`", skill_text)
         self.assertIn("`reviews`", skill_text)
         self.assertIn("`both`", skill_text)
-        self.assertIn("do not change it as a side effect", skill_text)
-        self.assertIn("only that narrow safety correction", skill_text)
+        self.assertIn("never creates, renames, or deletes either review file", skill_text)
+        self.assertIn("change `AGENTS.md` only to replace its legacy review-file reference", skill_text)
         self.assertIn("Existing review-file migration", skill_text)
-        self.assertIn("Do not delete it automatically", skill_text)
-        self.assertIn("stop before changing either file or `AGENTS.md`", skill_text)
+        self.assertIn("Delete `REVIEWS.md` only after all deletion checks below pass", skill_text)
+        self.assertIn("If any check is uncertain, preserve both files and defer deletion", skill_text)
+        self.assertIn("The `agents` mode never creates, renames, or deletes either review file", skill_text)
+        self.assertIn("change `AGENTS.md` only to replace its legacy review-file reference", skill_text)
+        self.assertIn("DevConcord design Skills", skill_text)
+        self.assertIn("assessment Skills", skill_text)
+        self.assertIn("or exclude useful non-DevConcord Skills", skill_text)
         self.assertIn("Never install Skills as part of guidance generation", skill_text)
         self.assertIn("A DevConcord source update does not update existing target guidance", skill_text)
         self.assertIn("## コードレビュー", agents_text)
         self.assertIn("REVIEW.md", agents_text)
-        self.assertIn("レビュー開始前", reviews_text)
+        self.assertIn("旧名 `REVIEWS.md`", reviews_text)
         self.assertIn("AGENTS.md", reviews_text)
         self.assertIn("実装済み", agents_text)
         self.assertIn("未確認", reviews_text)
         self.assertIn("REVIEWS.md", reviews_text)
-        self.assertIn("実質的な競合", reviews_text)
+        self.assertIn("解消不能な競合", reviews_text)
 
     def test_guidance_generation_scenarios_cover_project_and_user_scope(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
@@ -597,7 +602,7 @@ description: Use this Skill for a focused task.
             if line.startswith("|") and not line.startswith("|---")
         ]
 
-        self.assertEqual(len(table_rows) - 1, 20)
+        self.assertEqual(len(table_rows) - 1, 26)
         for expected in (
             "小規模CLI",
             "GUI中心",
@@ -619,6 +624,12 @@ description: Use this Skill for a focused task.
             "内容が異なる",
             "両ファイルの内容が同一",
             "移行後に再実行",
+            "`agents`モード",
+            "`reviews`モード",
+            "`both`モード",
+            "統合可能な差分",
+            "実質的な競合",
+            "未コミット変更がない旧ファイル",
         ):
             with self.subTest(generation_scenario=expected):
                 self.assertIn(expected, section)

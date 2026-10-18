@@ -13,7 +13,7 @@ description: >
 
 ## Workflow
 
-1. Read repository `AGENTS.md` and `REVIEW.md` before reviewing. If `REVIEW.md` is absent, say so and use evidence-based general review criteria without inventing project-specific guarantees.
+1. Read repository `AGENTS.md` and review criteria before reviewing. Prefer root `REVIEW.md`; if it is absent, read legacy root `REVIEWS.md` when present and identify it as legacy. If both exist, read both and compare substantive rules. Report important differences or contradictions as uncertainty; do not edit, delete, or silently merge either file. If neither exists, use evidence-based general criteria without inventing project-specific guarantees.
 2. Establish review scope and inspect relevant source, tests, CI, requirements, ADRs, issue/risk records and actual diff. Distinguish observed behavior from documented intent.
 3. Evaluate correctness, user task/function fit, contracts and invariants, boundary/failure behavior, and—where relevant—assets, trust boundaries, threats, least privilege, secure defaults, data lifecycle, dependency/supply-chain risk, security invariants, compatibility, resource/performance implications, dependency direction and verification evidence.
 4. Report only actionable findings with severity, file/line, concrete impact, reproduction or evidence, confidence and a minimal remedy. Separate findings from questions, residual risks, and unverified assumptions.

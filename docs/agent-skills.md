@@ -22,9 +22,11 @@
 
 `devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を整理します。具体的なコード上の欠陥を詳しく調べる `devconcord-repository-review` や、文書体系を設計する `devconcord-documentation-architecture` の手順を複製しません。詳細な設計作業や共通規約の導入・更新が必要な場合は該当Skillを次の作業として選べます。エージェント間の自動Skill呼び出しは前提にしません。
 
-リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用とSkill活用判断、`REVIEW.md` は具体的な品質基準と根拠付き指摘を担います。原則を考慮してもSkill実行は自動的に必要にならず、詳細検討が有益な未解決事項がある場合に、利用可能性を確認した専門Skillを候補にできます。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
+リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用と、必要時のDevConcord系専門Skillsの活用判断を担い、`REVIEW.md` は具体的な品質基準と根拠付き指摘を担います。`devconcord-repository-review`と`devconcord-gap-analysis`は横断評価用Skillsであり、Bootstrap / Adoption / Sync / Generate / Referenceの作業Skillsとも区別します。これらの区分は他の有用なSkillsを排除しません。Skill実行は自動的に必要にならず、利用可能性とリスクを確かめて候補にします。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
 
 導入先の `AGENTS.md` / `REVIEW.md` は `devconcord-generate-agent-guidance` の `agents` / `reviews` / `both` モードで対象リポジトリ上から生成・更新できます。DevConcord本体や生成Skillを更新しても、既存導入先の指示ファイルは自動更新されません。更新された生成手順を使う場合は、必要なScopeへSkillをインストールまたは同期した後、対象リポジトリで明示的に生成Skillを実行してください。Skillの配置だけで対象文書を書き換えることはありません。
+
+レビュー基準の正式名称はルートの `REVIEW.md` です。旧 `REVIEWS.md` は `reviews` / `both` モードで内容・Git状態・参照を確認し、安全に内容を引き継いで新名が検証できた後に削除します。両ファイル間に解消できない競合や失われる可能性のある編集がある場合は両方を保護して移行を保留します。Repository ReviewとGap Analysisは移行を行わず、旧ファイルしかない場合は読み取り互換としてその基準を使います。過去のSkillコミットを版固定で参照するCLIの許可パスも維持します。
 
 Bootstrap後は初期設計で解決できなかった重要事項に限り、Adoption後は既に確認した証拠からGap Analysisまたは関連する専門Skillを必要に応じて推奨します。実施状態、対象、理由、時期、期待成果物を根拠とともに示し、推奨だけでSkillを実行・導入したり、作業範囲を拡張したりしません。状態と候補の判断基準は[AI支援開発ガイドの§17.3](common/ai-assisted-development.md)を参照してください。
 

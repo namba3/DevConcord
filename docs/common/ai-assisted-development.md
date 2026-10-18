@@ -1127,6 +1127,8 @@ repository/
 
 BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、後続作業として専門Skillが有用かを判断する。推奨だけのために対象全体を再調査せず、Bootstrapが実施した初期設計を繰り返さない。対象プロジェクトの実態と、今回の作業で実際に確認できた根拠から、次の関係を説明できる候補だけを示す。
 
+ここでいう設計専門SkillはDevConcord系の `devconcord-design-*`、`devconcord-ux-functional-design`、`devconcord-documentation-architecture`です。`devconcord-repository-review`と`devconcord-gap-analysis`は、それぞれ具体的な欠陥レビューと横断評価を担う関連評価Skillです。Bootstrap / Adoption / Sync / Generate / Referenceの運用Skillとは役割を分けます。これらの区分は他の提供元の有用なSkillを排除せず、利用義務や自動実行を意味しません。
+
 > 確認済みの特徴または未解決事項 → 設計上の影響 → 必要な専門的検討 → Skill → 期待成果物と検証
 
 #### 推奨状態

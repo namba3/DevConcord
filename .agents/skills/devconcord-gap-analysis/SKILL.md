@@ -46,11 +46,15 @@ maintainability; do not audit for formal conformity to DevConcord.
 Inspect the target's purpose and entry points, HEAD, working-tree state,
 product form, users, environments, stack, important features, public APIs,
 external dependencies, maturity, constraints, and existing development rules.
-Read `AGENTS.md` and `REVIEW.md` when present; their absence is not itself a
-defect. Identify whether the request calls for a Full or Incremental
-Assessment. Agree or state the scope, important paths, excluded areas, and
-available evidence. Preserve uncommitted work and do not infer the target's
-structure from DevConcord examples.
+Read `AGENTS.md` and the target's review criteria when present; their absence
+is not itself a defect. Prefer root `REVIEW.md`, and read legacy root
+`REVIEWS.md` when the new name is absent. If both exist, compare substantive
+rules and report important differences or contradictions as uncertainty. This
+read-only assessment never migrates, merges, or deletes either file. Identify
+whether the request calls for a Full or Incremental Assessment. Agree or state
+the scope, important paths, excluded areas, and available evidence. Preserve
+uncommitted work and do not infer the target's structure from DevConcord
+examples.
 
 ### 2. Retrieve only relevant DevConcord criteria
 
