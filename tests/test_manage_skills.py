@@ -769,6 +769,68 @@ Version: {version}
         self.assertIn("Committed after Skill installation.", stdout.getvalue())
         self.assertIn("Source identity:", stdout.getvalue())
 
+    def test_installed_reference_is_independent_of_checkout_head_and_other_skills(self) -> None:
+        repository = self.source.parents[1]
+        unrelated_skill = self.source / "unrelated-skill"
+        unrelated_skill.mkdir()
+        (unrelated_skill / "SKILL.md").write_text(
+            "---\nname: unrelated-skill\ndescription: Unrelated valid fixture.\n---\n",
+            encoding="utf-8",
+        )
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "add unrelated fixture skill")
+        base_commit = self.git(repository, "rev-parse", "HEAD")
+        self.git(repository, "checkout", "-qb", "installed-reference")
+        self.write_skill("sample-skill", "installed branch")
+        (repository / "docs" / "reference.md").write_text(
+            "Installed branch reference.\n", encoding="utf-8"
+        )
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "installed reference version")
+        installed_commit = self.git(repository, "rev-parse", "HEAD")
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_operation("install", skills=["sample-skill"], apply=True)[0], 0
+        )
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+
+        self.git(repository, "checkout", "-qb", "unrelated-head", base_commit)
+        (unrelated_skill / "SKILL.md").write_text(
+            "broken unrelated Skill frontmatter\n", encoding="utf-8"
+        )
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "diverge and break unrelated skill")
+        unrelated_head = self.git(repository, "rev-parse", "HEAD")
+        self.assertNotEqual(unrelated_head, installed_commit)
+        self.assertNotEqual(
+            self.git(repository, "merge-base", installed_commit, unrelated_head),
+            installed_commit,
+        )
+
+        for scope, target in (("user", None), ("project", self.target)):
+            with self.subTest(scope=scope):
+                result, output, error = self.run_reference(
+                    path="docs/reference.md", scope=scope, target=target
+                )
+                self.assertEqual((result, error), (0, ""))
+                self.assertIn("Installed branch reference.", output)
+                self.assertIn(installed_commit, output)
+
+        (unrelated_skill / "SKILL.md").write_text(
+            "another invalid uncommitted edit\n", encoding="utf-8"
+        )
+        result, output, error = self.run_reference(path="docs/reference.md")
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Installed branch reference.", output)
+
     def test_reference_reads_allowlisted_root_files_and_rejects_other_root_paths(self) -> None:
         self.assertEqual(
             self.run_user_operation(

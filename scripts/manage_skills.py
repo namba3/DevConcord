@@ -86,7 +86,7 @@ def _user_state_directory(*, create: bool = False) -> Path:
     return state
 
 
-def _validate_source_repository(source_root: Path) -> tuple[Path, Path]:
+def _resolve_source_repository(source_root: Path) -> tuple[Path, Path]:
     try:
         repository = source_root.expanduser().resolve(strict=True)
     except OSError as error:
@@ -106,6 +106,11 @@ def _validate_source_repository(source_root: Path) -> tuple[Path, Path]:
     skills_root = repository / ".agents" / "skills"
     if not skills_root.is_dir() or skills_root.is_symlink():
         raise SkillManagementError("source_root does not contain a regular .agents/skills directory")
+    return repository, skills_root
+
+
+def _validate_source_repository(source_root: Path) -> tuple[Path, Path]:
+    repository, skills_root = _resolve_source_repository(source_root)
     validation_errors = validate_skill_roots([skills_root])
     if validation_errors:
         raise SkillManagementError(
@@ -114,7 +119,9 @@ def _validate_source_repository(source_root: Path) -> tuple[Path, Path]:
     return repository, skills_root
 
 
-def _read_user_config() -> tuple[dict[str, Any] | None, Path]:
+def _read_user_config(
+    *, validate_skills: bool = True
+) -> tuple[dict[str, Any] | None, Path]:
     _user_state_directory()
     path = _user_home() / USER_CONFIG_PATH
     if path.is_symlink():
@@ -140,7 +147,10 @@ def _read_user_config() -> tuple[dict[str, Any] | None, Path]:
         raise SkillManagementError(
             "invalid user DevConcord config; expected schema_version 1 and an absolute source_root"
         )
-    repository, _skills_root = _validate_source_repository(Path(value["source_root"]))
+    source_validation = (
+        _validate_source_repository if validate_skills else _resolve_source_repository
+    )
+    repository, _skills_root = source_validation(Path(value["source_root"]))
     if value["source_root"] != str(repository):
         raise SkillManagementError(
             "user DevConcord config source_root is not normalized; use config set-source "
@@ -2246,7 +2256,7 @@ def _safe_reference_path(value: str) -> str:
 
 def _reference_command(args: argparse.Namespace) -> int:
     try:
-        config, _config_path = _read_user_config()
+        config, _config_path = _read_user_config(validate_skills=False)
         if config is None:
             raise SkillManagementError(
                 "no local DevConcord source is registered; run "
@@ -2279,6 +2289,7 @@ def _reference_command(args: argparse.Namespace) -> int:
         source_identity: str
         source_head: str
         metadata_lines: list[str] = []
+        commit_validated = False
         if args.revision == "working-tree":
             for parent in (source_path, *source_path.parents):
                 if parent == source_root.parent:
@@ -2350,7 +2361,21 @@ def _reference_command(args: argparse.Namespace) -> int:
                         "configured source identity differs from the installed Skill; "
                         "review the source and use rebind-source only if the change is intentional"
                     )
-                _validate_history(source_root, commit, revision)
+                if not _full_commit_id(commit):
+                    raise SkillManagementError("installed Skill source commit is invalid")
+                commit_check = _git(
+                    source_root,
+                    "cat-file",
+                    "-e",
+                    f"{commit}^{{commit}}",
+                    check=False,
+                )
+                if commit_check.returncode:
+                    raise SkillManagementError(
+                        f"recorded source commit is missing from the configured local "
+                        f"repository: {commit}"
+                    )
+                commit_validated = True
                 for package_path, record in records:
                     skill_dir = installation_root / package_path / args.skill
                     if skill_dir.is_symlink() or not skill_dir.is_dir():
@@ -2377,8 +2402,6 @@ def _reference_command(args: argparse.Namespace) -> int:
                             "installed Skill source baseline does not match the recorded "
                             "source_tree_sha256 at source_commit"
                         )
-                if not _full_commit_id(commit):
-                    raise SkillManagementError("installed Skill source commit is invalid")
                 metadata_lines.append(
                     f"Reference: installed Skill {args.skill} source commit {commit}"
                     f" (current source HEAD {revision})"
@@ -2394,17 +2417,18 @@ def _reference_command(args: argparse.Namespace) -> int:
                 metadata_lines.append(
                     f"Reference: configured source HEAD {commit}; uncommitted edits excluded"
                 )
-            commit_check = _git(
-                source_root,
-                "cat-file",
-                "-e",
-                f"{commit}^{{commit}}",
-                check=False,
-            )
-            if commit_check.returncode:
-                raise SkillManagementError(
-                    f"required Git commit {commit} is not available in the configured local repository"
+            if not commit_validated:
+                commit_check = _git(
+                    source_root,
+                    "cat-file",
+                    "-e",
+                    f"{commit}^{{commit}}",
+                    check=False,
                 )
+                if commit_check.returncode:
+                    raise SkillManagementError(
+                        f"required Git commit {commit} is not available in the configured local repository"
+                    )
             tree_entry = _git(
                 source_root,
                 "ls-tree",
