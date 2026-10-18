@@ -46,6 +46,24 @@ description: Use this Skill for a focused task.
 
         self.assertEqual(validate_skill_directory(skill_dir), [])
 
+    def test_documentation_architecture_skill_is_valid_and_discoverable(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill_dir = (
+            repository_root
+            / ".agents"
+            / "skills"
+            / "documentation-architecture"
+        )
+        self.assertEqual(validate_skill_directory(skill_dir), [])
+        prompts_index = (repository_root / "prompts" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        docs_index = (repository_root / "docs" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("documentation-architecture", prompts_index)
+        self.assertIn("documentation-design.md", docs_index)
+
     def test_rejects_invalid_metadata_and_name_mismatch(self) -> None:
         skill_dir = self.make_skill(
             "sample-skill",

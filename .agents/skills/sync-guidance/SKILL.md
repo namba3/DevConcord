@@ -13,6 +13,7 @@ description: "Safely update previously adopted shared guidance using per-documen
 4. Compare each adopted source file from its own recorded baseline to the checked target revision. Review the target's current file and notes before applying: preserve local edits, prior applied changes, and unresolved holds. Do not bulk-copy unrelated or unadopted files.
 5. Classify differences as safe, locally adapted, held, or excluded. Keep partial/held status and reasons. If files change, run relevant validation before updating the baseline or marking applied. A failed or unavailable required check leaves the baseline/state unchanged.
 6. Check links, provenance rows, allowed paths, source-tree immutability and rerun behavior. Report actual source revisions, conflicts, validations and unresolved items.
+7. For documentation-design changes, evaluate relevance to the target's readers, existing information architecture, publishing system, public URLs/anchors and local rules. A shared-rule update does not imply rewriting all target documentation. Apply only relevant differences and keep local adaptations, holds and provenance consistent.
 
 ## Skill synchronization
 

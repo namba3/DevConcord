@@ -35,5 +35,6 @@ manifest schema 2は配置先ごとに共有agentとSkill provenanceを保存し
 | [`design-replaceability`](../.agents/skills/design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |
 | [`repository-review`](../.agents/skills/repository-review/SKILL.md) | 実装・設計・テスト・CI・運用記録を根拠にレビュー |
 | [`generate-agent-guidance`](../.agents/skills/generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEWS.md` の作成・更新 |
+| [`documentation-architecture`](../.agents/skills/documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
 
 Skills対応エージェントでは適切なSkillが自動発見・選択されることがありますが、常に発見や呼び出しが保証されるわけではありません。既存プロンプトは互換性のある手動実行入口として維持し、Skills非対応環境では従来どおり全文を渡して実行してください。Agent Skills導入は各ベンダーの実機評価とは区別します。

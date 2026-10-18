@@ -11,6 +11,7 @@
 | 資料 | 用途 |
 |---|---|
 | [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness / Replaceability by Design、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
+| [ドキュメント設計ガイド](common/documentation-design.md) | 読者中心の情報設計、README・文書の役割、ナビゲーション、Single Source of Truth、変更影響、Docs as Code |
 
 ## アプリ設計
 
@@ -46,10 +47,12 @@
 - 設計書起点の初期化では、入力出典・節からTASK/REQ/NFR、ADR、初期構造、課題、受け入れ条件へ必要な範囲で追跡します。設計書自体の出典と共通資料の `guidance-provenance.md` を混同せず、未確認事項を確定仕様として補いません。
 - 課題表と規約のリンクを保つ場合は `work-management/` をディレクトリごと対象リポジトリの `docs/` へコピーします。テンプレートだけをコピーする場合は、規約へのリンク先を対象内の配置に合わせて変更します。
 - AIエージェントに常時適用する作業ルールは対象リポジトリの `AGENTS.md`、レビュー専用の観点は `REVIEWS.md` に置くための[生成プロンプト](../prompts/README.md)も用意しています。
+- 文書の読者・情報構造・入口・正本・更新影響は[ドキュメント設計ガイド](common/documentation-design.md)を参照します。導入先の既存構成・公開URL・規約を尊重し、文書数や特定のREADME形式を品質目標にしません。
 - Agent Skillsは必要なタスクに応じて個別に読み込むワークフローです。CodexとCopilotは `.agents/skills/` を共有でき、Claude CodeとCopilotは `.claude/skills/` を共有できます。CodexとClaude Codeは異なる探索先を使います。三者併用はCopilotの重複解決が未保証のため明示的なopt-inが必要です。導入・同期はdry-runが既定で、ローカル編集や衝突を検出した場合は上書きせず停止します。schema 2の `.devconcord/skills-manifest.json` は配置パッケージ単位のagent共有とSkill出典・ハッシュを記録し、schema 1は次回適用時に保護的に移行します。共通資料の `docs/guidance-provenance.md` とは別に管理します。更新は同じGit履歴の前進のみを受け入れ、出典変更・巻き戻しは `rebind-source`、中断したトランザクションの確認・回復は `recover` を使います。
 - 設計書を入力に新しいリポジトリの開発基盤・初期構造を作る場合は[Design-to-Repository Bootstrap](../prompts/bootstrap-from-design.md)を使います。これは既存成果物を調査・保持しながら規約を選択導入する初回導入とは別のワークフローです。
 - 既存プロジェクトへ導入するときは、[導入プロンプト](../prompts/adopt-guidance.md)で既存規約との重複・差異を確認してから適用します。
 - 導入済み資料を更新するときは、[更新プロンプト](../prompts/sync-guidance.md)で資料ごとの比較基準コミット以降の差分と、適用メモに残る保留項目を確認します。
+- 読みやすさや情報構造を専門的に改善する場合は [`documentation-architecture` Skill](../.agents/skills/documentation-architecture/SKILL.md) を利用できます。詳細な判断原則は共通ガイドを参照し、Skillに大量複製しません。
 - AIへ詳細ガイドを渡す際は、全文ではなく必要な節を指定してください。[AI開発クイックリファレンス](common/ai-development-quick-reference.md)と[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md)から関連する詳細節を選べます。
 
 ## 自動検証
