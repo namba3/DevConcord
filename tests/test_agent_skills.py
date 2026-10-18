@@ -202,8 +202,13 @@ description: Use this Skill for a focused task.
                 self.assertIn("## DevConcord References", text)
                 self.assertIn("`devconcord-reference`", text)
                 self.assertIn(f"--skill {skill_dir.name}", text)
+                self.assertIn("scripts/manage_skills.py reference", text)
                 self.assertIn("--revision installed", text)
                 self.assertIn("--scope project --target", text)
+                self.assertIn("If the common Skill cannot be selected", text)
+                self.assertIn("Do not silently switch revisions", text)
+                self.assertIn("If a required reference cannot be read, stop", text)
+                self.assertIn("if it is optional", text)
                 self.assertFalse(
                     (skill_dir / "references" / "local-devconcord.md").exists()
                 )
@@ -231,6 +236,7 @@ description: Use this Skill for a focused task.
         self.assertIn("requesting Skill's name", skill_text)
         self.assertIn("Never substitute", skill_text)
         self.assertIn("does not identify which Skill revision", skill_text)
+        self.assertIn("not guaranteed across agents or runtimes", skill_text)
         self.assertFalse((skill_dir / "references").exists())
 
     def test_rejects_invalid_metadata_and_name_mismatch(self) -> None:
