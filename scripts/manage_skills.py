@@ -2278,13 +2278,14 @@ def _reference_command(args: argparse.Namespace) -> int:
         )
         source_identity: str
         source_head: str
-        for parent in (source_path, *source_path.parents):
-            if parent == source_root.parent:
-                break
-            if parent.is_symlink():
-                raise SkillManagementError("refusing to read a symlinked local reference path")
-
         if args.revision == "working-tree":
+            for parent in (source_path, *source_path.parents):
+                if parent == source_root.parent:
+                    break
+                if parent.is_symlink():
+                    raise SkillManagementError(
+                        "refusing to read a symlinked local reference path"
+                    )
             if not source_path.is_file():
                 raise SkillManagementError(f"local reference does not exist: {relative}")
             content = source_path.read_text(encoding="utf-8")
@@ -2401,16 +2402,46 @@ def _reference_command(args: argparse.Namespace) -> int:
                 raise SkillManagementError(
                     f"required Git commit {commit} is not available in the configured local repository"
                 )
-            file_type = _git(
-                source_root, "cat-file", "-t", f"{commit}:{relative}", check=False
+            tree_entry = _git(
+                source_root,
+                "ls-tree",
+                "-z",
+                "--full-tree",
+                commit,
+                "--",
+                relative,
+                check=False,
             )
-            if file_type.returncode:
+            if tree_entry.returncode:
+                raise SkillManagementError(
+                    f"Git could not inspect reference {relative!r} at commit {commit}: "
+                    f"{tree_entry.stderr.strip()}"
+                )
+            entries = [entry for entry in tree_entry.stdout.split("\0") if entry]
+            if not entries:
                 raise SkillManagementError(
                     f"reference {relative!r} does not exist at Git commit {commit}"
                 )
-            if file_type.stdout.strip() != "blob":
+            if len(entries) != 1 or "\t" not in entries[0]:
                 raise SkillManagementError(
-                    f"reference {relative!r} is not a file at Git commit {commit}"
+                    f"Git returned malformed tree data for reference {relative!r}"
+                )
+            metadata, tree_path = entries[0].split("\t", maxsplit=1)
+            fields = metadata.split()
+            if (
+                len(fields) != 3
+                or tree_path != relative
+                or fields[1] not in {"blob", "tree", "commit"}
+                or not _full_commit_id(fields[2])
+            ):
+                raise SkillManagementError(
+                    f"Git returned malformed tree data for reference {relative!r}"
+                )
+            mode, object_type, _object_id = fields
+            if mode not in {"100644", "100755"} or object_type != "blob":
+                raise SkillManagementError(
+                    f"reference {relative!r} is not a regular Git file at commit {commit} "
+                    f"(mode {mode}, type {object_type})"
                 )
             result = _git(
                 source_root, "show", f"{commit}:{relative}", check=False

@@ -796,7 +796,7 @@ Version: {version}
         self.assertIn("must be under docs/", error)
         result, _output, error = self.run_reference(path="docs/subdir")
         self.assertEqual(result, 2)
-        self.assertIn("is not a file", error)
+        self.assertIn("not a regular Git file", error)
 
     def test_reference_path_rejects_traversal_absolute_and_invalid_roots(self) -> None:
         for path in (
@@ -849,6 +849,69 @@ Version: {version}
         )
         self.assertEqual(result, 2)
         self.assertIn("does not exist at Git commit", error)
+
+    @unittest.skipIf(os.name == "nt", "Git symlink mode is platform-specific")
+    def test_reference_git_tree_accepts_only_regular_files_and_parses_exact_paths(self) -> None:
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        regular = repository / "docs" / "reference with space 日本語.md"
+        regular.write_text("unicode and space path\n", encoding="utf-8")
+        executable = repository / "docs" / "executable.md"
+        executable.write_text("executable regular file\n", encoding="utf-8")
+        executable.chmod(0o755)
+        symlink = repository / "docs" / "symlink.md"
+        symlink.symlink_to("reference.md")
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "add reference entry types")
+        for path, expected in (
+            ("docs/reference with space 日本語.md", "unicode and space path"),
+            ("docs/executable.md", "executable regular file"),
+        ):
+            with self.subTest(path=path):
+                result, output, error = self.run_reference(path=path, revision="head")
+                self.assertEqual((result, error), (0, ""))
+                self.assertIn(expected, output)
+
+        for path in ("docs/symlink.md", "docs/subdir", "docs/not-present.md"):
+            with self.subTest(path=path):
+                result, _output, error = self.run_reference(path=path, revision="head")
+                self.assertEqual(result, 2)
+                if path == "docs/not-present.md":
+                    self.assertIn("does not exist at Git commit", error)
+                else:
+                    self.assertIn("not a regular Git file", error)
+
+        self.git(
+            repository,
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            f"160000,{self.git(repository, 'rev-parse', 'HEAD')},docs/submodule",
+        )
+        self.git(repository, "commit", "-qm", "add submodule tree entry")
+        result, _output, error = self.run_reference(
+            path="docs/submodule", revision="head"
+        )
+        self.assertEqual(result, 2)
+        self.assertIn("not a regular Git file", error)
+
+        original_git = manage_skills._git
+
+        def malformed_tree(root: Path, *arguments: str, check: bool = True):
+            if arguments and arguments[0] == "ls-tree":
+                return subprocess.CompletedProcess(
+                    ["git", *arguments], 0, "not-tree-data\0", ""
+                )
+            return original_git(root, *arguments, check=check)
+
+        with patch.object(manage_skills, "_git", side_effect=malformed_tree):
+            result, _output, error = self.run_reference(
+                path="docs/reference.md", revision="head"
+            )
+        self.assertEqual(result, 2)
+        self.assertIn("malformed tree data", error)
 
     def test_reference_scope_manifests_are_independent(self) -> None:
         self.assertEqual(
