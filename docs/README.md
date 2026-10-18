@@ -4,7 +4,7 @@
 
 初回利用では[実行例付きの導入ガイド](getting-started.md)からUser ScopeのSkillsセットアップ、Bootstrap、Adoptionの該当シナリオを選んでください。Agent Skillsはユーザー単位が標準で、Project Scopeはチーム共有・CI等に使う任意の方式です。ワークフロー作業は導入先を作業コンテキストとし、DevConcordを参照元として使います。Skillsの出典管理・復旧などの詳細は[Agent Skills運用ガイド](agent-skills.md)が正本です。
 
-作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。既存参照用に残した旧プロンプトURLは短い互換案内であり、作業手順の全文は含みません。Skills非対応環境での手動利用方法は[Skills一覧と旧URL案内](../prompts/README.md)を参照してください。外部プロジェクトへの配布と同期は [`manage_skills.py`](../scripts/manage_skills.py) を使います。
+作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。Skillsの選択は[Agent Skills運用ガイドの一覧](agent-skills.md#skills)、導入・同期・復旧は [`manage_skills.py`](../scripts/manage_skills.py) と[運用手順](agent-skills.md)を参照してください。Skills非対応環境では、該当する `SKILL.md` と必要な `references/` の全文を対象エージェントへ渡します。
 
 ## 共通
 
@@ -40,7 +40,7 @@
 | 設計原則とAI支援開発の共通ルールを理解する | [AI支援開発ガイド](common/ai-assisted-development.md)、[AI開発クイックリファレンス](common/ai-development-quick-reference.md) |
 | 要求仕様や設計判断を記録する | [要求仕様テンプレート](application-design/templates/requirements.md)、[ADRテンプレート](application-design/templates/adr.md) |
 | 利用者タスクから機能を設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md) |
-| 性能・堅牢性・依存境界を検討する | [設計原則](common/ai-assisted-development.md)と個別の `design-performance`、`design-robustness`、`design-replaceability` [Skills](../prompts/README.md#agent-skills) |
+| 性能・堅牢性・依存境界を検討する | [設計原則](common/ai-assisted-development.md)と個別の `design-performance`、`design-robustness`、`design-replaceability` [Skills](agent-skills.md#skills) |
 | READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`documentation-architecture` Skill](../.agents/skills/documentation-architecture/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
 | レビュー基準を作る・調べる | [`generate-agent-guidance` Skill](../.agents/skills/generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEWS.md) |

@@ -20,7 +20,7 @@ git clone https://github.com/namba3/DevConcord.git devconcord
 
 ```text
 ~/projects/
-├── devconcord/                  # Skills・資料・プロンプトの参照元
+├── devconcord/                  # Skills・共通資料の参照元
 ├── design/requirements.md       # Bootstrapへの入力
 ├── my-new-app/                  # 新規Bootstrapの変更先
 └── my-app/                      # 既存プロジェクトの変更先
@@ -115,7 +115,7 @@ VS Codeで開くフォルダーが作業対象です。Bootstrapなら空の `my
 1. **File > Open Folder...** から対象リポジトリを開きます。
 2. Codex拡張のチャットを開きます。グローバルSkillsが利用可能か確認し、BootstrapまたはAdoptionの該当Skillを指定します。
 3. 参照元・変更先・設計書パスを明示し、上記シナリオと同じ指示を渡します。
-4. Skillが使えない場合は、DevConcordの該当 `SKILL.md` と `references/` の必要な詳細手順を開いて全文をチャットへ貼り付けます。旧 `prompts/` パスの案内ファイルだけでは手順全文になりません。DevConcord側のファイルを編集・保存しないでください。
+4. Skillが使えない場合は、DevConcordの該当 `SKILL.md` と `references/` の必要な詳細手順を開いて全文をチャットへ貼り付けます。従来の汎用プロンプト利用者もこの方法へ移行します。DevConcord側のファイルを編集・保存しないでください。
 5. 対象リポジトリで差分・リンク・既存のビルド/テストを確認します。
 
 Codex拡張やエージェントがユーザーのホーム・DevConcord cloneへアクセスできるかは、VS Codeの実行環境と権限に依存します。実際のアクセスやSkill実行は実機で確認し、未確認の環境を対応済みとみなしません。
@@ -217,7 +217,7 @@ python3 ~/projects/devconcord/scripts/manage_skills.py reference \
 | `reference` がコミット・ファイルを読めない | 設定、source identity、Git履歴、対象コミット・ファイルの存在、エージェントのローカルアクセス権を個別に確認します。オンライン最新版やHEADへ黙って置き換えません。 |
 | `recover` が不整合を報告する | journal、manifest、バックアップを保持し、対象と状態を調査します。不明なデータを削除・上書きしません。 |
 | Bootstrapが既存対象として停止する | `my-new-app/` が本当に空か確認します。既存成果物や履歴を消さず、既存プロジェクトにはAdoptionを使います。 |
-| Codex CLI・VS Code拡張がSkillsや資料を読めない | 対象環境のホーム、ワークスペース権限、利用中の製品版、プロンプト手動実行を確認します。別マシンやクラウド環境からローカルDevConcordへアクセスできるとは限りません。 |
+| Codex CLI・VS Code拡張がSkillsや資料を読めない | 対象環境のホーム、ワークスペース権限、利用中の製品版、Skill本体とreferenceの手動入力を確認します。別マシンやクラウド環境からローカルDevConcordへアクセスできるとは限りません。 |
 
 ## DevConcord自身の検証
 

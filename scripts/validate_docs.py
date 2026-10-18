@@ -523,21 +523,8 @@ def check_conventions(files: list[Path]) -> list[str]:
     if "AGENTS.md" not in review_guidance or "レビュー開始前" not in review_guidance:
         errors.append("generate-agent-guidance/reviews-md.md: must connect REVIEWS.md to AGENTS.md loading")
 
-    legacy_skills = {
-        "bootstrap-from-design.md": "bootstrap-from-design",
-        "adopt-guidance.md": "adopt-guidance",
-        "sync-guidance.md": "sync-guidance",
-        "create-agents-md.md": "generate-agent-guidance",
-        "create-reviews-md.md": "generate-agent-guidance",
-    }
-    for filename, skill_name in legacy_skills.items():
-        shim = read_utf8(ROOT / "prompts" / filename, "legacy prompt compatibility notice", errors)
-        if shim is None:
-            continue
-        if f"../.agents/skills/{skill_name}/SKILL.md" not in shim:
-            errors.append(f"prompts/{filename}: must link to its canonical Skill")
-        if "この案内だけでは作業手順の全文" not in shim:
-            errors.append(f"prompts/{filename}: must identify itself as a compatibility notice, not a full workflow")
+    if (ROOT / "prompts").exists():
+        errors.append("prompts/: remove the retired directory; Skills are the canonical workflow sources")
     return errors
 
 

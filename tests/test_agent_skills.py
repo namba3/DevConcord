@@ -55,13 +55,13 @@ description: Use this Skill for a focused task.
             / "documentation-architecture"
         )
         self.assertEqual(validate_skill_directory(skill_dir), [])
-        prompts_index = (repository_root / "prompts" / "README.md").read_text(
+        skills_guide = (repository_root / "docs" / "agent-skills.md").read_text(
             encoding="utf-8"
         )
         docs_index = (repository_root / "docs" / "README.md").read_text(
             encoding="utf-8"
         )
-        self.assertIn("documentation-architecture", prompts_index)
+        self.assertIn("documentation-architecture", skills_guide)
         self.assertIn("documentation-design.md", docs_index)
 
     def test_bootstrap_workflow_reference_preserves_safety_and_scope_contracts(self) -> None:
@@ -148,13 +148,9 @@ description: Use this Skill for a focused task.
         docs_index = (repository_root / "docs" / "README.md").read_text(
             encoding="utf-8"
         )
-        prompts_index = (repository_root / "prompts" / "README.md").read_text(
-            encoding="utf-8"
-        )
-
         self.assertIn("(docs/getting-started.md)", readme)
         self.assertIn("(.agents/skills/bootstrap-from-design/SKILL.md)", readme)
-        self.assertIn("互換性", prompts_index)
+        self.assertIn("(docs/agent-skills.md#skills)", readme)
         self.assertIn("(docs/agent-skills.md)", readme)
         self.assertIn("## 2. Agent Skillsをユーザー単位でインストールする", getting_started)
         self.assertIn("User Scope", getting_started)
@@ -162,23 +158,8 @@ description: Use this Skill for a focused task.
         self.assertIn("## 中断した操作の回復", skills_guide)
         self.assertIn("## 検証とトラブルシューティング", skills_guide)
         self.assertIn("(agent-skills.md)", docs_index)
-        self.assertIn("(../docs/agent-skills.md)", prompts_index)
-
-    def test_legacy_prompt_paths_are_short_skill_compatibility_shims(self) -> None:
-        repository_root = Path(__file__).resolve().parents[1]
-        aliases = {
-            "bootstrap-from-design.md": "bootstrap-from-design",
-            "adopt-guidance.md": "adopt-guidance",
-            "sync-guidance.md": "sync-guidance",
-            "create-agents-md.md": "generate-agent-guidance",
-            "create-reviews-md.md": "generate-agent-guidance",
-        }
-        for filename, skill_name in aliases.items():
-            with self.subTest(filename=filename):
-                text = (repository_root / "prompts" / filename).read_text(encoding="utf-8")
-                self.assertIn(f"../.agents/skills/{skill_name}/SKILL.md", text)
-                self.assertIn("この案内だけでは作業手順の全文", text)
-                self.assertLess(len(text), 700)
+        self.assertIn("## Skills", skills_guide)
+        self.assertIn("## Skills非対応環境で手動利用", skills_guide)
 
     def test_local_reference_guidance_is_compact_and_skill_specific(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]

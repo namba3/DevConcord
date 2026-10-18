@@ -1,6 +1,21 @@
 # Agent Skillsの導入・同期・検証
 
-この資料はUser Scopeを標準とするAgent Skillsの運用リファレンスです。チーム共有・CI・バージョン固定等ではProject Scopeも利用できます。初回導入の実行例は[はじめての導入と運用](getting-started.md)を参照してください。Skillの選択・発見・実行ワークフローは [Agent Skills一覧](../prompts/README.md#agent-skills) にあります。
+この資料はUser Scopeを標準とするAgent Skillsの運用リファレンスです。チーム共有・CI・バージョン固定等ではProject Scopeも利用できます。初回導入の実行例は[はじめての導入と運用](getting-started.md)を参照してください。
+
+## Skills
+
+| Skill | 用途 |
+|---|---|
+| [`bootstrap-from-design`](../.agents/skills/bootstrap-from-design/SKILL.md) | 設計要求から新規リポジトリのFoundation/Scaffold/Initial Implementationを構築 |
+| [`adopt-guidance`](../.agents/skills/adopt-guidance/SKILL.md) | 既存プロジェクトへ共通資料を選択導入 |
+| [`sync-guidance`](../.agents/skills/sync-guidance/SKILL.md) | 導入済み資料・Skillsをローカル変更を保護しながら同期 |
+| [`ux-functional-design`](../.agents/skills/ux-functional-design/SKILL.md) | ユーザー目標を機能・状態・受け入れ条件へ接続 |
+| [`design-performance`](../.agents/skills/design-performance/SKILL.md) | ワークロードに基づく性能設計と測定条件を定義 |
+| [`design-robustness`](../.agents/skills/design-robustness/SKILL.md) | 不変条件・失敗時契約・回復・検証を設計 |
+| [`design-replaceability`](../.agents/skills/design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |
+| [`repository-review`](../.agents/skills/repository-review/SKILL.md) | 実装・設計・テスト・CI・運用記録を根拠にレビュー |
+| [`generate-agent-guidance`](../.agents/skills/generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEWS.md` の作成・更新 |
+| [`documentation-architecture`](../.agents/skills/documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
 
 ## User Scope
 
@@ -53,7 +68,11 @@ python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
 
 ## 配置とエージェントの共用
 
-Skillsは作業時に必要な手順だけを選択的に読み込む標準形式のワークフローです。Skillの正本はDevConcordの `.agents/skills/<skill-name>/SKILL.md` に一つだけ置きます。旧プロンプトURLは互換案内として保持し、Skills非対応環境ではSkill本体と必要な `references/` の全文を手動でエージェントへ渡します。詳細は[旧プロンプトURLとAgent Skills](../prompts/README.md)を参照してください。
+Skillsは作業時に必要な手順だけを選択的に読み込む標準形式のワークフローです。Skillの正本はDevConcordの `.agents/skills/<skill-name>/SKILL.md` に一つだけ置きます。
+
+## Skills非対応環境で手動利用
+
+以前の汎用プロンプトを使っていた場合も、該当するSkillの `SKILL.md` とタスクに必要な `references/` の全文を読み、対象エージェントへ渡します。AGENTS/REVIEWS生成では依頼内容に応じたreferenceを選びます。Skillの本文だけ、あるいは共通ガイドだけで必要な詳細手順を読んだことにしないでください。ローカル共通資料が必要な場合は `references/local-devconcord.md` の手順で版固定参照します。
 
 以下の表は **Project Scope** でリポジトリ内にSkillを配置する場合の探索先です。User Scopeの配置先は前節を参照してください。
 

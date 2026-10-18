@@ -15,8 +15,8 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 既存プロジェクトへ規約を選んで導入する | [`adopt-guidance` Skill](.agents/skills/adopt-guidance/SKILL.md) |
 | 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
-| Agent Skillsを選ぶ | [Skills一覧](prompts/README.md#agent-skills) |
-| 旧プロンプトURLを使う | [互換案内と手動利用方法](prompts/README.md) |
+| Agent Skillsを選ぶ | [Skills一覧](docs/agent-skills.md#skills) |
+| Skill非対応環境で手動利用する | [Skill本体と参照資料を渡す方法](docs/agent-skills.md#skills非対応環境で手動利用) |
 | User ScopeのSkillsを導入・同期・検証する | [Getting Started](docs/getting-started.md#2-agent-skillsをユーザー単位でインストールする)または[Skills運用ガイド](docs/agent-skills.md) |
 | Project ScopeのSkillsを導入する | [Project Scopeの実行例](docs/getting-started.md#7-project-scopeでskillsを導入する任意) |
 | ドキュメント体系を設計・改善する | [ドキュメント設計ガイド](docs/common/documentation-design.md) |
@@ -35,4 +35,4 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 
 ## ライセンス
 
-個別に異なるライセンスが明記されていない限り、このリポジトリの資料・テンプレート・プロンプトはMITまたはApache License 2.0のいずれかを選択して利用できます。詳細は[MIT License](LICENSE-MIT)と[Apache License 2.0](LICENSE-APACHE)を参照してください。
+個別に異なるライセンスが明記されていない限り、このリポジトリの資料・テンプレート・Agent SkillsはMITまたはApache License 2.0のいずれかを選択して利用できます。詳細は[MIT License](LICENSE-MIT)と[Apache License 2.0](LICENSE-APACHE)を参照してください。
