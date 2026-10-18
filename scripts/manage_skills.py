@@ -11,6 +11,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tarfile
 import tempfile
 import uuid
 from pathlib import Path
@@ -18,9 +19,19 @@ from typing import Any
 from urllib.parse import urlsplit
 
 if __package__:
-    from .agent_skills import DISCOVERY_PATHS, skill_directories, validate_skill_roots
+    from .agent_skills import (
+        DISCOVERY_PATHS,
+        skill_directories,
+        validate_repository_skills,
+        validate_skill_roots,
+    )
 else:
-    from agent_skills import DISCOVERY_PATHS, skill_directories, validate_skill_roots
+    from agent_skills import (
+        DISCOVERY_PATHS,
+        skill_directories,
+        validate_repository_skills,
+        validate_skill_roots,
+    )
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -74,22 +85,149 @@ def source_revision(source_root: Path) -> tuple[str, bool, str]:
         raise SkillManagementError(f"could not inspect Skill source status: {status.stderr.strip()}")
     remote = _git(source_root, "remote", "get-url", "origin", check=False)
     if remote.returncode:
-        repository = "local Git repository"
-    else:
-        origin = remote.stdout.strip()
-        if "://" in origin:
-            parsed = urlsplit(origin)
-            repository = (
-                f"{parsed.scheme}://{parsed.hostname}{parsed.path}"
-                if parsed.hostname
-                else "redacted Git origin"
-            )
-        elif "@" in origin and ":" in origin:
-            repository = origin.rsplit("@", maxsplit=1)[1]
+        remotes = _git(source_root, "remote", check=False)
+        remote_names = remotes.stdout.splitlines() if remotes.returncode == 0 else []
+        if len(remote_names) == 1:
+            remote = _git(source_root, "remote", "get-url", remote_names[0], check=False)
+        if remote.returncode:
+            repository = _local_repository_identity(Path(top.stdout.strip()))
         else:
-            repository = "local Git repository"
+            repository = _repository_identity(remote.stdout.strip(), source_root)
+    else:
+        repository = _repository_identity(remote.stdout.strip(), source_root)
     repository = "".join(character for character in repository if character.isprintable())[:512]
     return commit.stdout.strip(), bool(status.stdout.strip()), repository
+
+
+def _local_repository_identity(repository_root: Path) -> str:
+    common_dir = _git(repository_root, "rev-parse", "--git-common-dir")
+    common_path = Path(common_dir.stdout.strip())
+    if not common_path.is_absolute():
+        common_path = repository_root / common_path
+    identity = hashlib.sha256(str(common_path.resolve()).encode("utf-8")).hexdigest()
+    return f"local-git-sha256:{identity}"
+
+
+def _repository_identity(remote: str, source_root: Path | None = None) -> str:
+    parsed = urlsplit(remote)
+    if parsed.scheme == "file":
+        local_path = Path(parsed.path)
+        if local_path.is_dir():
+            return _local_repository_identity(local_path)
+        return "local Git repository"
+    if parsed.hostname:
+        host = parsed.hostname.lower()
+        path = parsed.path.strip("/")
+    elif "@" in remote and ":" in remote and "://" not in remote:
+        host, path = remote.rsplit("@", maxsplit=1)[1].split(":", maxsplit=1)
+        host = host.lower()
+    elif (
+        source_root is not None
+        and (remote.startswith(("./", "../")) or Path(remote).is_absolute())
+    ):
+        local_path = Path(remote)
+        if not local_path.is_absolute():
+            local_path = source_root / local_path
+        if local_path.is_dir():
+            return _local_repository_identity(local_path)
+        return "local Git repository"
+    elif "/" in remote and "://" not in remote:
+        if remote.startswith("/"):
+            local_path = Path(remote)
+            if local_path.is_dir():
+                return _local_repository_identity(local_path)
+            return "local Git repository"
+        host, path = remote.split("/", maxsplit=1)
+        host = host.lower()
+    else:
+        return "local Git repository"
+    if path.endswith(".git"):
+        path = path[:-4]
+    if not path:
+        return "local Git repository"
+    return f"{host}/{path}"
+
+
+def _source_identity_is_verified(value: Any) -> bool:
+    return isinstance(value, str) and value not in {"", "local Git repository"}
+
+
+def _normalize_recorded_source_identity(value: str) -> str:
+    if value == "local Git repository":
+        return value
+    if value.startswith("local-git-sha256:"):
+        return value
+    return _repository_identity(value)
+
+
+def _git_skill_digest(source_root: Path, commit: str, skill_name: str) -> str:
+    with tempfile.TemporaryDirectory(prefix="devconcord-skill-baseline-") as temporary:
+        temporary_root = Path(temporary)
+        archive_path = temporary_root / "skill.tar"
+        with archive_path.open("wb") as archive_file:
+            result = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(source_root),
+                    "archive",
+                    "--format=tar",
+                    commit,
+                    "--",
+                    skill_name,
+                ],
+                stdout=archive_file,
+                stderr=subprocess.PIPE,
+                check=False,
+                text=False,
+            )
+        if result.returncode:
+            detail = result.stderr.decode("utf-8", errors="replace").strip()
+            raise SkillManagementError(
+                f"could not read baseline Skill {skill_name!r} at {commit}: {detail}"
+            )
+        extracted_root = temporary_root / "extracted"
+        extracted_root.mkdir()
+        directory_modes: list[tuple[Path, int]] = []
+        with tarfile.open(archive_path, mode="r:") as archive:
+            for member in archive.getmembers():
+                member_path = Path(member.name)
+                if (
+                    member_path.is_absolute()
+                    or ".." in member_path.parts
+                    or not member_path.parts
+                    or member_path.parts[0] != skill_name
+                ):
+                    raise SkillManagementError(
+                        f"baseline archive contains an unsafe path for Skill {skill_name!r}"
+                    )
+                destination = extracted_root / member_path
+                if member.isdir():
+                    destination.mkdir(parents=True, exist_ok=True)
+                    directory_modes.append((destination, 0o755))
+                elif member.isfile():
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    source_file = archive.extractfile(member)
+                    if source_file is None:
+                        raise SkillManagementError(
+                            f"baseline archive has an unreadable file for Skill {skill_name!r}"
+                        )
+                    with source_file, destination.open("xb") as output_file:
+                        shutil.copyfileobj(source_file, output_file)
+                    file_mode = 0o755 if member.mode & 0o111 else 0o644
+                    os.chmod(destination, file_mode)
+                else:
+                    raise SkillManagementError(
+                        f"baseline archive contains unsupported content for Skill {skill_name!r}"
+                    )
+        for directory, mode in reversed(directory_modes):
+            os.chmod(directory, mode)
+        skill_root = extracted_root / skill_name
+        if not skill_root.is_dir():
+            raise SkillManagementError(
+                f"baseline commit {commit} does not contain Skill {skill_name!r}"
+            )
+        return tree_digest(skill_root)
 
 
 def _git(root: Path, *arguments: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -177,6 +315,7 @@ def _read_manifest(path: Path) -> tuple[dict[str, Any], bool]:
         if not isinstance(packages, dict):
             raise SkillManagementError("invalid Skill packages manifest; refusing to replace it")
         _validate_packages(packages)
+        _duplicate_allowances(value)
         return value, False
     if type(schema) is not int or schema != 1 or not isinstance(value.get("installations"), dict):
         raise SkillManagementError("unrecognized Skill manifest format; refusing to replace it")
@@ -255,6 +394,135 @@ def _validate_packages(packages: dict[str, Any]) -> None:
                 raise SkillManagementError(
                     f"invalid provenance for Skill {name!r} at {package_path!r}"
                 )
+
+
+def _duplicate_allowances(
+    manifest: dict[str, Any],
+) -> set[tuple[str, tuple[str, str]]]:
+    records = manifest.get("duplicate_discovery_allowances", [])
+    if not isinstance(records, list):
+        raise SkillManagementError("invalid duplicate-discovery allowances in Skill manifest")
+    allowed_paths = set(DISCOVERY_PATHS)
+    allowances: set[tuple[str, tuple[str, str]]] = set()
+    for record in records:
+        if (
+            not isinstance(record, dict)
+            or set(record) != {"skill", "paths"}
+            or not _valid_skill_name(record.get("skill"))
+            or not isinstance(record.get("paths"), list)
+            or len(record["paths"]) != 2
+            or any(not isinstance(path, str) for path in record["paths"])
+            or any(path not in allowed_paths for path in record["paths"])
+            or len(set(record["paths"])) != 2
+        ):
+            raise SkillManagementError(
+                "invalid duplicate-discovery allowance in Skill manifest"
+            )
+        pair = tuple(sorted(record["paths"]))
+        allowance = (record["skill"].casefold(), pair)
+        if allowance in allowances:
+            raise SkillManagementError(
+                "duplicate duplicate-discovery allowance in Skill manifest"
+            )
+        allowances.add(allowance)
+    return allowances
+
+
+def _copilot_is_exposed(manifest: dict[str, Any]) -> bool:
+    return any(
+        "copilot" in package.get("agents", [])
+        for package in manifest["packages"].values()
+    )
+
+
+def _discovery_state(
+    target_root: Path,
+    names: set[str],
+    *,
+    actions: list[tuple[SkillAction, str]] | None = None,
+    manifest: dict[str, Any],
+) -> dict[str, dict[str, tuple[str, str]]]:
+    interested_names = {name.casefold() for name in names}
+    state: dict[str, dict[str, tuple[str, str]]] = {}
+    for relative in DISCOVERY_PATHS:
+        root = target_root / relative
+        _check_destination_path(target_root, root)
+        if not root.exists():
+            continue
+        try:
+            installed_skills = skill_directories(root)
+        except (OSError, ValueError) as error:
+            raise SkillManagementError(
+                f"cannot inspect Skill discovery path {relative} ({error})"
+            ) from error
+        recorded_skills = manifest["packages"].get(relative, {}).get("skills", {})
+        for skill_dir in installed_skills:
+            name_key = skill_dir.name.casefold()
+            if name_key not in interested_names:
+                continue
+            digest = tree_digest(skill_dir)
+            recorded = recorded_skills.get(skill_dir.name)
+            if recorded is not None and digest != recorded.get("installed_tree_sha256"):
+                raise SkillManagementError(
+                    f"{relative}/{skill_dir.name}: installed Skill differs from its "
+                    "manifest hash; refusing to plan around an externally changed package"
+                )
+            roots = state.setdefault(name_key, {})
+            if relative in roots:
+                raise SkillManagementError(
+                    f"{relative}: case-insensitive duplicate Skill name {skill_dir.name!r}"
+                )
+            roots[relative] = (skill_dir.name, digest)
+
+    for action_tuple, relative in actions or []:
+        action, _source, name, source_hash, _expected_target_hash = action_tuple
+        if action not in {"install", "update", "metadata", "unchanged"}:
+            continue
+        if name.casefold() in interested_names:
+            state.setdefault(name.casefold(), {})[relative] = (name, source_hash)
+    return state
+
+
+def _check_duplicate_discovery(
+    state: dict[str, dict[str, tuple[str, str]]],
+    manifest: dict[str, Any],
+    *,
+    allow_duplicates: bool,
+) -> tuple[bool, list[str]]:
+    allowances = _duplicate_allowances(manifest)
+    updated_allowances = set(allowances)
+    conflicts: list[str] = []
+    has_duplicates = False
+    for skill_key, roots in state.items():
+        if len(roots) < 2:
+            continue
+        paths = sorted(roots)
+        if len({digest for _, digest in roots.values()}) != 1:
+            conflicts.append(
+                f"{skill_key}: same-name Skills in Copilot discovery paths have different "
+                "contents; synchronize all managed copies together"
+            )
+            continue
+        has_duplicates = True
+        for index, first_path in enumerate(paths):
+            for second_path in paths[index + 1 :]:
+                allowance = (skill_key, (first_path, second_path))
+                if allowance in allowances:
+                    continue
+                if not allow_duplicates:
+                    conflicts.append(
+                        f"{skill_key}: identical Skills in {first_path} and {second_path} "
+                        "may be discovered more than once; explicitly pass "
+                        "--allow-duplicate-discovery after reviewing the host behavior"
+                    )
+                    continue
+                updated_allowances.add(allowance)
+    if updated_allowances != allowances:
+        manifest["duplicate_discovery_allowances"] = [
+            {"skill": skill, "paths": list(paths)}
+            for skill, paths in sorted(updated_allowances)
+        ]
+    return has_duplicates, conflicts
 
 
 def _is_sha256(value: Any) -> bool:
@@ -407,60 +675,27 @@ def _plan(
     source_hashes = {
         name: tree_digest(available[name]) for name in names if name in available
     }
-    requested_destinations = {Path(path).as_posix() for path in requested_roots}
     duplicate_exposure = False
-    if "copilot" in requested_agents:
-        for relative in DISCOVERY_PATHS:
-            if relative in requested_destinations:
-                continue
-            other_root = target_root / relative
-            _check_destination_path(target_root, other_root)
-            if not other_root.exists():
-                continue
-            if not other_root.is_dir():
-                raise SkillManagementError(f"agent discovery path is not a directory: {other_root}")
-            for name in names:
-                other_skill = other_root / name
-                if not other_skill.exists() and not other_skill.is_symlink():
-                    continue
-                if other_skill.is_symlink() or not other_skill.is_dir():
-                    raise SkillManagementError(
-                        f"ambiguous duplicate Skill exposure for Copilot: {other_skill}"
-                    )
-                source_path = available.get(name)
-                if source_path is None:
-                    continue
-                source_hash = source_hashes[name]
-                existing_hash = tree_digest(other_skill)
-                if source_hash != existing_hash:
-                    raise SkillManagementError(
-                        f"conflicting same-name Skill visible to Copilot: {other_skill}"
-                    )
-                if not allow_duplicate_discovery:
-                    raise SkillManagementError(
-                        f"identical Skill copies in multiple Copilot discovery roots: "
-                        f"{other_skill}; use --allow-duplicate-discovery only after confirming "
-                        "the host's duplicate behavior"
-                    )
-                duplicate_exposure = True
-
     revision, dirty, repository = source_revision(source_root)
     if dirty and not allow_dirty_source:
         raise SkillManagementError(
             "Skill source has uncommitted changes; commit them or explicitly pass "
             "--allow-dirty-source"
         )
-    if "copilot" in requested_agents and len(requested_roots) > 1:
-        overlap = sorted(set(names))
-        if overlap and not allow_duplicate_discovery:
-            raise SkillManagementError(
-                "the requested agents expose the same Skill name in multiple roots that "
-                "Copilot may scan; use --allow-duplicate-discovery only after verifying "
-                "duplicate handling for your Copilot host"
-            )
-        duplicate_exposure = bool(overlap)
+    if revision != "unversioned" and not dirty:
+        for name, source_hash in source_hashes.items():
+            committed_hash = _git_skill_digest(source_root, revision, name)
+            if committed_hash != source_hash:
+                if not allow_dirty_source:
+                    raise SkillManagementError(
+                        f"Skill {name!r} differs from its Git commit baseline; commit the "
+                        "complete Skill source or explicitly pass --allow-dirty-source"
+                    )
+                dirty = True
     actions: list[tuple[SkillAction, str]] = []
     conflicts: list[str] = []
+    history_cache: dict[tuple[str, str], str] = {}
+    baseline_digest_cache: dict[tuple[str, str], str] = {}
     for relative in requested_roots:
         destination_root = target_root / relative
         destination_key = _relative_target(target_root, destination_root)
@@ -511,7 +746,39 @@ def _plan(
                     history = "rebind"
                 else:
                     try:
-                        history = _validate_history(source_root, baseline, revision)
+                        history_key = (baseline, revision)
+                        history = history_cache.get(history_key)
+                        if history is None:
+                            history = _validate_history(source_root, baseline, revision)
+                            history_cache[history_key] = history
+                        recorded_source = recorded.get("source_repository")
+                        if (
+                            not _source_identity_is_verified(recorded_source)
+                            or not _source_identity_is_verified(repository)
+                            or _normalize_recorded_source_identity(recorded_source)
+                            != _normalize_recorded_source_identity(repository)
+                        ):
+                            raise SkillManagementError(
+                                "Skill source identity changed or cannot be verified; "
+                                "use rebind-source only after reviewing the new source"
+                            )
+                        if recorded.get("source_dirty"):
+                            raise SkillManagementError(
+                                "the recorded baseline contains uncommitted source changes; "
+                                "use rebind-source to establish a new baseline"
+                            )
+                        digest_key = (baseline, name)
+                        baseline_digest = baseline_digest_cache.get(digest_key)
+                        if baseline_digest is None:
+                            baseline_digest = _git_skill_digest(
+                                source_root, baseline, name
+                            )
+                            baseline_digest_cache[digest_key] = baseline_digest
+                        if baseline_digest != recorded.get("source_tree_sha256"):
+                            raise SkillManagementError(
+                                "recorded baseline Skill content does not match the "
+                                "source_commit and source_tree_sha256"
+                            )
                     except SkillManagementError as error:
                         conflicts.append(f"{name} ({relative}): {error}")
                         continue
@@ -530,6 +797,23 @@ def _plan(
                 actions.append(((action, source, name, source_hash, current_hash), relative))
             else:
                 actions.append((("install", source, name, source_hash, None), relative))
+
+    if "copilot" in requested_agents or _copilot_is_exposed(manifest):
+        try:
+            projected = _discovery_state(
+                target_root,
+                set(names),
+                actions=actions,
+                manifest=manifest,
+            )
+            duplicate_exposure, duplicate_conflicts = _check_duplicate_discovery(
+                projected,
+                manifest,
+                allow_duplicates=allow_duplicate_discovery,
+            )
+            conflicts.extend(duplicate_conflicts)
+        except (OSError, SkillManagementError) as error:
+            conflicts.append(f"cannot validate post-operation Skill discovery state: {error}")
 
     if conflicts:
         raise SkillManagementError("preflight conflicts; no files changed:\n- " + "\n- ".join(conflicts))
@@ -674,7 +958,7 @@ def _recover_transaction(target_root: Path, transaction_root: Path) -> str:
         raise SkillManagementError(
             "manifest changed after interruption; preserve the transaction and resolve it manually"
         )
-    if old_manifest_hash is not None and manifest_hash != old_manifest_hash:
+    if old_manifest_hash is not None:
         if manifest_backup_name != "manifest.previous":
             raise SkillManagementError("manifest backup is missing from recovery journal")
         manifest_backup = transaction_root / manifest_backup_name
@@ -796,6 +1080,7 @@ def _recover_transaction(target_root: Path, transaction_root: Path) -> str:
         shutil.rmtree(transaction_root)
         return "completed"
 
+    rollback_plan: list[tuple[Path, Path | None, str | None, str | None]] = []
     for entry in reversed(entries):
         destination = _safe_target_path(target_root, entry["destination"])
         current_hash = _tree_digest_or_missing(destination)
@@ -811,29 +1096,58 @@ def _recover_transaction(target_root: Path, transaction_root: Path) -> str:
             raise SkillManagementError(
                 f"target changed after interruption; preserving {destination}"
             )
-        if backup is not None and backup.exists():
-            if tree_digest(backup) != old_hash:
-                raise SkillManagementError(f"backup integrity check failed: {backup}")
-            if destination.exists():
-                shutil.rmtree(destination)
-            os.replace(backup, destination)
-        elif old_hash is None:
-            if destination.exists():
-                shutil.rmtree(destination)
-        else:
+        if old_hash is not None and (backup is None or not backup.is_dir()):
             raise SkillManagementError(
                 f"required transaction backup is missing for {destination}"
             )
+        rollback_plan.append((destination, backup, old_hash, current_hash))
 
-    backup_name = manifest_backup_name
-    if old_manifest_hash is not None and backup_name and manifest_hash != old_manifest_hash:
-        if backup_name != "manifest.previous":
-            raise SkillManagementError("invalid manifest backup path in recovery journal")
-        backup = transaction_root / backup_name
-        if not backup.is_file() or hashlib.sha256(backup.read_bytes()).hexdigest() != old_manifest_hash:
-            raise SkillManagementError("manifest backup is missing or corrupt")
-        _write_bytes_atomically(manifest_path, backup.read_bytes())
-    elif old_manifest_hash is None and manifest_hash is not None:
+    manifest_needs_restore = manifest_hash != old_manifest_hash
+    manifest_backup = (
+        transaction_root / manifest_backup_name
+        if manifest_backup_name is not None
+        else None
+    )
+
+    for destination, backup, old_hash, expected_current_hash in rollback_plan:
+        if _tree_digest_or_missing(destination) != expected_current_hash:
+            raise SkillManagementError(
+                f"target changed during recovery; preserving {destination}"
+            )
+        if backup is not None:
+            if not backup.is_dir() or tree_digest(backup) != old_hash:
+                raise SkillManagementError(
+                    f"backup changed during recovery; preserving {backup}"
+                )
+            if destination.exists():
+                shutil.rmtree(destination)
+            os.replace(backup, destination)
+        elif destination.exists():
+            shutil.rmtree(destination)
+
+    if manifest_needs_restore and old_manifest_hash is not None:
+        if manifest_backup is None or not manifest_backup.is_file():
+            raise SkillManagementError("manifest backup changed during recovery")
+        current_manifest = (
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            if manifest_path.is_file()
+            else None
+        )
+        if current_manifest != new_manifest_hash:
+            raise SkillManagementError(
+                "manifest changed during recovery; preserve the transaction"
+            )
+        _write_bytes_atomically(manifest_path, manifest_backup.read_bytes())
+    elif manifest_needs_restore and old_manifest_hash is None:
+        current_manifest = (
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            if manifest_path.is_file()
+            else None
+        )
+        if current_manifest != new_manifest_hash:
+            raise SkillManagementError(
+                "manifest changed during recovery; preserve the transaction"
+            )
         manifest_path.unlink()
     shutil.rmtree(transaction_root)
     return "rolled back"
@@ -1066,6 +1380,23 @@ def _apply(
                     f"target changed during Skill update; refusing to commit manifest for "
                     f"{destination.name}"
                 )
+        if _copilot_is_exposed(manifest):
+            changed_names = {action[0][2] for action in actions}
+            discovery_state = _discovery_state(
+                target_root,
+                changed_names,
+                manifest=manifest,
+            )
+            _has_duplicates, duplicate_conflicts = _check_duplicate_discovery(
+                discovery_state,
+                manifest,
+                allow_duplicates=False,
+            )
+            if duplicate_conflicts:
+                raise SkillManagementError(
+                    "post-apply discovery validation failed:\n- "
+                    + "\n- ".join(duplicate_conflicts)
+                )
         if manifest_path.is_symlink():
             raise SkillManagementError("manifest changed to a symlink during Skill update")
         current_manifest = manifest_path.read_bytes() if manifest_path.exists() else None
@@ -1091,6 +1422,19 @@ def _apply(
 
 def _run(args: argparse.Namespace) -> int:
     if args.command == "validate":
+        target = getattr(args, "target", None)
+        if target is not None:
+            root = target.resolve()
+            if not root.is_dir():
+                print(f"ERROR: target repository does not exist: {root}", file=sys.stderr)
+                return 1
+            errors = validate_repository_skills(root, require_canonical_source=False)
+            if errors:
+                for error in errors:
+                    print(f"ERROR: {error}", file=sys.stderr)
+                return 1
+            print(f"Validated Agent Skills in target repository {root}")
+            return 0
         root = args.source.resolve()
         try:
             directories = skill_directories(root)
@@ -1267,6 +1611,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = commands.add_parser("validate", help="validate Skill source directories")
     validate.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
+    validate.add_argument(
+        "--target",
+        type=Path,
+        help="validate installed package hashes and duplicate discovery in a repository",
+    )
 
     for command in ("install", "sync", "rebind-source"):
         action = commands.add_parser(command, help=f"plan and optionally {command} Skills")

@@ -32,6 +32,9 @@ jobs:
       - name: Lint Markdown
         run: npx --yes markdownlint-cli2@0.23.3 "**/*.md"
 
+      - name: Validate Agent Skills
+        run: python3 scripts/manage_skills.py validate
+
       - name: Validate documentation links and conventions
         run: python3 scripts/validate_docs.py
 

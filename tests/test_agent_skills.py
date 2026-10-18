@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts import agent_skills
 from scripts.agent_skills import validate_repository_skills, validate_skill_directory
 
 
@@ -30,6 +31,15 @@ description: Use this Skill for a focused task.
             encoding="utf-8",
         )
         return skill_dir
+
+    def manifest_record(self, skill_dir: Path) -> dict[str, object]:
+        return {
+            "source_repository": "test-source",
+            "source_commit": "unversioned",
+            "source_dirty": False,
+            "source_tree_sha256": "0" * 64,
+            "installed_tree_sha256": agent_skills._skill_fingerprint(skill_dir),
+        }
 
     def test_accepts_standard_portable_skill_metadata(self) -> None:
         skill_dir = self.make_skill("sample-skill")
@@ -146,13 +156,21 @@ description: Use this Skill for a focused task.
         (second_skill / "SKILL.md").write_bytes((skill / "SKILL.md").read_bytes())
         manifest = self.root / ".devconcord" / "skills-manifest.json"
         manifest.parent.mkdir()
+        first_record = self.manifest_record(skill)
+        second_record = self.manifest_record(second_skill)
         manifest.write_text(
             json.dumps(
                 {
                     "schema_version": 2,
                     "packages": {
-                        ".agents/skills": {"agents": ["codex"], "skills": {}},
-                        ".claude/skills": {"agents": ["claude"], "skills": {}},
+                        ".agents/skills": {
+                            "agents": ["codex"],
+                            "skills": {"sample-skill": first_record},
+                        },
+                        ".claude/skills": {
+                            "agents": ["claude"],
+                            "skills": {"sample-skill": second_record},
+                        },
                     },
                 }
             ),
@@ -167,8 +185,14 @@ description: Use this Skill for a focused task.
                 {
                     "schema_version": 2,
                     "packages": {
-                        ".agents/skills": {"agents": ["codex", "copilot"], "skills": {}},
-                        ".claude/skills": {"agents": ["claude", "copilot"], "skills": {}},
+                        ".agents/skills": {
+                            "agents": ["codex", "copilot"],
+                            "skills": {"sample-skill": first_record},
+                        },
+                        ".claude/skills": {
+                            "agents": ["claude", "copilot"],
+                            "skills": {"sample-skill": second_record},
+                        },
                     },
                 }
             ),
@@ -176,6 +200,30 @@ description: Use this Skill for a focused task.
         )
         errors = validate_repository_skills(self.root)
         self.assertTrue(any("identical Skill copy" in error for error in errors))
+
+        manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
+        manifest_data["duplicate_discovery_allowances"] = [
+            {
+                "skill": "sample-skill",
+                "paths": [".agents/skills", ".claude/skills"],
+            }
+        ]
+        manifest.write_text(json.dumps(manifest_data), encoding="utf-8")
+        errors = validate_repository_skills(self.root)
+        self.assertFalse(any("identical Skill copy" in error for error in errors))
+
+        unexpected_file = self.root / ".agents" / "skills" / "unexpected.txt"
+        unexpected_file.write_text("not a Skill package\n", encoding="utf-8")
+        errors = validate_repository_skills(self.root)
+        self.assertTrue(any("unexpected non-Skill entry" in error for error in errors))
+        unexpected_file.unlink()
+
+        (second_skill / "SKILL.md").write_text(
+            (second_skill / "SKILL.md").read_text(encoding="utf-8") + "\nLocal edit.\n",
+            encoding="utf-8",
+        )
+        errors = validate_repository_skills(self.root)
+        self.assertTrue(any("conflicting same-name Skill" in error for error in errors))
 
 
 if __name__ == "__main__":

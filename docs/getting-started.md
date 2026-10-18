@@ -10,7 +10,7 @@
 | すでにコードや規約があるプロジェクトに共通資料を選んで導入する | [既存プロジェクトへの初回導入](../prompts/adopt-guidance.md) | 既存成果物を保護し、共通資料を選択的に統合 |
 | すでに導入済みの共通資料を更新する | [導入済み資料の同期](../prompts/sync-guidance.md) | 資料別の比較基準と保留メモを使った差分適用 |
 
-Bootstrapは既存成果物を新規構成で上書きするためのものではありません。ファイルや実装がある場合は既存状態を先に確認し、共通資料の導入が目的なら初回導入ワークフローを選択します。新規対象へBootstrap Skillを先に導入した場合は、検証済みschema 2 manifestに記録されたSkillファイルだけを例外的な初期状態として扱えます。その他のファイル、未知のSkill、既存Git履歴やremoteがあれば、通常の既存状態として保護して停止します。最も安全で簡単な順序は、空の対象でBootstrapを実施してからSkillを導入することです。
+Bootstrapは既存成果物を新規構成で上書きするためのものではありません。開始状態は、(1)空で未初期化、(2)入力一覧に明記された設計書だけ、(3)検証済みschema 2 manifestが管理するSkillsだけ、(4)その両方、(5)Git初期化済み、(6)既存プロジェクトに区別します。設計書だけの状態では指定された通常ファイルとその親ディレクトリ以外に成果物がないことを確認し、設計書を保持したまま追加作業できます。Skillsもある場合はmanifest・ツリーハッシュ・余分なファイルの検査もすべて必要です。Gitが既にある場合は再初期化せず、HEAD・履歴・remote・index・作業ツリーを確認して保持します。unborn HEADでremoteや無関係なstaged変更がない場合は追加作業を検討できます。commitや成果物が既にある場合は空と扱わず、衝突しない追加だけを許可し、競合すれば停止します。最も安全で簡単な順序は、設計書を対象外から読み、空の対象でBootstrapを実施してからSkillを導入することです。
 
 ## Agent Skillsを利用する
 
@@ -31,7 +31,7 @@ Skill本体は `.agents/skills/` に一つだけ置き、agent名をSkillの所�
 | Codex + Claude Code | `.agents/skills/` と `.claude/skills/` に同内容を生成 |
 | Codex + Claude Code + Copilot | 上記二箇所。Copilotから重複発見される可能性があるため明示opt-inが必要 |
 
-Copilotは複数のSkill探索先を持ちます。Claude Codeのsymlink重複扱い等の仕様をCopilotや他エージェントに一般化しません。三者併用時の同名Skill重複解決はホスト依存で、実機確認されていない限り保証しません。通常はCopilotが見える探索先を一つにし、重複のない組み合わせを選んでください。
+Copilotが複数のSkill探索先を実際に発見するかはホスト・版ごとに確認し、Claude Codeのsymlink等の挙動を他エージェントに一般化しません。管理ツールはCopilotがmanifest上で有効な場合、今回指定していない配置先も含めて選択Skillの操作後配置を比較します。段階的に `Claude + Copilot` を導入した後にCodexを追加する場合も、同名コピーを検出して止めます。異なる内容の同名Skillはopt-inで回避できません。同一内容の重複だけ、実機の挙動を確認したうえで `--allow-duplicate-discovery` により明示許可できます。許可はmanifestのSkill名・配置先ペアとして記録され、同じ配置先の再実行で失われません。片方だけを更新して内容がずれた場合は同期を拒否し、両方を同時に更新してください。
 
 DevConcordのcloneを `~/projects/devconcord`、対象を `~/projects/my-app` とした例です。まず `--apply` なしで計画を確認します。これは既定のdry-runで、ファイルを変更しません。
 
@@ -67,9 +67,9 @@ python3 ~/projects/devconcord/scripts/manage_skills.py sync \
   --target ~/projects/my-app --agent codex --apply
 ```
 
-初回導入時は `.devconcord/skills-manifest.json` にSkillごとの出典リポジトリ識別子・コミット、出典ツリーのSHA-256、導入済みツリーのSHA-256を記録します。Git remote URLを記録する場合はユーザー情報・query・fragmentを除去します。導入先でSkillが編集されている、管理記録がない同名Skillがある、別の探索先と衝突する場合は上書きしません。内容を確認してローカル変更を退避・統合するか、衝突する配置を一つに整理してから再実行します。`guidance-provenance.md` は共通ガイド資料の記録であり、Skillの導入記録には使用しません。
+初回導入時は `.devconcord/skills-manifest.json` にSkillごとの出典識別子・完全コミットSHA、出典ツリーのSHA-256、導入済みツリーのSHA-256を記録します。HTTPS/SSHのscheme差やremote名変更（単一remoteの場合）は正規化し、credential・query・fragmentを識別子へ含めません。remoteのないローカルGit cloneはGit common directoryのパスを一方向SHA-256化して識別します。同じremote・履歴だけでも出典の真正性を暗号学的に証明するものではないため、更新元を信頼できることは利用者が確認してください。remoteを照合できない、複数remoteから現在の出典を選べない、記録基準コミットのSkill内容が記録ハッシュと一致しない場合は通常同期を止めます。HTTPSからSSHへの切替等、同一出典だと確認できるremote表記変更は通常同期できます。導入先でSkillが編集されている、管理記録がない同名Skillがある、別の探索先と衝突する場合は上書きしません。内容を確認してローカル変更を退避・統合するか、衝突する配置を一つに整理してから再実行します。`guidance-provenance.md` は共通ガイド資料の記録であり、Skillの導入記録には使用しません。
 
-同期は記録された完全コミットが現在のソースcloneに存在し、現在のコミットがその子孫であることを確認します。同一コミットはそのまま、通常の前進だけを同期し、巻き戻し・分岐・欠落履歴・浅い履歴・ローカル編集・未コミットソースは止めます。fetch / unshallow / reset は行いません。別のソースを意図的に採用する場合だけ、差分を確認して `rebind-source` を使います。rebindも導入先ローカル編集の上書きは許可せず、明示的な `--apply` が必要です。
+通常同期は、記録された出典識別子、完全コミットSHAの存在と祖先関係、記録コミット時点のSkill内容と記録された出典ツリーハッシュ、導入先のローカルハッシュをそれぞれ検査します。同じ出典からの同一コミットまたは前進だけを許可し、別remote、巻き戻し、分岐、欠落/浅い履歴、比較基準不一致、ローカル編集、dirty sourceは止めます。fetch / unshallow / reset は行いません。出典URL/remoteの識別子は信頼の暗号学的証明ではなく、リモート所有権・commit署名検証も実施しません。確認できない出典変更には、内容を確認して `rebind-source` を明示します。rebindも導入先ローカル編集の上書きは許可せず、明示的な `--apply` が必要です。
 
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py rebind-source \
@@ -98,11 +98,12 @@ DevConcordルートで `requirements-dev.txt` の依存が導入済みのPython�
 ```sh
 cd ~/projects/devconcord
 python3 scripts/manage_skills.py validate
+python3 scripts/manage_skills.py validate --target ~/projects/my-app
 python3 scripts/validate_docs.py
 python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 ```
 
-決定的な検証で確認できるのは構造・メタデータ・参照・配布処理です。対象エージェントでのSkill発見、選択、適用は[統合シナリオ](../tests/integration/README.md)に従って個別に評価します。
+`validate` の `--target` は導入済みmanifestとSkill実体のSHA-256、記録されていない/欠落したSkill、探索先の名前衝突を照合します。引数なしの `validate` は従来どおりSkillソースを検証します。決定的な検証で確認できるのは構造・メタデータ・参照・ファイル状態です。対象エージェントでのSkill発見、選択、適用は[統合シナリオ](../tests/integration/README.md)に従って個別に評価します。
 
 Claude Code・Codex・Copilotでの実際の発見・呼び出し動作は各エージェントと環境のバージョンに依存します。静的検証や配布テストは実エージェントによる実行確認の代替ではありません。未実行のエージェントは未検証として報告してください。
 
@@ -168,20 +169,22 @@ codex
 
 ## Design-to-Repository Bootstrapを行う
 
-新規プロジェクトのディレクトリを用意し、その対象を作業コンテキストとしてAIエージェントを起動します。対象を既存プロジェクトのGit URLからcloneする必要はありません。複数のMarkdown設計書を渡すほか、PDF/DOCX等は利用中のエージェント環境で実際に内容を読み取れる場合に限り入力にできます。読み取りできない節・抽出結果の不確かな内容は未確認として扱います。
+新規プロジェクトのディレクトリを用意し、その対象を作業コンテキストとしてAIエージェントを起動します。対象を既存プロジェクトのGit URLからcloneする必要はありません。推奨例では設計書を対象外の `../design/` から参照します。設計書を対象内に置く場合は、入力欄でファイルを明示し、その設計書だけが存在する開始状態として扱うことを指示します。指定ファイルは保持し、生成物で上書きしません。PDF/DOCX等は利用中のエージェント環境で実際に内容を読み取れる場合に限り入力にできます。読み取りできない節・抽出結果の不確かな内容は未確認として扱います。
 
 Bootstrap Skillを使う場合、推奨順序は空の対象でBootstrapを開始し、初期成果物を作成してから対象へ必要なSkillsを導入することです。Skillを先にインストール済みの対象を使う場合は、[`bootstrap-from-design.md`](../prompts/bootstrap-from-design.md) にあるschema 2 manifest・ツリーハッシュ・対象内の他成果物・Git履歴の検査をすべて満たさなければ進めません。Codex / Claude Code / CopilotいずれでもSkillの利用と対象へのファイル変更を区別し、agentの探索挙動が未確認ならプロンプト全文を使う手順へフォールバックします。
 
 [`bootstrap-from-design.md`](../prompts/bootstrap-from-design.md) の全文をエージェントへ渡し、入力欄を指定します。
 
 ```text
-設計書のパス（複数可）: ./design/requirements.md, ./design/architecture.md
+設計書のパス（複数可）: ../design/requirements.md, ../design/architecture.md
 初期化対象ディレクトリ: .
 プロジェクト名: Example App
 技術的制約: 設計書に記載の内容を参照
 初期化範囲: 開発基盤のみ
-追加指定: 設計書をリポジトリへコピーしない
+追加指定: 設計書をリポジトリへコピーしない。対象外の設計書は読み取り専用で参照する
 ```
+
+設計書を対象内に配置したい場合は、例えば `./design/requirements.md` と `./design/architecture.md` を入力として明示し、対象にそのファイルと親ディレクトリ以外の成果物がないことを確認します。Bootstrapは指定された設計書を読み取り専用入力として保持し、別ファイルの生成・追記で構成します。対象内設計書とSkillsを同居させる場合はmanifest・ツリーハッシュ等のSkills検証条件も必要です。
 
 作業開始前に設計書の矛盾・不足と対象ディレクトリのGit/ファイル状態を確認します。曖昧なライセンスや技術選択を勝手に決めず、重要な不明点は未決事項として記録します。実装のない設計制約を実装済みの事実として `AGENTS.md` / `REVIEWS.md` に記載しないよう、既存の指示ファイル生成プロンプトの方針を再利用します。
 

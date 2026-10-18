@@ -146,16 +146,14 @@ def _skill_fingerprint(skill_dir: Path) -> str:
         relative = path.relative_to(skill_dir).as_posix().encode("utf-8")
         digest.update(len(relative).to_bytes(4, "big"))
         digest.update(relative)
-        digest.update((stat.S_IMODE(path.stat().st_mode)).to_bytes(4, "big"))
-        if path.is_dir():
-            digest.update(b"D")
-        elif path.is_file():
+        if not path.is_dir() and not path.is_file():
+            raise ValueError(f"unsupported non-regular Skill content: {path}")
+        digest.update(b"D" if path.is_dir() else b"F")
+        digest.update(stat.S_IMODE(path.stat().st_mode).to_bytes(4, "big"))
+        if path.is_file():
             content = path.read_bytes()
-            digest.update(b"F")
             digest.update(len(content).to_bytes(8, "big"))
             digest.update(content)
-        else:
-            raise ValueError(f"unsupported non-regular Skill content: {path}")
     return digest.hexdigest()
 
 
@@ -163,9 +161,10 @@ def validate_skill_roots(
     skills_roots: list[Path],
     *,
     agent_exposures: dict[str, set[str]] | None = None,
+    duplicate_allowances: set[tuple[str, tuple[str, str]]] | None = None,
 ) -> list[str]:
     errors: list[str] = []
-    names: dict[str, tuple[Path, Path]] = {}
+    names: dict[str, list[tuple[Path, Path]]] = {}
     for root in skills_roots:
         if not root.exists():
             continue
@@ -177,62 +176,84 @@ def validate_skill_roots(
         for skill_dir in skills:
             errors.extend(validate_skill_directory(skill_dir))
             name = skill_dir.name.casefold()
-            if name in names:
-                previous, previous_root = names[name]
-                try:
-                    identical = _skill_fingerprint(skill_dir) == _skill_fingerprint(previous)
-                except (OSError, ValueError) as error:
-                    errors.append(
-                        f"{skill_dir}: cannot compare duplicate Skill package "
-                        f"({type(error).__name__})"
-                    )
-                    continue
-                if identical:
+            previous_locations = names.get(name, [])
+            if previous_locations:
+                for previous, previous_root in previous_locations:
+                    try:
+                        identical = _skill_fingerprint(skill_dir) == _skill_fingerprint(previous)
+                    except (OSError, ValueError) as error:
+                        errors.append(
+                            f"{skill_dir}: cannot compare duplicate Skill package "
+                            f"({type(error).__name__})"
+                        )
+                        continue
+                    current_root_key = f"{root.parent.name}/{root.name}"
+                    previous_root_key = f"{previous_root.parent.name}/{previous_root.name}"
                     current_agents = (
-                        agent_exposures.get(f"{root.parent.name}/{root.name}")
+                        agent_exposures.get(current_root_key)
                         if agent_exposures is not None
                         else None
                     )
                     previous_agents = (
-                        agent_exposures.get(f"{previous_root.parent.name}/{previous_root.name}")
+                        agent_exposures.get(previous_root_key)
                         if agent_exposures is not None
                         else None
                     )
-                    if (
+                    disjoint_exposure = (
                         current_agents is not None
                         and previous_agents is not None
                         and current_agents.isdisjoint(previous_agents)
+                    )
+                    allowance = (
+                        name,
+                        tuple(sorted((current_root_key, previous_root_key))),
+                    )
+                    if identical and (
+                        disjoint_exposure
+                        or (
+                            duplicate_allowances is not None
+                            and allowance in duplicate_allowances
+                        )
                     ):
                         continue
-                    errors.append(
-                        f"{skill_dir}: identical Skill copy also discovered at {previous}; "
-                        "one agent may discover duplicate copies from multiple paths"
-                    )
-                else:
-                    errors.append(
-                        f"{skill_dir}: conflicting same-name Skill also discovered at {previous}"
-                    )
-            else:
-                names[name] = (skill_dir, root)
+                    if identical:
+                        errors.append(
+                            f"{skill_dir}: identical Skill copy also discovered at {previous}; "
+                            "one agent may discover duplicate copies from multiple paths"
+                        )
+                    else:
+                        errors.append(
+                            f"{skill_dir}: conflicting same-name Skill also discovered at {previous}"
+                        )
+            names.setdefault(name, []).append((skill_dir, root))
     return errors
 
 
-def _manifest_agent_exposures(repository_root: Path) -> tuple[dict[str, set[str]] | None, list[str]]:
+def _manifest_agent_exposures(
+    repository_root: Path,
+) -> tuple[
+    dict[str, set[str]] | None,
+    set[tuple[str, tuple[str, str]]],
+    list[str],
+]:
     metadata_root = repository_root / ".devconcord"
     manifest_path = metadata_root / "skills-manifest.json"
     if metadata_root.is_symlink():
-        return None, [f"{metadata_root}: metadata directory must not be a symlink"]
+        return None, set(), [f"{metadata_root}: metadata directory must not be a symlink"]
     if not manifest_path.exists() and not manifest_path.is_symlink():
-        return None, []
+        return None, set(), []
     if manifest_path.is_symlink() or not manifest_path.is_file():
-        return None, [f"{manifest_path}: must be a regular manifest file"]
+        return None, set(), [f"{manifest_path}: must be a regular manifest file"]
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        return None, [f"{manifest_path}: cannot read agent exposure metadata ({type(error).__name__})"]
+        return None, set(), [
+            f"{manifest_path}: cannot read agent exposure metadata ({type(error).__name__})"
+        ]
     if not isinstance(manifest, dict):
-        return None, [f"{manifest_path}: invalid agent exposure metadata"]
+        return None, set(), [f"{manifest_path}: invalid agent exposure metadata"]
     exposures: dict[str, set[str]] = {}
+    allowances: set[tuple[str, tuple[str, str]]] = set()
     schema = manifest.get("schema_version")
     if type(schema) is int and schema == 2 and isinstance(manifest.get("packages"), dict):
         for path, package in manifest["packages"].items():
@@ -250,9 +271,42 @@ def _manifest_agent_exposures(repository_root: Path) -> tuple[dict[str, set[str]
                 or len(package["agents"]) != len(set(package["agents"]))
                 or not set(package["agents"]) <= valid_agents
             ):
-                return None, [f"{manifest_path}: invalid package exposure metadata"]
+                return None, set(), [f"{manifest_path}: invalid package exposure metadata"]
             exposures[path] = set(package["agents"])
-        return exposures, []
+            package_errors = _validate_installed_package(
+                repository_root / path,
+                package.get("skills"),
+                manifest_path,
+            )
+            if package_errors:
+                return None, set(), package_errors
+        records = manifest.get("duplicate_discovery_allowances", [])
+        if not isinstance(records, list):
+            return None, set(), [f"{manifest_path}: invalid duplicate-discovery allowances"]
+        for record in records:
+            if (
+                not isinstance(record, dict)
+                or set(record) != {"skill", "paths"}
+                or not isinstance(record.get("skill"), str)
+                or not SKILL_NAME.fullmatch(record["skill"])
+                or not isinstance(record.get("paths"), list)
+                or len(record["paths"]) != 2
+                or any(not isinstance(path, str) or path not in DISCOVERY_PATHS for path in record["paths"])
+                or len(set(record["paths"])) != 2
+            ):
+                return None, set(), [
+                    f"{manifest_path}: invalid duplicate-discovery allowance"
+                ]
+            allowance = (
+                record["skill"].casefold(),
+                tuple(sorted(record["paths"])),
+            )
+            if allowance in allowances:
+                return None, set(), [
+                    f"{manifest_path}: duplicate duplicate-discovery allowance"
+                ]
+            allowances.add(allowance)
+        return exposures, allowances, []
     if type(schema) is int and schema == 1 and isinstance(manifest.get("installations"), dict):
         for path, installation in manifest["installations"].items():
             if (
@@ -266,20 +320,96 @@ def _manifest_agent_exposures(repository_root: Path) -> tuple[dict[str, set[str]
                     else {"claude", "copilot"}
                 )
             ):
-                return None, [f"{manifest_path}: invalid legacy exposure metadata"]
+                return None, set(), [f"{manifest_path}: invalid legacy exposure metadata"]
             exposures[path] = {installation["agent"]}
-        return exposures, []
-    return None, [f"{manifest_path}: unknown exposure manifest format"]
+            package_errors = _validate_installed_package(
+                repository_root / path,
+                installation.get("skills"),
+                manifest_path,
+            )
+            if package_errors:
+                return None, set(), package_errors
+        return exposures, set(), []
+    return None, set(), [f"{manifest_path}: unknown exposure manifest format"]
 
 
-def validate_repository_skills(repository_root: Path) -> list[str]:
+def _validate_installed_package(
+    skills_root: Path,
+    records: Any,
+    manifest_path: Path,
+) -> list[str]:
+    if not isinstance(records, dict):
+        return [f"{manifest_path}: package Skill records must be a mapping"]
+    errors: list[str] = []
+    try:
+        actual_skills = {path.name: path for path in skill_directories(skills_root)}
+        if skills_root.exists():
+            unexpected_entries = [
+                path for path in skills_root.iterdir() if not path.is_dir()
+            ]
+            errors.extend(
+                f"{path}: unexpected non-Skill entry in managed package"
+                for path in unexpected_entries
+            )
+    except (OSError, ValueError) as error:
+        return [f"{skills_root}: cannot inspect managed Skills ({type(error).__name__})"]
+    for name, record in records.items():
+        if (
+            not isinstance(name, str)
+            or not SKILL_NAME.fullmatch(name)
+            or not isinstance(record, dict)
+            or not isinstance(record.get("source_tree_sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", record["source_tree_sha256"])
+            or not isinstance(record.get("installed_tree_sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", record["installed_tree_sha256"])
+            or not isinstance(record.get("source_repository"), str)
+            or not record["source_repository"]
+            or not isinstance(record.get("source_commit"), str)
+            or not (
+                record["source_commit"] == "unversioned"
+                or re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", record["source_commit"])
+            )
+            or not isinstance(record.get("source_dirty"), bool)
+        ):
+            errors.append(f"{manifest_path}: invalid provenance record for Skill {name!r}")
+            continue
+        skill_dir = actual_skills.get(name)
+        if skill_dir is None:
+            errors.append(f"{skills_root / name}: manifest records a missing Skill")
+            continue
+        try:
+            digest = _skill_fingerprint(skill_dir)
+        except (OSError, ValueError) as error:
+            errors.append(
+                f"{skill_dir}: cannot verify installed Skill hash ({type(error).__name__})"
+            )
+            continue
+        if digest != record["installed_tree_sha256"]:
+            errors.append(f"{skill_dir}: installed Skill differs from manifest hash")
+    for name in sorted(set(actual_skills) - set(records)):
+        errors.append(f"{actual_skills[name]}: installed Skill is not recorded in manifest")
+    return errors
+
+
+def validate_repository_skills(
+    repository_root: Path,
+    *,
+    require_canonical_source: bool = True,
+) -> list[str]:
     roots = [repository_root / relative for relative in DISCOVERY_PATHS]
-    exposures, exposure_errors = _manifest_agent_exposures(repository_root)
-    errors = [*exposure_errors, *validate_skill_roots(roots, agent_exposures=exposures)]
+    exposures, allowances, exposure_errors = _manifest_agent_exposures(repository_root)
+    errors = [
+        *exposure_errors,
+        *validate_skill_roots(
+            roots,
+            agent_exposures=exposures,
+            duplicate_allowances=allowances,
+        ),
+    ]
     canonical_root = repository_root / DISCOVERY_PATHS[0]
-    if not canonical_root.exists():
+    if require_canonical_source and not canonical_root.exists():
         errors.append(f"{canonical_root}: canonical Agent Skills source directory is missing")
-    else:
+    elif require_canonical_source:
         try:
             if not skill_directories(canonical_root):
                 errors.append(f"{canonical_root}: canonical Agent Skills source is empty")

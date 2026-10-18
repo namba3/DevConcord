@@ -26,13 +26,26 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 
 ## Agent Skillsの決定的な配布・検証テスト
 
-[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、相対リンク、権限frontmatter、複数探索先の名前衝突を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリに対してdry-run、7通りのagent組み合わせと配置パッケージの共有、schema 1移行、選択インストール、出典manifest、冪等な再実行、前進/巻き戻し/異なる履歴、dirty source、ローカル編集・同名衝突の保護、manifest破損保護、失敗時rollbackと中断journal recovery、正本の不変性を確認します。
+[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、相対リンク、権限frontmatter、探索先の名前衝突、明示許可のmanifest記録を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリに対してdry-run、7通りのagent組み合わせ、段階的agent追加と全体重複状態、許可記録の再実行保持、片側同期拒否・複数側の一括同期、schema 1移行、選択インストール、HTTPS/SSH表記切替、同履歴の別remote拒否、比較基準Git treeとsource hash、前進/巻き戻し/分岐/欠落履歴、dirty source、ローカル編集保護を検査します。recover系は複数パッケージ中断、後続対象の外部変更による全体preflight拒否、破損backup、manifest書込後の完了判定、I/O失敗後の再試行を確認し、preflight拒否時の既存Skill・manifest不変をアサートします。
 
 ```sh
 python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 ```
 
 これはファイルシステム操作とメタデータの決定的なテストです。実際のエージェントがSkillを発見・選択・実行することを証明しません。
+
+特に以下の操作列を決定的な一時Gitリポジトリで確認します。
+
+```text
+install(Claude, Copilot) -> install(Codex) -> reject duplicate unless explicitly allowed
+-> record allowance -> repeat install -> reject one-sided sync -> sync both -> validate
+install(Source A) -> fork with shared baseline history -> reject sync(Source B)
+-> rebind-source(Source B)
+install(v1) -> interrupt sync(v2) -> external edit to a later recovery target
+-> recover preflight rejects without changing any earlier target or manifest
+```
+
+duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙動を検証済みにするものではありません。実エージェントごとの発見範囲・選択結果は引き続き手動シナリオで確認します。
 
 ## Agent Skillsのエージェント実機シナリオ
 

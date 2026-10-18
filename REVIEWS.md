@@ -22,8 +22,9 @@
 - Design-to-Repository Bootstrapが既存導入・同期と区別され、入力設計書の出典と共通資料のprovenanceを分けているか。対象の既存ファイル/Git履歴、指定初期化範囲、ライセンス・技術選択の不確実性を安全に扱い、設計要求から初期構造・課題・検証へ追跡できるか。実AIの判断評価と決定的な成果物アサーションの証拠を混同していないか。
 - Agent Skillsが標準の `SKILL.md` frontmatterとSkill名規則に従い、各Skillの正本が一つで、相対参照が配布単位内で解決するか。ベンダー固有のpermission/invocation構文を共有Skillへ混入させず、Skillの記述を実行権限の境界と誤認していないか。
 - Agentごとの実探索先に照らし、同じSkillの共有・生成コピー・symlink・同一内容複製・別内容の同名衝突を区別しているか。複数探索先の同名Skill解決を未確認のまま保証していないか。Codex/Copilot共有およびCopilotを含む組み合わせのテストが配置・manifest・内容一致を検証しているか。
-- Skill manifestのschema移行が未知/破損状態を保持し、同期が記録元の完全SHA・コミット存在・祖先関係・source dirty・導入先ハッシュを確認しているか。出典変更や巻き戻しを通常同期に混ぜていないか。
-- インストール/同期が排他制御とjournalにより失敗・中断後の部分状態を検出し、ローカル変更や外部変更を保護して回復できるか。クロスデバイス置換、壊れたbackup/journal、プロセス強制終了の保証限界を明確にしているか。
+- Skill manifestのschema移行が未知/破損状態を保持し、同期が出典識別子・記録元の完全SHA・コミット存在・祖先関係・比較基準時点のSkill内容hash・source dirty・導入先ハッシュを独立して確認しているか。同じ履歴を持つ別remoteへの切替、Git管理外/ignoredなsource内容、URL scheme差・remote名変更を適切に区別し、出典変更や巻き戻しを通常同期に混ぜていないか。
+- Agent Skills管理は単一操作だけでなくinstall/sync/rebind/recoverとagentの段階的追加を組み合わせた状態遷移テストがあり、manifestと実体、同名内容、永続opt-in、冪等性、変更範囲の不変条件を各段階で確認しているか。Copilot重複検査が今回の指定agentだけでなく、操作後の全探索先と実際のpackage内容を比較しているか。
+- インストール/同期が排他制御とjournalにより失敗・中断後の部分状態を検出し、ローカル変更や外部変更を保護して回復できるか。recoverは全対象のjournal・manifest・backup・staged・導入先状態を変更前にpreflightし、後続の不整合で前半だけ変更しないか。クロスデバイス置換、壊れたbackup/journal、プロセス強制終了の保証限界を明確にしているか。
 - Skill配布・同期ツールがdry-runを既定とし、既存同名Skill、他探索先との重複、壊れた/変更済みの導入物、シンボリックリンク、無効なprovenance manifestを安全に検出するか。失敗時に部分更新を残さず、出典・適用版・実体hashを整合させ、正本・無関係ファイル・Git履歴を変更していないか。
 - `.agents/skills/`、`.claude/skills/`、`.github/skills/` の探索パスを各ホストの実際のサポートに合わせて扱い、重複発見や名前衝突を説明しているか。Claude Code・Codex・Copilotの実機確認を行っていない場合、静的検証・配布テストを互換性実証として報告していないか。
 - Skill discovery (metadata/description)、selection (適用場面・責務境界)、execution (成果物・検証・安全性) を別々に評価し、自然言語の説明が適切なだけで実行品質を保証したと主張していないか。導入・同期Skillsの出典記録を `guidance-provenance.md` と重複・混同していないか。

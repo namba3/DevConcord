@@ -20,6 +20,8 @@ The output must explain why a user need implies a function or behavior, how succ
 
 ## References
 
+The links below follow `main` and can be newer than this installed Skill. For version-matched detail, read this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` in the DevConcord links with that full SHA. If no commit is recorded or the revision is unavailable, do not assume the linked guide matches; the workflow above remains the usable baseline.
+
 - [DevConcord UI/UX design guide](https://github.com/namba3/DevConcord/blob/main/docs/application-design/ui-ux-guide.md)
 - [Requirements template](https://github.com/namba3/DevConcord/blob/main/docs/application-design/templates/requirements.md)
 

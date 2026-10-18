@@ -19,7 +19,9 @@ Summarize scope and evidence, prioritized findings, checks performed and limitat
 
 ## References
 
+The links below follow `main` and can be newer than this installed Skill. For version-matched detail, read this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` in the DevConcord links with that full SHA. If no commit is recorded or the revision is unavailable, do not assume the linked guide matches; the workflow above remains the usable baseline.
+
 - [DevConcord review criteria](https://github.com/namba3/DevConcord/blob/main/REVIEWS.md)
 - [Repository review workflow](https://github.com/namba3/DevConcord/blob/main/docs/README.md)
 
-For an external target, apply its local `REVIEWS.md` as the project-specific source of review criteria. These upstream references are optional and may require network access. When installed with `manage_skills.py`, use the recorded `source_commit` in `.devconcord/skills-manifest.json` in place of `main` in these URLs to pin the references to the installed source revision.
+For an external target, apply its local `REVIEWS.md` as the project-specific source of review criteria. These upstream references are optional and may require network access.

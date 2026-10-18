@@ -11,7 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from scripts import manage_skills
+from scripts import agent_skills, manage_skills
 
 
 class SkillManagementTests(unittest.TestCase):
@@ -70,6 +70,7 @@ Version: {version}
         skills: list[str] | None = None,
         apply: bool = False,
         allow_duplicate_discovery: bool = False,
+        allow_dirty_source: bool = False,
     ) -> tuple[int, str, str]:
         args = SimpleNamespace(
             command=command,
@@ -80,6 +81,7 @@ Version: {version}
             skills=skills,
             apply=apply,
             allow_duplicate_discovery=allow_duplicate_discovery,
+            allow_dirty_source=allow_dirty_source,
         )
         stdout = io.StringIO()
         stderr = io.StringIO()
@@ -99,6 +101,36 @@ Version: {version}
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
             result = manage_skills._run(args)
         return result, stdout.getvalue(), stderr.getvalue()
+
+    def run_validation(self) -> tuple[int, str, str]:
+        args = SimpleNamespace(
+            command="validate",
+            source=manage_skills.DEFAULT_SOURCE,
+            target=self.target,
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            result = manage_skills._run(args)
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def interrupt_sync_before_manifest(self) -> Path:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        self.write_skill("sample-skill", "v2")
+        self.git(self.source.parents[1], "add", ".")
+        self.git(self.source.parents[1], "commit", "-qm", "v2")
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        real_write = manage_skills._write_atomically
+
+        def interrupt_manifest(path: Path, text: str) -> None:
+            if path == manifest_path:
+                raise KeyboardInterrupt()
+            real_write(path, text)
+
+        with patch.object(manage_skills, "_write_atomically", side_effect=interrupt_manifest):
+            with self.assertRaises(KeyboardInterrupt):
+                self.run_operation("sync", apply=True)
+        return manifest_path
 
     def test_dry_run_does_not_write_then_install_records_provenance(self) -> None:
         source_before = {
@@ -127,7 +159,7 @@ Version: {version}
         record = manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
         self.assertEqual(record["source_tree_sha256"], record["installed_tree_sha256"])
         self.assertIn("source_commit", record)
-        self.assertEqual(record["source_repository"], "local Git repository")
+        self.assertTrue(record["source_repository"].startswith("local-git-sha256:"))
         self.assertEqual(
             source_before,
             {
@@ -175,6 +207,51 @@ Version: {version}
         self.assertTrue((skills_root / "other-skill" / "SKILL.md").is_file())
         self.assertFalse((skills_root / "sample-skill").exists())
 
+    def test_install_rejects_clean_git_checkout_with_ignored_skill_content(self) -> None:
+        source_repo = self.source.parents[1]
+        (source_repo / ".gitignore").write_text("*.local\n", encoding="utf-8")
+        self.git(source_repo, "add", ".gitignore")
+        self.git(source_repo, "commit", "-qm", "ignore local files")
+        ignored = self.source / "sample-skill" / "private.local"
+        ignored.write_text("not present in Git\n", encoding="utf-8")
+
+        result, _, error = self.run_operation("install", apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertIn("differs from its Git commit baseline", error)
+        self.assertFalse((self.target / ".agents" / "skills").exists())
+
+        result, _, error = self.run_operation(
+            "install", apply=True, allow_dirty_source=True
+        )
+        self.assertEqual((result, error), (0, ""))
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        record = manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
+        self.assertTrue(record["source_dirty"])
+
+    def test_target_validation_checks_manifest_hash_and_untracked_skill_files(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        self.assertEqual(self.run_validation()[0], 0)
+        installed_root = self.target / ".agents" / "skills"
+        installed_skill = installed_root / "sample-skill"
+        (installed_skill / "SKILL.md").write_text(
+            "local edit\n", encoding="utf-8"
+        )
+        result, _, error = self.run_validation()
+        self.assertEqual(result, 1)
+        self.assertIn("differs from manifest hash", error)
+
+        unmanaged = installed_root / "unmanaged-skill"
+        unmanaged.mkdir()
+        (unmanaged / "SKILL.md").write_text(
+            "---\nname: unmanaged-skill\ndescription: A valid Skill.\n---\n",
+            encoding="utf-8",
+        )
+        result, _, error = self.run_validation()
+        self.assertEqual(result, 1)
+        self.assertIn("not recorded in manifest", error)
+
     def test_local_edits_and_untracked_collisions_are_preserved(self) -> None:
         self.assertEqual(self.run_operation("install", apply=True)[0], 0)
         target_skill = self.target / ".agents" / "skills" / "sample-skill"
@@ -213,7 +290,7 @@ Version: {version}
         (second_skill / "SKILL.md").write_text("existing", encoding="utf-8")
         result, _, error = self.run_operation("install", agent="copilot", apply=True)
         self.assertEqual(result, 2)
-        self.assertIn("conflicting same-name Skill visible to Copilot", error)
+        self.assertIn("different contents", error)
         self.assertFalse((self.target / ".agents" / "skills").exists())
 
         shutil.rmtree(second_skill)
@@ -288,6 +365,90 @@ Version: {version}
                 self.assertEqual(len(package_hashes), 1)
                 if len(agents) == 3:
                     self.assertIn("duplicate discovery", output.lower())
+
+    def test_incremental_agent_install_checks_and_records_global_duplicate_exposure(self) -> None:
+        self.assertEqual(
+            self.run_operation("install", agents=["claude", "copilot"], apply=True)[0],
+            0,
+        )
+
+        result, _, error = self.run_operation(
+            "install", agent="codex", apply=True
+        )
+
+        self.assertEqual(result, 2)
+        self.assertIn("duplicate-discovery", error.lower())
+        self.assertFalse(
+            (self.target / ".agents" / "skills" / "sample-skill").exists()
+        )
+
+        result, output, error = self.run_operation(
+            "install",
+            agent="codex",
+            apply=True,
+            allow_duplicate_discovery=True,
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("duplicate discovery", output.lower())
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertIn(
+            {
+                "skill": "sample-skill",
+                "paths": [".agents/skills", ".claude/skills"],
+            },
+            manifest["duplicate_discovery_allowances"],
+        )
+        self.assertFalse(agent_skills.validate_repository_skills(self.target))
+        self.assertEqual(self.run_validation()[0], 0)
+
+        result, output, error = self.run_operation("install", agent="codex", apply=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("duplicate discovery", output.lower())
+        repeated_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            repeated_manifest["duplicate_discovery_allowances"],
+            manifest["duplicate_discovery_allowances"],
+        )
+
+        self.write_skill("sample-skill", "v2")
+        self.git(self.source.parents[1], "add", ".")
+        self.git(self.source.parents[1], "commit", "-qm", "v2")
+        original_claude = (
+            self.target / ".claude" / "skills" / "sample-skill" / "SKILL.md"
+        ).read_bytes()
+        result, _, error = self.run_operation(
+            "sync", agent="codex", apply=True
+        )
+        self.assertEqual(result, 2)
+        self.assertIn("different contents", error.lower())
+        self.assertEqual(
+            (
+                self.target / ".agents" / "skills" / "sample-skill" / "SKILL.md"
+            ).read_text(encoding="utf-8").count("v1"),
+            1,
+        )
+        self.assertEqual(
+            (
+                self.target / ".claude" / "skills" / "sample-skill" / "SKILL.md"
+            ).read_bytes(),
+            original_claude,
+        )
+
+        result, _, error = self.run_operation(
+            "sync", agents=["codex", "claude"], apply=True
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertEqual(
+            manage_skills.tree_digest(
+                self.target / ".agents" / "skills" / "sample-skill"
+            ),
+            manage_skills.tree_digest(
+                self.target / ".claude" / "skills" / "sample-skill"
+            ),
+        )
+        self.assertFalse(agent_skills.validate_repository_skills(self.target))
+        self.assertEqual(self.run_validation()[0], 0)
 
     def test_codex_and_copilot_share_existing_package_and_migrate_legacy_manifest(self) -> None:
         self.assertEqual(self.run_operation("install", agent="codex", apply=True)[0], 0)
@@ -380,6 +541,77 @@ Version: {version}
 
         self.assertEqual(result, 2)
         self.assertIn("different or diverged", error.lower())
+
+    def test_sync_rejects_same_history_from_a_different_remote(self) -> None:
+        source_repo = self.source.parents[1]
+        self.git(source_repo, "remote", "add", "origin", "https://github.com/team/original.git")
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+
+        fork = self.root / "fork"
+        self.git(self.root, "clone", "-q", str(source_repo), str(fork))
+        self.git(fork, "remote", "set-url", "origin", "git@github.com:team/fork.git")
+        fork_skills = fork / ".agents" / "skills"
+        (fork_skills / "sample-skill" / "SKILL.md").write_text(
+            "---\nname: sample-skill\ndescription: Use this Skill for a focused task.\n---\n\nVersion: fork\n",
+            encoding="utf-8",
+        )
+        self.git(fork, "add", ".")
+        self.git(fork, "commit", "-qm", "fork update")
+        self.source = fork_skills
+        installed_file = self.target / ".agents" / "skills" / "sample-skill" / "SKILL.md"
+        original = installed_file.read_bytes()
+
+        result, _, error = self.run_operation("sync", apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertIn("source identity changed", error.lower())
+        self.assertEqual(installed_file.read_bytes(), original)
+
+        result, _, error = self.run_operation("rebind-source", apply=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Version: fork", installed_file.read_text(encoding="utf-8"))
+
+    def test_sync_accepts_https_to_ssh_url_change_for_same_repository(self) -> None:
+        source_repo = self.source.parents[1]
+        self.git(source_repo, "remote", "add", "origin", "https://github.com/team/repo.git")
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        self.git(source_repo, "remote", "set-url", "origin", "git@github.com:team/repo.git")
+        self.write_skill("sample-skill", "v2")
+        self.git(source_repo, "add", ".")
+        self.git(source_repo, "commit", "-qm", "v2")
+
+        result, _, error = self.run_operation("sync", apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn(
+            "Version: v2",
+            (self.target / ".agents" / "skills" / "sample-skill" / "SKILL.md").read_text(
+                encoding="utf-8"
+            ),
+        )
+
+    def test_sync_verifies_baseline_skill_content_against_recorded_commit(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["packages"][".agents/skills"]["skills"]["sample-skill"][
+            "source_tree_sha256"
+        ] = "0" * 64
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.write_skill("sample-skill", "v2")
+        self.git(self.source.parents[1], "add", ".")
+        self.git(self.source.parents[1], "commit", "-qm", "v2")
+
+        result, _, error = self.run_operation("sync", apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertIn("baseline skill content", error.lower())
+        self.assertIn(
+            "Version: v1",
+            (self.target / ".agents" / "skills" / "sample-skill" / "SKILL.md").read_text(
+                encoding="utf-8"
+            ),
+        )
 
     def test_sync_identifies_shallow_history_without_fetching(self) -> None:
         self.assertEqual(self.run_operation("install", apply=True)[0], 0)
@@ -494,6 +726,166 @@ Version: {version}
         self.assertEqual(installed_file.read_bytes(), old_skill)
         self.assertEqual(manage_skills._transaction_directories(self.target), [])
 
+    def test_recovery_preflight_does_not_restore_any_skill_if_a_later_target_changed(self) -> None:
+        self.write_skill("other-skill", "v1")
+        self.git(self.source.parents[1], "add", ".")
+        self.git(self.source.parents[1], "commit", "-qm", "add second Skill")
+        self.assertEqual(
+            self.run_operation(
+                "install",
+                agents=["codex", "claude"],
+                apply=True,
+                allow_duplicate_discovery=True,
+            )[0],
+            0,
+        )
+        self.write_skill("sample-skill", "v2")
+        self.write_skill("other-skill", "v2")
+        self.git(self.source.parents[1], "add", ".")
+        self.git(self.source.parents[1], "commit", "-qm", "v2")
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        real_write = manage_skills._write_atomically
+
+        def interrupt_manifest(path: Path, text: str) -> None:
+            if path == manifest_path:
+                raise KeyboardInterrupt()
+            real_write(path, text)
+
+        with patch.object(manage_skills, "_write_atomically", side_effect=interrupt_manifest):
+            with self.assertRaises(KeyboardInterrupt):
+                self.run_operation(
+                    "sync",
+                    agents=["codex", "claude"],
+                    apply=True,
+                    allow_duplicate_discovery=True,
+                )
+
+        changed_target = self.target / ".agents" / "skills" / "sample-skill"
+        changed_file = changed_target / "SKILL.md"
+        changed_file.write_text("external edit\n", encoding="utf-8")
+        claude_target = self.target / ".claude" / "skills"
+        claude_before = {
+            path.relative_to(claude_target).as_posix(): (
+                path.read_bytes() if path.is_file() else path.stat().st_mode
+            )
+            for path in claude_target.rglob("*")
+            if path.is_file()
+        }
+        manifest_before = manifest_path.read_bytes()
+
+        result, _, error = self.run_recovery(apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertIn("target changed after interruption", error)
+        self.assertEqual(changed_file.read_text(encoding="utf-8"), "external edit\n")
+        self.assertEqual(manifest_path.read_bytes(), manifest_before)
+        self.assertEqual(
+            claude_before,
+            {
+                path.relative_to(claude_target).as_posix(): (
+                    path.read_bytes() if path.is_file() else path.stat().st_mode
+                )
+                for path in claude_target.rglob("*")
+                if path.is_file()
+            },
+        )
+
+    def test_recovery_preflight_preserves_files_when_a_backup_is_corrupt(self) -> None:
+        manifest_path = self.interrupt_sync_before_manifest()
+        transaction = manage_skills._transaction_directories(self.target)[0]
+        backup = next((transaction / "backups").iterdir())
+        (backup / "SKILL.md").write_text("corrupt backup\n", encoding="utf-8")
+        target_skill = self.target / ".agents" / "skills" / "sample-skill"
+        target_before = {
+            path.relative_to(target_skill).as_posix(): path.read_bytes()
+            for path in target_skill.rglob("*")
+            if path.is_file()
+        }
+        manifest_before = manifest_path.read_bytes()
+
+        result, _, error = self.run_recovery(apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertIn("backup integrity check failed", error)
+        self.assertEqual(
+            target_before,
+            {
+                path.relative_to(target_skill).as_posix(): path.read_bytes()
+                for path in target_skill.rglob("*")
+                if path.is_file()
+            },
+        )
+        self.assertEqual(manifest_path.read_bytes(), manifest_before)
+        self.assertTrue(transaction.exists())
+
+    def test_recovery_completes_when_manifest_was_written_before_interruption(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        self.write_skill("sample-skill", "v2")
+        self.git(self.source.parents[1], "add", ".")
+        self.git(self.source.parents[1], "commit", "-qm", "v2")
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        real_write = manage_skills._write_atomically
+
+        def interrupt_after_manifest(path: Path, text: str) -> None:
+            real_write(path, text)
+            if path == manifest_path:
+                raise KeyboardInterrupt()
+
+        with patch.object(manage_skills, "_write_atomically", side_effect=interrupt_after_manifest):
+            with self.assertRaises(KeyboardInterrupt):
+                self.run_operation("sync", apply=True)
+        self.assertEqual(len(manage_skills._transaction_directories(self.target)), 1)
+
+        result, output, error = self.run_recovery(apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("completed", output)
+        self.assertIn(
+            "Version: v2",
+            (self.target / ".agents" / "skills" / "sample-skill" / "SKILL.md").read_text(
+                encoding="utf-8"
+            ),
+        )
+        self.assertEqual(manage_skills._transaction_directories(self.target), [])
+        self.assertEqual(self.run_recovery(apply=True)[0], 0)
+
+    def test_recovery_io_failure_keeps_journal_and_allows_retry(self) -> None:
+        manifest_path = self.interrupt_sync_before_manifest()
+        target_skill = self.target / ".agents" / "skills" / "sample-skill"
+        target_before = {
+            path.relative_to(target_skill).as_posix(): path.read_bytes()
+            for path in target_skill.rglob("*")
+            if path.is_file()
+        }
+        manifest_before = manifest_path.read_bytes()
+        real_rmtree = shutil.rmtree
+
+        def fail_target_removal(path: Path, *args: object, **kwargs: object) -> None:
+            if Path(path) == target_skill:
+                raise OSError("simulated recovery I/O failure")
+            real_rmtree(path, *args, **kwargs)
+
+        with patch.object(shutil, "rmtree", side_effect=fail_target_removal):
+            result, _, error = self.run_recovery(apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertIn("simulated recovery I/O failure", error)
+        self.assertEqual(
+            target_before,
+            {
+                path.relative_to(target_skill).as_posix(): path.read_bytes()
+                for path in target_skill.rglob("*")
+                if path.is_file()
+            },
+        )
+        self.assertEqual(manifest_path.read_bytes(), manifest_before)
+        self.assertEqual(len(manage_skills._transaction_directories(self.target)), 1)
+        self.assertEqual(self.run_recovery(apply=True)[0], 0)
+        self.assertIn(
+            "Version: v1",
+            (target_skill / "SKILL.md").read_text(encoding="utf-8"),
+        )
+
     def test_recovery_force_removes_only_a_confirmed_stale_lock(self) -> None:
         lock_path = self.target / ".devconcord" / "skills.lock"
         lock_path.parent.mkdir()
@@ -550,7 +942,7 @@ Version: {version}
             commit, dirty, repository = manage_skills.source_revision(self.source)
 
         self.assertEqual((commit, dirty), ("abc123", False))
-        self.assertEqual(repository, "https://example.com/org/repo.git")
+        self.assertEqual(repository, "example.com/org/repo")
         self.assertNotIn("password", repository)
         self.assertNotIn("secret", repository)
 
