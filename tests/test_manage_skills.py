@@ -894,6 +894,79 @@ Version: {version}
         self.assertEqual((result, error), (0, ""))
         self.assertIn("Initial committed guidance.", output)
 
+    def test_reference_uses_requesting_skill_commit_in_user_and_project_scope(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_operation("install", skills=["sample-skill"], apply=True)[0],
+            0,
+        )
+        repository = self.source.parents[1]
+        source_commit = self.git(repository, "rev-parse", "HEAD")
+        self.write_skill("devconcord-reference", "helper-at-newer-commit")
+        reference_file = repository / "docs" / "reference.md"
+        reference_file.write_text(
+            "# Versioned reference\n\nGuidance added with the helper Skill.\n",
+            encoding="utf-8",
+        )
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "add reference Skill at newer revision")
+        helper_commit = self.git(repository, "rev-parse", "HEAD")
+
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["devconcord-reference"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_operation(
+                "install", skills=["devconcord-reference"], apply=True
+            )[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0],
+            0,
+        )
+        self.assertEqual(
+            self.run_user_operation("validate", source=self.source)[0], 0
+        )
+        self.assertEqual(self.run_operation("validate")[0], 0)
+
+        for scope, target in (("user", None), ("project", self.target)):
+            with self.subTest(scope=scope):
+                requester_result, requester_output, requester_error = self.run_reference(
+                    path="docs/reference.md",
+                    scope=scope,
+                    target=target,
+                    skill="sample-skill",
+                )
+                helper_result, helper_output, helper_error = self.run_reference(
+                    path="docs/reference.md",
+                    scope=scope,
+                    target=target,
+                    skill="devconcord-reference",
+                )
+                self.assertEqual((requester_result, requester_error), (0, ""))
+                self.assertIn("Initial committed guidance.", requester_output)
+                self.assertIn(source_commit, requester_output)
+                self.assertEqual((helper_result, helper_error), (0, ""))
+                self.assertIn("Guidance added with the helper Skill.", helper_output)
+                self.assertIn(helper_commit, helper_output)
+
     def test_reference_rejects_missing_installed_source_commit(self) -> None:
         self.assertEqual(
             self.run_user_operation(
