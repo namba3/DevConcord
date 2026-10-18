@@ -245,7 +245,11 @@ def check_links(files: list[Path]) -> list[str]:
 
             link_path = unquote(parsed.path)
             try:
-                target = (source.parent / link_path).resolve() if link_path else source
+                target = (
+                    (source.parent / link_path).resolve()
+                    if link_path
+                    else source.resolve()
+                )
             except (OSError, RuntimeError) as error:
                 errors.append(
                     f"{source_label}: cannot resolve link target "

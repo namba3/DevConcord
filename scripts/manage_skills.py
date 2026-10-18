@@ -559,6 +559,18 @@ def _git(root: Path, *arguments: str, check: bool = True) -> subprocess.Complete
     return result
 
 
+def _git_bytes(root: Path, *arguments: str) -> subprocess.CompletedProcess[bytes]:
+    """Run Git while preserving file bytes for explicit decoding at the boundary."""
+    try:
+        return subprocess.run(
+            ["git", "-C", str(root), *arguments],
+            capture_output=True,
+            check=False,
+        )
+    except OSError as error:
+        raise SkillManagementError(f"Git is unavailable ({type(error).__name__})") from error
+
+
 def _full_commit_id(value: str) -> bool:
     return len(value) in {40, 64} and all(character in "0123456789abcdef" for character in value)
 
@@ -2486,14 +2498,12 @@ def _reference_command(args: argparse.Namespace) -> int:
                     f"reference {relative!r} is not a regular Git file at commit {commit} "
                     f"(mode {mode}, type {object_type})"
                 )
-            result = _git(
-                source_root, "show", f"{commit}:{relative}", check=False
-            )
+            result = _git_bytes(source_root, "show", f"{commit}:{relative}")
             if result.returncode:
                 raise SkillManagementError(
                     f"Git could not read reference {relative!r} at commit {commit}"
                 )
-            content = result.stdout
+            content = result.stdout.decode("utf-8")
         metadata_lines.extend(
             (
                 f"Reference path: {relative}",

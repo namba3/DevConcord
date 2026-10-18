@@ -17,8 +17,8 @@ from scripts import agent_skills, manage_skills
 
 
 def paths_equal(left: Path, right: Path) -> bool:
-    return os.path.normcase(os.path.abspath(left)) == os.path.normcase(
-        os.path.abspath(right)
+    return os.path.normcase(str(Path(left).resolve())) == os.path.normcase(
+        str(Path(right).resolve())
     )
 
 
@@ -1026,16 +1026,16 @@ Version: {version}
         self.assertEqual(
             self.run_config("set-source", source_root=repository, replace=False)[0], 0
         )
-        original_git = manage_skills._git
+        original_git = manage_skills._git_bytes
 
-        def failed_read(root: Path, *arguments: str, check: bool = True):
+        def failed_read(root: Path, *arguments: str):
             if arguments and arguments[0] == "show":
                 return subprocess.CompletedProcess(
-                    ["git", *arguments], 1, "partial content", "injected read error"
+                    ["git", *arguments], 1, b"partial content", b"injected read error"
                 )
-            return original_git(root, *arguments, check=check)
+            return original_git(root, *arguments)
 
-        with patch.object(manage_skills, "_git", side_effect=failed_read):
+        with patch.object(manage_skills, "_git_bytes", side_effect=failed_read):
             result, output, error = self.run_reference(
                 path="docs/reference.md", revision="head"
             )
