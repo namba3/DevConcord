@@ -80,6 +80,24 @@ description: Use this Skill for a focused task.
         self.assertIn("完成度10軸とSDS", workflow_text)
         self.assertIn("同じ入力・範囲で再実行", workflow_text)
 
+    def test_adoption_workflow_reference_preserves_provenance_and_existing_records(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill = repository_root / ".agents" / "skills" / "adopt-guidance"
+        skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
+        workflow_text = (skill / "references" / "workflow.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("Required safety checks", skill_text)
+        self.assertIn("適用済み", workflow_text)
+        self.assertIn("部分適用", workflow_text)
+        self.assertIn("保留", workflow_text)
+        self.assertIn("対象外", workflow_text)
+        self.assertIn("比較基準コミット", workflow_text)
+        self.assertIn("docs/guidance-provenance.md", workflow_text)
+        self.assertIn("課題ID・状態・履歴", workflow_text)
+        self.assertIn("未実施の確認", workflow_text)
+
     def test_reader_navigation_connects_quick_start_and_skill_operations(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         readme = (repository_root / "README.md").read_text(encoding="utf-8")

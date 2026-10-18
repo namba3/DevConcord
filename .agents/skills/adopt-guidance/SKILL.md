@@ -1,35 +1,25 @@
 ---
 name: adopt-guidance
-description: "Selectively introduce shared development guidance, templates, and agent instructions into an existing software repository. Use when adopting common coding standards without replacing existing project rules."
+description: "Selectively introduce shared development guidance, templates, and agent instructions into an existing software repository. Use when adopting common coding and documentation practices without replacing existing project rules."
 ---
 
 # Adopt Shared Guidance
 
-## Purpose
+Use this workflow for first-time adoption into an existing project. Use `bootstrap-from-design` for a new repository and `sync-guidance` to update already adopted materials.
 
-Safely select and integrate reusable guidance into a project that already exists.
+## Required safety checks
 
-## When to use / not use
-
-- Use when an existing repository needs selected development guidance or templates.
-- Do not use for a new repository bootstrapped from design inputs; use `bootstrap-from-design`.
-- Do not use to update guidance already recorded as adopted; use `sync-guidance`.
+- Inspect and preserve the target's uncommitted work, Git history, remotes, existing rules, requirement and issue IDs, statuses, links, and project-specific structure. Do not overwrite unexamined files or alter unrelated code, settings, or data.
+- Select only useful materials. Do not force DevConcord's layout, README format, GUI rules, new issue or risk ledgers, all-dependency abstractions, or unrequested Agent Skill installation.
+- Keep design-source provenance, shared-guidance provenance, and Skill installation manifests separate. Record only verified source commits and actual application state; partial and held material must not be marked fully applied.
+- Do not claim unrun checks passed or treat deterministic fixture tests as evidence of real agent decisions.
 
 ## Workflow
 
-1. Inspect the target root, worktree, README, docs and their reader/publishing roles, code, toolchain, CI, requirements, ADRs, issue register, `AGENTS.md` and `REVIEWS.md`. Capture relevant existing content, links, conventions and Git state; do not stage, commit, or discard unrelated edits.
-2. Read the source guidance and select only materials useful for the target's technology, risk, scale and existing conventions. Prefer source-controlled, committed guidance. Reuse the target's issue and risk registers; never replace existing instructions or tracking identifiers.
-3. Resolve overlap and conflicts explicitly. Preserve effective local rules, statuses, history, links, requirements, and decisions. Consider the documentation-design guidance only when it improves reader navigation or maintainability; do not force its directory layout, README pattern or a documentation site. Do not impose GUI-specific conventions on CLI/library/service projects, add duplicate ledgers, force all dependencies behind interfaces, or invent project-specific facts.
-4. Integrate only the agreed materials. For `AGENTS.md` / `REVIEWS.md`, use the repository's generation prompts if available; inspect what is implemented separately from constraints intended for future work. Keep the review-file loading instruction in `AGENTS.md`.
-5. Record shared-material source, checked revision and per-material destination/baseline, application state and hold notes in the established `docs/guidance-provenance.md` format when adopting shared materials. Do not confuse it with design-document provenance or claim a held/partial material is fully applied.
-6. Check changed-file scope, existing content and issue records, relative links, publishing/build conventions, provenance, and relevant project tests. Re-run only if it will not create duplicate files or entries.
+Read [the detailed Adoption workflow](references/workflow.md) before making changes. It covers target and source inspection, selective adoption, link and provenance handling, test evidence, and reporting. Use `generate-agent-guidance` when AGENTS.md or REVIEWS.md generation is in scope.
 
-## Documentation references
+For detailed DevConcord guidance or templates, use [the version-pinned local reference procedure](references/local-devconcord.md). If the local checkout or required commit cannot be read, report that and do not claim to have applied its contents.
 
-The optional [documentation-design guide](https://github.com/namba3/DevConcord/blob/main/docs/common/documentation-design.md) provides reusable reader-centred principles. It may require network access and may follow a newer revision than this Skill. For version-matched guidance, resolve this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` with that full SHA. The workflow remains usable if the guide is unavailable.
+## Completion report
 
-For a configured local checkout and an exact-commit copy of this guide or the adoption prompt, use the [version-pinned local reference procedure](references/local-devconcord.md). Do not assume access to the user's home directory from a remote or cloud agent.
-
-## Safety and completion
-
-Do not overwrite an unexamined file with the same name, change Git history/remotes, or make remote changes. Report selected and excluded material, preserved local rules, conflicts/holds, exact revision, changed paths, checks and unresolved items. A successful document copy alone does not prove the guidance was correctly adopted.
+List adopted, excluded, partially applied, and held materials; target rules and records preserved; source URL and checked commit; changed paths; validations run and not run; unresolved conflicts; and remaining decisions. Keep `docs/guidance-provenance.md` consistent with the actual applied scope.
