@@ -110,6 +110,22 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 以下は [`devconcord-gap-analysis` Skill](../../.agents/skills/devconcord-gap-analysis/SKILL.md) が対象リポジトリの目的・制約・証拠に応じて適用性と優先度を判断できるかを確認する手動シナリオです。固定文言の生成を評価せず、同じDevConcord参照版を使い、根拠の妥当性、未検証事項、Read-only動作を人が記録します。通常CIはエージェントを起動せず、下記の意味判断を検証済みとは扱いません。
 
+### 依頼目的に応じたSkill選択
+
+descriptionによる発見条件と、依頼目的に対する意味的な選択結果は別々に評価します。通常CIの文字列検査はSkill選択の実証ではありません。
+
+| 依頼 | 選択するSkill | 確認する判断 |
+|---|---|---|
+| 「DevConcordの設計原則に照らして、現状のギャップを分析して」 | `devconcord-gap-analysis` | repository-wideな原則適用状況・不足の評価を選ぶ |
+| 「リポジトリ全体の品質上の不足と改善ロードマップを作って」 | `devconcord-gap-analysis` | 横断評価、証拠不足、優先改善順を求める依頼と理解する |
+| 「前回のギャップ分析から改善した部分を確認して」 | `devconcord-gap-analysis` | prior report/baselineと比較するIncremental Assessmentを選ぶ |
+| 「Performance / Robustness / Securityの適用状況を評価して」 | `devconcord-gap-analysis` | 複数原則の適用状況評価として扱う |
+| 「この変更のバグや設計上の問題をレビューして」 | `devconcord-repository-review` | 変更に対する具体的な問題発見を選ぶ |
+| 「PRの回帰リスクと具体的な修正箇所を確認して」 | `devconcord-repository-review` | diffに基づくリスクと修正可能な指摘を求める依頼と理解する |
+| 「コードを精査して重要度順に問題を報告して」 | `devconcord-repository-review` | 重要度と具体的な根拠を持つ欠陥指摘を選ぶ |
+| 「READMEとdocsの構成を見直して」 | `devconcord-documentation-architecture` | 文書構成・読者導線の専門評価を選ぶ |
+| 「DevConcord原則への適合状況を分析し、重大なコード欠陥も詳しく確認して」 | `devconcord-gap-analysis`を中心に依頼範囲を実施 | 横断評価を行い、具体的欠陥も求められる範囲で確認する。Skill間の自動呼び出しを前提にしない |
+
 | シナリオ | 対象・入力 | 確認する判断 |
 |---|---|---|
 | 1. 小規模CLIの全体診断 | GUIやネットワークのない小規模CLI | GUI原則を対象外とし、CLI契約・入出力・終了コード・保守性など必要な範囲を評価する。規模に合わない層や記録を要求しない |

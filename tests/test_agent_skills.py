@@ -98,11 +98,24 @@ description: Use this Skill for a focused task.
         report_text = (skill_dir / "references" / "report-format.md").read_text(
             encoding="utf-8"
         )
+        review_skill = (
+            repository_root
+            / ".agents"
+            / "skills"
+            / "devconcord-repository-review"
+            / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        integration = (repository_root / "tests" / "integration" / "README.md").read_text(
+            encoding="utf-8"
+        )
 
         self.assertEqual(validate_skill_directory(skill_dir), [])
         for expected in (
             "name: devconcord-gap-analysis",
-            "full or incremental quality gap assessments",
+            "Assess full-repository alignment with DevConcord principles",
+            "evidence coverage, missing",
+            "prioritized improvement",
+            "concrete actionable defects",
             "Full Assessment",
             "Incremental Assessment",
             "Finding identity and lifecycle",
@@ -135,6 +148,27 @@ description: Use this Skill for a focused task.
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, skill_text)
+        for expected in (
+            "concrete actionable defects",
+            "design problems",
+            "regression risks",
+            "evidence-based severity",
+            "specific\n  remediation",
+            "repository-wide or incremental",
+        ):
+            with self.subTest(skill="repository-review", expected=expected):
+                self.assertIn(expected, review_skill)
+        for expected in (
+            "依頼目的に応じたSkill選択",
+            "DevConcordの設計原則に照らして、現状のギャップを分析して",
+            "前回のギャップ分析から改善した部分を確認して",
+            "この変更のバグや設計上の問題をレビューして",
+            "READMEとdocsの構成を見直して",
+            "Skill間の自動呼び出しを前提にしない",
+            "通常CIの文字列検査はSkill選択の実証ではありません",
+        ):
+            with self.subTest(selection_scenario=expected):
+                self.assertIn(expected, integration)
         for expected in (
             "## 1. Assessment overview",
             "## 3. Area assessment",

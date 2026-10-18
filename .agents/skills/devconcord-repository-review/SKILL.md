@@ -1,10 +1,12 @@
 ---
 name: devconcord-repository-review
 description: >
-  DevConcord workflow for evidence-based repository reviews across code,
-  architecture, requirements, tests, CI, and project guidance. Use for audits,
-  design or code reviews, and readiness assessments that need concrete
-  findings; distinguish defects from optional improvements.
+  Review code, architecture, requirements, tests, CI, and project guidance to
+  find concrete actionable defects, design problems, and regression risks.
+  Use for code or change reviews that need evidence-based severity and specific
+  remediation. Use devconcord-gap-analysis for repository-wide or incremental
+  alignment with DevConcord principles, evidence coverage, and improvement
+  roadmaps.
 ---
 
 # Repository Review

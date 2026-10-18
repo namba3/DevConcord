@@ -1,12 +1,13 @@
 ---
 name: devconcord-gap-analysis
 description: >
-  Analyze an existing software repository against DevConcord design,
-  development, quality, and documentation principles. Use for evidence-based
-  full or incremental quality gap assessments, design and development reviews,
-  prioritized improvement plans, and periodic reassessments. Identify gaps,
-  unverified claims, and opportunities without modifying the target repository
-  by default.
+  Assess full-repository alignment with DevConcord principles or reassess gaps
+  against a prior report or baseline. Use for evidence coverage, missing
+  verification, cross-cutting quality gaps, and a prioritized improvement
+  roadmap. Use devconcord-repository-review when the primary request is to find
+  concrete actionable defects, design problems, or regression risks in code or
+  a change. Identify gaps and unverified claims without modifying the target by
+  default.
 ---
 
 # DevConcord Gap Analysis
@@ -18,10 +19,14 @@ maintainability; do not audit for formal conformity to DevConcord.
 
 ## Scope and boundaries
 
-- Use this Skill for cross-cutting assessments against DevConcord principles.
-  Use `devconcord-repository-review` for concrete code/design findings,
-  `devconcord-documentation-architecture` for documentation structure, and the
-  `devconcord-design-*` Skills for detailed work on one design principle.
+- Use this Skill when the user needs to understand repository-wide or
+  incremental alignment with DevConcord principles, evidence coverage, and
+  improvement priorities. Code inspection is evidence for that assessment.
+  Use `devconcord-repository-review` when the user primarily needs concrete,
+  actionable defects, design problems, or regression risks in a codebase or
+  change. Use `devconcord-documentation-architecture` for documentation
+  information architecture and navigation, and the `devconcord-design-*`
+  Skills for detailed work on one design principle.
 - Use `devconcord-adopt-guidance` for first-time adoption and
   `devconcord-sync-guidance` for updating already adopted shared guidance.
   Recommend a follow-up Skill when useful, but do not assume Skills can invoke
