@@ -2,7 +2,7 @@
 
 このディレクトリには、複数のソフトウェア開発プロジェクトで再利用する運用ガイドと文書テンプレートを置きます。プロジェクト固有の仕様・設計・運用記録は、それぞれの対象リポジトリへ配置してください。
 
-初回利用では[実行例付きの導入ガイド](getting-started.md)からBootstrap・Adoption・更新の該当シナリオを選んでください。プロンプト作業は導入先を作業コンテキストとし、DevConcordを参照元として使います。Agent Skills CLIは別操作で、`--target` が変更先です。Skillsの出典管理・復旧などの詳細は[Agent Skills運用ガイド](agent-skills.md)が正本です。
+初回利用では[実行例付きの導入ガイド](getting-started.md)からUser ScopeのSkillsセットアップ、Bootstrap、Adoptionの該当シナリオを選んでください。Agent Skillsはユーザー単位が標準で、Project Scopeはチーム共有・CI等に使う任意の方式です。プロンプト作業は導入先を作業コンテキストとし、DevConcordを参照元として使います。Skillsの出典管理・復旧などの詳細は[Agent Skills運用ガイド](agent-skills.md)が正本です。
 
 作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。Skillsはプロンプトを置き換えるのではなく、選択時に読み込む実行ワークフローです。外部プロジェクトへの配布と同期は [`manage_skills.py`](../scripts/manage_skills.py) を使います。
 
@@ -44,10 +44,11 @@
 | READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`documentation-architecture` Skill](../.agents/skills/documentation-architecture/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
 | レビュー基準を作る・調べる | [`REVIEWS.md`生成プロンプト](../prompts/create-reviews-md.md)、[レビュー指針](../REVIEWS.md) |
-| 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#2-codex-cliで新規bootstrapする)、[Bootstrapプロンプト](../prompts/bootstrap-from-design.md) |
-| 既存プロジェクトへ規約を導入する | [Adoptionの実行例](getting-started.md#3-codex-cliで既存プロジェクトへadoptionする)、[Adoptionプロンプト](../prompts/adopt-guidance.md) |
-| 導入済み共通資料を更新する | [資料Synchronizationの実行例](getting-started.md#7-導入済み共通ガイドをsynchronizationする)、[Synchronizationプロンプト](../prompts/sync-guidance.md) |
-| Agent Skillsを導入・更新・検証する | [Skillsの実行例](getting-started.md#agent-skillsを利用する)、[Agent Skills運用ガイド](agent-skills.md) |
+| 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[Bootstrapプロンプト](../prompts/bootstrap-from-design.md) |
+| 既存プロジェクトへ規約を導入する | [Adoptionの実行例](getting-started.md#4-既存リポジトリへadoptionするcodex-cli)、[Adoptionプロンプト](../prompts/adopt-guidance.md) |
+| 導入済み共通資料を更新する | [資料Synchronizationの実行例](getting-started.md#8-共通ガイドのsynchronization)、[Synchronizationプロンプト](../prompts/sync-guidance.md) |
+| User ScopeのSkillsを導入・更新・検証する | [Skillsの実行例](getting-started.md#2-agent-skillsをユーザー単位でインストールする)、[Agent Skills運用ガイド](agent-skills.md) |
+| Project Scopeを使ってSkillを共有する | [Project Scopeの実行例](getting-started.md#7-project-scopeでskillsを導入する任意)、[Agent Skills運用ガイド](agent-skills.md) |
 
 ## 選択と適用
 

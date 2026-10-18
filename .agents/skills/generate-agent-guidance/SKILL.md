@@ -19,3 +19,5 @@ For documentation principles, prefer the target's own adopted guide. The optiona
 ## Compatibility
 
 When the repository contains DevConcord generation prompts, use `prompts/create-agents-md.md` and `prompts/create-reviews-md.md` as the detailed source of procedure. Otherwise follow the portable steps above without requiring the DevConcord repository.
+
+When the target does not contain these prompts and the local DevConcord checkout is available, use the [version-pinned local reference procedure](references/local-devconcord.md). Do not copy a user-specific absolute path into generated project guidance.

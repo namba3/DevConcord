@@ -18,6 +18,8 @@ description: "Derive functional requirements and application behavior from user 
 
 The output must explain why a user need implies a function or behavior, how success/failure is observable, and how the acceptance condition can be verified. Naming usability theories without a resulting design decision is insufficient.
 
+When detailed DevConcord UI/UX guidance or requirement templates are needed, use the [version-pinned local reference procedure](references/local-devconcord.md); do not make the local checkout a prerequisite for general task analysis.
+
 ## References
 
 The links below follow `main` and can be newer than this installed Skill. For version-matched detail, read this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` in the DevConcord links with that full SHA. If no commit is recorded or the revision is unavailable, do not assume the linked guide matches; the workflow above remains the usable baseline.

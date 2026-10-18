@@ -4,20 +4,21 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 
 ## 目的から選ぶ
 
-初回利用時は、先に[実行例付きの導入ガイド](docs/getting-started.md)を開いてください。プロンプトを使う作業は導入先リポジトリを作業コンテキストにし、DevConcordは読み取り専用の参照元として扱います。Skills管理CLIは別操作で、`--target` に指定した導入先へ適用します。
+初回利用時は、先に[実行例付きの導入ガイド](docs/getting-started.md)を開いてください。Agent Skillsはユーザー単位のUser Scopeが標準で、プロジェクトへのコピーはチーム共有・CI等のProject Scopeが必要な場合に選びます。プロンプトを使う作業は導入先リポジトリを作業コンテキストにし、DevConcordは読み取り専用の参照元として扱います。
 
 | 目的 | 入口 |
 |---|---|
-| 設計書から新規Bootstrapする | [Bootstrapの実行例](docs/getting-started.md#2-codex-cliで新規bootstrapする) |
-| 既存リポジトリへAdoptionする | [Adoptionの実行例](docs/getting-started.md#3-codex-cliで既存プロジェクトへadoptionする) |
+| 設計書から新規Bootstrapする | [Bootstrapの実行例](docs/getting-started.md#3-設計書から新規bootstrapするcodex-cli) |
+| 既存リポジトリへAdoptionする | [Adoptionの実行例](docs/getting-started.md#4-既存リポジトリへadoptionするcodex-cli) |
 | はじめてDevConcordを使う | [導入と運用ガイド](docs/getting-started.md) |
 | 設計書から新しいプロジェクトを始める | [Bootstrapプロンプト](prompts/bootstrap-from-design.md) |
 | 既存プロジェクトへ規約を選んで導入する | [Adoptionプロンプト](prompts/adopt-guidance.md) |
-| 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#7-導入済み共通ガイドをsynchronizationする) |
+| 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
 | プロンプトを使う・選ぶ | [プロンプト一覧](prompts/README.md) |
 | 特定タスク向けAgent Skillを選ぶ | [Skills一覧](prompts/README.md#agent-skills) |
-| Skillsを導入・同期・検証する | [Skills運用ガイド](docs/agent-skills.md)または[実行例](docs/getting-started.md#agent-skillsを利用する) |
+| User ScopeのSkillsを導入・同期・検証する | [Getting Started](docs/getting-started.md#2-agent-skillsをユーザー単位でインストールする)または[Skills運用ガイド](docs/agent-skills.md) |
+| Project ScopeのSkillsを導入する | [Project Scopeの実行例](docs/getting-started.md#7-project-scopeでskillsを導入する任意) |
 | ドキュメント体系を設計・改善する | [ドキュメント設計ガイド](docs/common/documentation-design.md) |
 
 ## 収録内容

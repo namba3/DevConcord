@@ -14,13 +14,13 @@
 
 プロンプトは導入先リポジトリを作業コンテキストとして実行し、DevConcordを読み取り専用の参照元として指定します。`<...>` の箇所は対象に合わせて置き換えてください。新規リポジトリを設計書から作る場合はBootstrap、すでに存在するプロジェクトへ共通資料を適用する場合はAdoption、導入済み資料を更新する場合は資料Synchronizationを使います。Bootstrapは既存成果物のあるディレクトリを新規扱いで上書きする用途ではありません。各作業後は根拠のない記述や既存ルールとの重複・矛盾を人が確認します。設計原則の適用はプロジェクト規模に合わせ、UI/UXを機能設計へ、Performance / Robustnessを必要な要求・契約・検証へ、Replaceabilityを交換価値のある依存境界へつなぎます。特にCLIやライブラリへGUI要件を課さず、別の課題・リスク台帳や全依存の抽象化も無条件に追加しません。具体的な準備・操作は[実行例付きの導入ガイド](../docs/getting-started.md)を参照してください。
 
-プロンプトの実行とAgent Skills管理CLIは別の操作です。Skillsの配置先はCLIの `--target` で指定し、dry-runの計画を確認してから `--apply` を使います。共通資料のSynchronizationはプロンプトによる文書差分適用であり、`manage_skills.py sync` はmanifest管理下のSkillsパッケージ同期です。Skillのコマンド・出典・復旧手順は[Agent Skills運用ガイド](../docs/agent-skills.md)を参照してください。
+プロンプトの実行とAgent Skills管理CLIは別の操作です。Skillsは通常User Scopeとしてユーザー環境へ一度導入します。Project Scopeが必要な場合だけ `--scope project --target <導入先>` を指定します。`install` / `sync` はdry-runが既定で、差分を確認してから `--apply` を使います。共通資料のSynchronizationはプロンプトによる文書差分適用であり、`manage_skills.py sync` はmanifest管理下のSkillsパッケージ同期です。Skillのコマンド・出典・復旧手順は[Agent Skills運用ガイド](../docs/agent-skills.md)を参照してください。
 
 このリポジトリにある共通ガイドやテンプレートを適用する場合は、対象リポジトリへ必要な資料をコピーし、そのパスをプロンプトに明示してください。`AGENTS.md` にはレビュー時に `REVIEWS.md` を読む手順を含め、任意のファイルが自動読込される前提にしないでください。
 
 ## Agent Skills
 
-作業単位の再利用可能なSkillは [`.agents/skills/`](../.agents/skills/) に標準形式の正本を置きます。Skill一覧から目的に合うワークフローを選び、対象エージェントへの導入・共有・同期・復旧が必要な場合は[Agent Skills運用ガイド](../docs/agent-skills.md)を参照してください。`install` / `sync` は `--apply` がなければdry-runで、ローカル変更や同名衝突を上書きせず保護します。
+作業単位の再利用可能なSkillは [`.agents/skills/`](../.agents/skills/) に標準形式の正本を置きます。Skill一覧から目的に合うワークフローを選び、通常はユーザー環境へUser Scopeとして導入します。チーム共有・CI・バージョン固定ではProject Scopeを選べます。導入・同期・復旧は[Agent Skills運用ガイド](../docs/agent-skills.md)を参照してください。CLIはDevConcordのローカル参照先とSkillの出典コミットを用いて、必要な資料を同じ版から読み出せます。エージェントがローカルファイルへアクセスできない場合は、その環境で参照済みと扱いません。
 
 | Skill | 用途 |
 |---|---|

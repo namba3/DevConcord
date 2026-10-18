@@ -1,21 +1,12 @@
 # はじめての導入と運用
 
-このページは、DevConcordを初めて利用する開発者向けの実行例です。標準方式は **Target-centric** です。Bootstrap / Adoption / Synchronizationのプロンプトを実行するときは導入先を作業コンテキストにし、DevConcordは読み取り専用の参照元として指定します。Agent Skills管理CLIは別操作で、どのディレクトリから実行しても `--target` に指定したリポジトリを変更します。
+DevConcordのAgent Skillsは **User Scope（ユーザー単位）** が標準です。一度ユーザー環境へ導入すると、対応エージェントからローカルプロジェクトで利用できます。各プロジェクトにSkillやSkill manifestをコピーする必要はありません。Skillsの利用と共通文書の導入・更新は別の操作です。
 
-## まず選ぶ
+Bootstrap / Adoption / 資料Synchronizationは、導入先リポジトリを作業コンテキストとして実行します。DevConcordは読み取り専用の参照元です。Agent Skills管理CLIは別操作で、User Scopeではユーザー環境、Project Scopeでは `--target` に指定したリポジトリを変更します。
 
-| 目的 | 作業対象 | 使うもの |
-|---|---|---|
-| 設計書から新しいプロジェクトを始める | 空の `my-new-app/` | [`bootstrap-from-design.md`](../prompts/bootstrap-from-design.md) |
-| 既存プロジェクトへ共通資料を導入する | 既存の `my-app/` | [`adopt-guidance.md`](../prompts/adopt-guidance.md) |
-| 導入済みの共通資料を更新する | 既存の `my-app/` | [`sync-guidance.md`](../prompts/sync-guidance.md) |
-| 導入済みAgent Skillsを更新する | manifest管理下の `my-app/` | [`manage_skills.py sync`](agent-skills.md) |
+## 1. DevConcordをcloneしてローカル参照を登録する
 
-**BootstrapとAdoptionは別の作業です。** 既存ファイルや履歴がある対象へBootstrapを実行しないでください。また、新規Bootstrapの前にSkillをインストールしないでください。Skillだけの状態も追加のmanifest・ツリー検証が必要な開始状態になるため、先にBootstrapを終え、必要なSkillはその後に導入するのが簡単で安全です。
-
-## 1. cloneして作業場所を用意する
-
-以下は `~/projects/` の下にDevConcord、設計書、新規対象、既存対象を置く例です。既にclone済みのリポジトリは再cloneしないでください。既存プロジェクトをcloneする場合、コマンド実行時に自分が利用できるGit URLを入力します。
+以下の例では、DevConcord、設計書、新規対象、既存対象を `~/projects/` に配置します。既にclone済みなら再cloneしません。User Scopeの参照設定は実際のcloneを検証し、ユーザーの `~/.devconcord/config.json` に絶対パスを保存します。
 
 **実行場所: `~/projects/`**
 
@@ -23,247 +14,212 @@
 mkdir -p ~/projects/design ~/projects/my-new-app
 cd ~/projects
 git clone https://github.com/namba3/DevConcord.git devconcord
-# 既存プロジェクトをまだcloneしていない場合だけ実行する:
-read -r -p "既存プロジェクトのGit URL: " REPO_URL
-git clone "$REPO_URL" my-app
 ```
 
-`my-new-app/` が既に存在する場合は、中身を確認し、空でないディレクトリをBootstrap対象にしないでください。設計書を `~/projects/design/` に配置してください。以降の例では `requirements.md` を入力設計書とします。実際のファイル名が異なる場合は、指示例のパスを置き換えます。ディレクトリは次のようになります。
+必要なら設計書を `~/projects/design/` に、既存プロジェクトを `~/projects/my-app/` に用意します。DevConcordディレクトリは次のようになります。
 
 ```text
 ~/projects/
-├── devconcord/                  # 共通資料とプロンプト。参照元
+├── devconcord/                  # Skills・資料・プロンプトの参照元
 ├── design/requirements.md       # Bootstrapへの入力
-├── my-new-app/                  # Bootstrapの変更先。開始時は空
-└── my-app/                      # 既存リポジトリ。Adoption/同期の変更先
+├── my-new-app/                  # 新規Bootstrapの変更先
+└── my-app/                      # 既存プロジェクトの変更先
 ```
 
-DevConcordに未コミット変更がある場合は、内容を確認せず更新・破棄しないでください。以下の操作ではDevConcordのファイルを編集しません。
+**実行場所: `~/projects/devconcord/`**
 
-## 2. Codex CLIで新規Bootstrapする
+```sh
+cd ~/projects/devconcord
+python3 scripts/manage_skills.py config set-source \
+  --source-root ~/projects/devconcord
+python3 scripts/manage_skills.py config show
+```
 
-**前提:** Codex CLIが利用可能で、設計書を読めること。`my-new-app/` は空であること。Bootstrap前にAgent Skillsを導入しません。
+登録は `~/.devconcord/config.json` だけを作成・変更します。既存の設定は上書きしません。別の有効な設定がある場合は先に確認し、意図して変更するときだけ `set-source` に `--replace` を加えます。Windows、WSL2、コンテナ、リモート環境はそれぞれ別のホームとファイルアクセス権を持つ場合があります。実際にエージェントが使う環境で登録してください。
 
-**作業ディレクトリ:** Codexを起動する前に `~/projects/my-new-app/` へ移動します。入力は `~/projects/design/requirements.md`、変更先は `~/projects/my-new-app/`、参照元は `~/projects/devconcord/` です。
+## 2. Agent Skillsをユーザー単位でインストールする
 
-**実行場所: `~/projects/my-new-app/`**
+Skillsの標準形式と各エージェントの公式探索先に従い、CodexとCopilotで共用する `.agents/skills/`、Claude Code用の `.claude/skills/` に分けて配置します。最初にdry-runの計画を確認します。`--apply` がないコマンドはファイルを変更しません。
+
+**前提:** 利用するエージェントを決めます。以下はCodexとCopilotでSkillsを共用する例です。インストール時に `--skills` を省略すると、全Skillsが対象です。
+
+**実行場所: `~/projects/devconcord/`。変更先: 現在のユーザー環境。**
+
+```sh
+cd ~/projects/devconcord
+python3 scripts/manage_skills.py install \
+  --scope user --agents codex copilot
+```
+
+出力された配置先・Skill名・競合を確認した後、同じコマンドに `--apply` を追加します。
+
+```sh
+python3 scripts/manage_skills.py install \
+  --scope user --agents codex copilot --apply
+python3 scripts/manage_skills.py validate --scope user
+python3 scripts/manage_skills.py config show
+```
+
+Claude Codeだけを使う場合は `--agents codex copilot` の代わりに `--agent claude` を指定します。CodexまたはCopilotとClaude Codeを同時に使うと、Copilotが両方の配置から同じSkillを発見する可能性があります。ホストの挙動を実際に確認せず、3エージェント構成を既定として選ばないでください。必要な場合の重複許可は[Skills運用ガイド](agent-skills.md#配置とエージェントの共用)を参照してください。
+
+**期待する成果物:** Codex/Copilot用なら `~/.agents/skills/`、Claude Code用なら `~/.claude/skills/` に選択したSkillsが配置され、状態・manifest・lock・復旧情報はユーザーの `~/.devconcord/` に保存されます。インストールしても対象プロジェクトにはファイルを作成しません。
+
+## 3. 設計書から新規Bootstrapする（Codex CLI）
+
+**前提:** Codex CLIが利用でき、登録済みのローカル参照元とグローバル `bootstrap-from-design` SkillをCodexから読めること。`my-new-app/` は空にしておきます。グローバルSkillは対象へコピーしないため、Skill導入によってBootstrap開始状態が変わりません。
+
+**作業ディレクトリ・変更先:** `~/projects/my-new-app/`。入力設計書は `~/projects/design/requirements.md`、ローカル参照元は `~/projects/devconcord/` です。
 
 ```sh
 cd ~/projects/my-new-app
 codex
 ```
 
-Codexのチャットには、別ターミナルから次のコマンドで表示したプロンプト全文を貼り付けます。コマンドを実行するターミナルはどこでも構いません。
+Codexへ「`bootstrap-from-design` Skillを使い、`~/projects/design/requirements.md` からこの空のリポジトリを初期化してください。DevConcordの資料は読み取り専用で参照し、変更先はこのリポジトリだけにしてください。未確認の機能やコマンドを事実として記載しないでください」と依頼します。
+
+Skillが利用できない場合は、別のターミナルで次を表示し、[Bootstrapプロンプト](../prompts/bootstrap-from-design.md)を対象リポジトリで実行中のエージェントへ渡します。
 
 ```sh
 cat ~/projects/devconcord/prompts/bootstrap-from-design.md
 ```
 
-そのプロンプトの入力欄を、例えば次のように指定してください。
+**期待する成果物:** 合意した範囲のREADME、設計・要求資料、最小限の実装骨格・検証資産などです。Git初期化や技術スタックは設計と対象の状態に基づき判断します。生成された記述が設計書・実装と一致するか、人が確認してください。
 
-```text
-設計書のパス（複数可）: ~/projects/design/requirements.md
-初期化対象ディレクトリ: ~/projects/my-new-app
-プロジェクト名: 設計書に記載された名称を使用
-技術的制約: 設計書に記載された制約を使用
-初期化範囲: 最小実装骨格まで
-Git初期化: 空の対象に限り必要性を確認して実施
-追加指定: ~/projects/devconcord の資料は読み取り専用で参照し、変更先は ~/projects/my-new-app のみとする。未確認の機能・ライセンス・コマンドを事実として記載しない
-```
+## 4. 既存リポジトリへAdoptionする（Codex CLI）
 
-**期待する成果物:** 合意した初期化範囲に応じたREADME、設計・要求資料、最小限のプロジェクト骨格と検証資産などです。設計書と作業前の状態を照合し、未実装機能を完成済みと記載していないことを確認します。
+**前提:** `my-app/` を既存チェックアウトとして用意し、未コミット変更を確認して保持します。既存プロジェクトにはBootstrapではなくAdoptionを使います。
 
-**実行後の確認:** Git初期化を行った場合は `~/projects/my-new-app/` で `git status --short` を確認します。README・生成ファイル・リンク・要求出典・実装状態もレビューしてください。技術スタックが確定した後、そのプロジェクトの開発手順に記載されたビルド・テスト・検証だけを実行してください。Bootstrapは機能完成や全テスト成功を意味しません。
-
-## 3. Codex CLIで既存プロジェクトへAdoptionする
-
-**前提:** `my-app/` をclone済みまたは既存チェックアウトとして用意し、現在の作業ツリーを把握していること。未コミット変更がある場合は、作業開始時点を記録し、保持するよう指示します。
-
-**作業ディレクトリ:** `~/projects/my-app/`。参照元は `~/projects/devconcord/`、変更先は `~/projects/my-app/` です。
-
-**実行場所: `~/projects/my-app/`**
+**作業ディレクトリ・変更先:** `~/projects/my-app/`。参照元は `~/projects/devconcord/` です。
 
 ```sh
 cd ~/projects/my-app
 codex
 ```
 
-Codexへ渡すAdoptionプロンプトは次のコマンドで表示できます。
+「`adopt-guidance` Skillを使い、このリポジトリの既存実装・文書・規約・リンク・履歴を調査してください。DevConcordの共通資料はローカル参照から必要な範囲だけ確認し、独自規約や未コミット変更を保護してください。導入・変更はこのリポジトリだけに行い、必要な資料を選択して理由を説明してください」と依頼します。
+
+Skillが利用できない場合は、[`adopt-guidance.md`](../prompts/adopt-guidance.md) を読み、対象コンテキストで使います。
 
 ```sh
 cat ~/projects/devconcord/prompts/adopt-guidance.md
 ```
 
-プロンプトの入力欄の記入例:
+**期待する成果物:** 調査と合意に基づく必要最小限の共通資料、`AGENTS.md` / `REVIEWS.md`、採用内容を示すprovenance等です。DevConcordのSkills manifestと対象の `guidance-provenance.md` は別の記録です。適用後に差分、既存規約、リンク、provenance、対象固有の検証を確認します。
 
-```text
-資料集の場所: ~/projects/devconcord
-導入対象: ~/projects/my-app
-利用者・希望する運用: 既存の構成・設計・課題管理・文書リンクを保護し、必要な共通資料だけ選択導入する
-Agent Skills導入: 今回は導入しない
-```
+## 5. VS Code + Codex拡張でBootstrap / Adoptionする
 
-**期待する成果物:** 調査・合意した範囲の資料や指示ファイル、採用・保留の範囲を記録するprovenanceなどです。既存の有効な規約・要求ID・課題・リンクを無条件に再編しないでください。
+VS Codeで開くフォルダーが作業対象です。Bootstrapなら空の `my-new-app/`、Adoptionなら既存の `my-app/` を開きます。
 
-**実行後の確認:** `~/projects/my-app/` で `git status --short` と `git diff --check` を実行し、差分をレビューします。課題表、`AGENTS.md` / `REVIEWS.md`、相対リンク、provenanceと適用内容を確認し、対象プロジェクト既存の文書検証・ビルド・テストを実行します。DevConcord自身の検証器は、導入先用としてそのまま実行するものではありません。
+1. **File > Open Folder...** から対象リポジトリを開きます。
+2. Codex拡張のチャットを開きます。グローバルSkillsが利用可能か確認し、BootstrapまたはAdoptionの該当Skillを指定します。
+3. 参照元・変更先・設計書パスを明示し、上記シナリオと同じ指示を渡します。
+4. Skillが使えない場合は、DevConcordの該当プロンプトを開いて内容をチャットへ貼り付けます。DevConcord側のファイルを編集・保存しないでください。
+5. 対象リポジトリで差分・リンク・既存のビルド/テストを確認します。
 
-## 4. VS Code + Codex拡張でBootstrapまたはAdoptionする
-
-CLIと同様に、**VS Codeで開くフォルダーが作業対象**です。Bootstrapなら空の `~/projects/my-new-app/`、Adoptionなら既存の `~/projects/my-app/` を開きます。DevConcordフォルダーを作業対象として開いてプロンプトを実行しないでください。
-
-1. VS Codeの **File > Open Folder...** から対象リポジトリを開きます。
-2. Codex拡張のサイドバーを開きます。コマンドパレットで `Codex: Open Codex Sidebar` を選べます。
-3. VS Codeの統合ターミナルで `cat ~/projects/devconcord/prompts/bootstrap-from-design.md` または `cat ~/projects/devconcord/prompts/adopt-guidance.md` を実行し、該当する全文をCodexチャットへ貼り付けます。
-4. Bootstrapなら「2. Codex CLIで新規Bootstrapする」、Adoptionなら「3. Codex CLIで既存プロジェクトへAdoptionする」の入力例を使い、参照元・変更先・読み取り専用の境界を指定します。
-5. 提案された差分を確認し、同節の実行後チェックを行います。
-
-プロンプトファイルをVS Codeで開く場合はDevConcordの内容を編集・保存しないでください。ワークスペース外のファイルにアクセスできない環境では、プロンプト全文をコピーして渡します。実際の拡張UI・アクセス設定はバージョンにより異なるため、必要なら[公式Codex IDE手順](https://developers.openai.com/codex/ide)を確認してください。
-
-## Agent Skillsを利用する
-
-5番目のシナリオはAgent Skillsの導入です。インストールはプロンプト実行とは別の操作です。`manage_skills.py` の既定の出典はそのスクリプトを含むDevConcordリポジトリで、`--target` が変更先です。例ではBootstrapまたはAdoption完了後の `my-new-app/` を対象に、Codex用Bootstrap Skillだけを導入します。
-
-**前提:** 対象に対するSkills導入が初回、またはmanifestで管理されたSkillであること。導入先のローカル変更を保護するため、まずdry-runします。
-
-**実行場所:** 下の例は `~/projects/` から実行します。`--target` が実際の変更先を指定します。
-
-```sh
-cd ~/projects
-python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-new-app --agent codex \
-  --skills bootstrap-from-design
-```
-
-計画に表示された対象、Skill名、競合を確認します。問題がなければ、次の適用コマンドを実行します。
-
-```sh
-python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-new-app --agent codex \
-  --skills bootstrap-from-design --apply
-```
-
-**期待する成果物:** 対象の `.agents/skills/bootstrap-from-design/` と `.devconcord/skills-manifest.json` です。CLIはSkillを対象へコピーします。DevConcordのSkill正本を変更しません。
-
-**利用時の指示例:** インストール後、Codexで対象リポジトリを開き、「`bootstrap-from-design` Skillを使い、指定した設計書に基づいてこの新規プロジェクトを初期化してください。変更先はこのリポジトリだけにしてください」と依頼します。開始状態の条件が複雑になるため、通常は先にBootstrapプロンプトを実行し、その後でSkillを導入してください。
-
-**注意:** Bootstrap Skillを先に入れて空の対象へBootstrapする方法は可能ですが、対象状態の判定が増えるため、まずBootstrapを完了してからSkillsを導入してください。Claude CodeまたはCopilotとの共用例は次節、出典・属性・重複・復旧の詳細は[Agent Skills運用ガイド](agent-skills.md)を参照します。
+Codex拡張やエージェントがユーザーのホーム・DevConcord cloneへアクセスできるかは、VS Codeの実行環境と権限に依存します。実際のアクセスやSkill実行は実機で確認し、未確認の環境を対応済みとみなしません。
 
 ## 6. Claude Code・GitHub CopilotでSkillsを使う
 
-インストール先を管理CLIの `--agent` / `--agents` で選び、その後、該当エージェントで **同じ対象リポジトリ** を開きます。CodexとCopilotは `.agents/skills/` を共用できます。Claude CodeとCopilotは `.claude/skills/` を共用できます。以下はCopilotとClaude Code用に、既存のBootstrap Skillを選んでdry-runし、確認後に適用する例です。
+対応するエージェントで対象プロジェクトを開き、「`adopt-guidance` Skillを使って必要な範囲を調査してください」のように依頼します。Claude Codeの個人Skillは `~/.claude/skills/`、CodexとCopilotで共有するSkillは `~/.agents/skills/` に配置します。CLIのインストール成功と、エージェントがSkillを発見・選択・実行できることは別々に確認してください。
 
-**実行場所:** `~/projects/`。dry-runの計画を確認後、問題がなければ適用コマンドを別途実行します。変更先は `--target` で明示します。
+CopilotがCodex用 `.agents/skills/` とClaude用 `.claude/skills/` の両方を使う構成は、対応版や表示・選択動作を実機で確認してください。Claude Code、Copilot CLI、クラウドエージェントでユーザー単位のSkillsやローカルファイルアクセスが使えるかは、それぞれの実行形態によって異なります。グローバルSkillsを利用できない環境ではProject Scopeを検討します。
 
-Copilot向けdry-run:
+## 7. Project ScopeでSkillsを導入する（任意）
 
-```sh
-cd ~/projects
-python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-new-app --agent copilot --skills bootstrap-from-design
-```
+Project Scopeはチーム共有、CI、バージョン固定、クラウドエージェント等のためにリポジトリ内へSkillsを置く方式です。User Scopeとmanifest・復旧状態は別です。対象の作業ツリーへSkillsと `.devconcord/skills-manifest.json` を追加するため、変更を確認して管理してください。
 
-計画を確認後、Copilot向け適用:
+**実行場所:** `~/projects/devconcord/`。変更先は `--target` の `~/projects/my-app/` です。
 
 ```sh
-python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-new-app --agent copilot --skills bootstrap-from-design --apply
+cd ~/projects/devconcord
+python3 scripts/manage_skills.py install \
+  --scope project --target ~/projects/my-app --agent codex \
+  --skills adopt-guidance
 ```
 
-Claude Code向けdry-run:
+dry-runの対象と差分を確認後、同じコマンドに `--apply` を加えます。後方互換性のため `--scope` を省略して `--target` を指定した場合もProject Scopeです。User Scopeでは `--target` を指定しません。既存の非DevConcord Skills、同名Skill、ローカル編集は保護されます。
 
-```sh
-python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-new-app --agent claude --skills bootstrap-from-design
-```
+## 8. 共通ガイドのSynchronization
 
-計画を確認後、Claude Code向け適用:
+資料Synchronizationは、採用済みの**共通文書・規約の差分適用**です。Agent Skillsを更新する `manage_skills.py sync` とは異なります。対象に資料別provenanceと比較基準があることを先に確認します。
 
-```sh
-python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-new-app --agent claude --skills bootstrap-from-design --apply
-```
-
-**期待する成果物:** Copilot用なら `.agents/skills/`、Claude Code用なら `.claude/skills/` にSkillコピーとmanifest記録ができます。導入後にCopilotまたはClaude Codeで `my-new-app/` を開き、Skillが発見・選択されるか確認します。インストール成功はエージェントでの発見・実行を保証しません。
-
-**利用時の指示例:** 対象を開いたCopilotまたはClaude Codeに「`bootstrap-from-design` Skillを使い、`~/projects/design/requirements.md` を入力としてこのリポジトリを初期化してください。DevConcordは読み取り専用の参照元とし、変更先はこのリポジトリだけにしてください」と依頼します。Skillを明示して依頼しても、エージェントが対応Skillを認識・利用することは別途確認してください。
-
-**注意:** 三者併用ではCopilotが複数探索先から同じSkillを見つける可能性があります。必要な組合せの重複挙動を実機で確認し、明示許可が必要なら[運用ガイド](agent-skills.md#配置とエージェントの共用)を参照してください。エージェントの起動オプションはここでは指定しません。利用中の版の公式手順に従い、対象リポジトリを開きます。
-
-## 7. 導入済み共通ガイドをSynchronizationする
-
-これは、DevConcordから以前採用した**文書・規約の差分適用**です。Agent Skillsのファイルを同期する `manage_skills.py sync` とは別操作です。`my-app/` のprovenanceに資料別の比較基準が記録されている場合に使います。記録がなければ通常のSynchronizationとして開始せず、初回Adoptionの扱いを確認します。
-
-**実行前:** 資料集の現在の完全コミットと導入先の変更を確認します。
-
-```sh
-git -C ~/projects/devconcord rev-parse HEAD
-git -C ~/projects/my-app status --short
-```
-
-**作業ディレクトリ:** Codex等のエージェントを `~/projects/my-app/` で起動します。DevConcordのプロンプトと共通資料は読み取り専用の参照元です。
+**作業ディレクトリ・変更先:** `~/projects/my-app/`。DevConcordは参照元です。
 
 ```sh
 cd ~/projects/my-app
 codex
 ```
 
-別ターミナルで `cat ~/projects/devconcord/prompts/sync-guidance.md` によりプロンプトを表示して渡します。入力例の「今回確認するコミット」には、`git -C ~/projects/devconcord rev-parse HEAD` の結果を指定します。
+`sync-guidance` Skillまたは [`sync-guidance.md`](../prompts/sync-guidance.md) を使い、ローカル変更を保護し、採用済み資料の必要な差分だけを適用するよう指示します。比較対象のDevConcordコミットやprovenanceを推測で変更しません。適用後は対象の差分、provenance、リンク、既存の文書検証を確認します。
 
-```text
-資料集の場所: ~/projects/devconcord
-導入対象: ~/projects/my-app
-今回確認するコミット: <上のコマンドが出力した完全なコミットSHA>
-更新方針: 既存のプロジェクト固有ルール、未コミット変更、資料別provenance、リンクを保護し、採用済み資料の必要な差分だけを適用する
-Agent Skills同期: 今回は同期しない
-```
+## 9. Agent Skillsの同期・検証・復旧
 
-**期待する成果物:** 同意された資料差分のみが `my-app/` に反映され、変更した資料のprovenanceが実際の適用状況に合います。保留や対象外の差分は理由とともに既存記録へ残します。エージェントが `devconcord/` 側に変更を提案した場合は適用しないでください。
+### User ScopeのSkills同期
 
-**実行後の確認:** `my-app/` で `git status --short`、`git diff --check`、変更文書のリンク検証と対象固有の文書ビルド/テストを実施します。provenanceのSHAは実際に比較した値、状態は実際に適用した範囲と一致させます。異なる履歴・浅い履歴・比較基準不明などの扱いは[同期プロンプト](../prompts/sync-guidance.md)を参照し、fetch・reset・基準SHA変更を独断で行いません。
-
-## 8. 導入済みAgent Skillsを同期する
-
-これは、manifestで管理された**Skillパッケージの更新**です。共通ガイドのSynchronizationではありません。`sync` は記録済み出典・履歴・導入先ハッシュを検証します。出典変更、履歴巻き戻し、未追跡のSkillsを通常同期で上書きしません。
-
-**実行場所:** `~/projects/`。対象とエージェントはCLI引数で明示します。
+**実行場所:** `~/projects/devconcord/`。対象はユーザー環境です。`--agents` を省略するとmanifestで管理されているagentを使います。
 
 ```sh
-cd ~/projects
-python3 ~/projects/devconcord/scripts/manage_skills.py sync \
-  --target ~/projects/my-app --agent codex
+cd ~/projects/devconcord
+python3 scripts/manage_skills.py sync --scope user
 ```
 
-dry-runの計画をレビューし、問題なければ同じコマンドに `--apply` を加えます。
+dry-runと出典・履歴・ローカル変更の検査結果を確認し、適用が必要な場合だけ同コマンドに `--apply` を追加します。
 
 ```sh
-python3 ~/projects/devconcord/scripts/manage_skills.py sync \
-  --target ~/projects/my-app --agent codex --apply
+python3 scripts/manage_skills.py sync --scope user --apply
+python3 scripts/manage_skills.py validate --scope user
+python3 scripts/manage_skills.py doctor --target ~/projects/my-app
 ```
 
-**期待する成果物:** manifestに記録されたCodex向けSkillsだけが安全に更新され、`my-app/` のmanifestが更新されます。別agent用パッケージを同期する場合はmanifest上の構成に合わせて `--agent` または `--agents` を指定します。
+`doctor` はUser Scopeの状態を検証し、任意の対象プロジェクトとの同名Skill衝突を表示します。エージェントごとの優先順位は断定しません。
 
-**実行後の確認:** `python3 ~/projects/devconcord/scripts/manage_skills.py validate --target ~/projects/my-app` を実行し、さらに対象で `git -C ~/projects/my-app status --short` を確認します。出典変更や中断操作の回復は、[Agent Skills運用ガイド](agent-skills.md)の `rebind-source` / `recover` の説明を読み、状況を確認してから行います。
+### Project ScopeのSkills同期
 
-## 9. 検証コマンド
-
-以下は検証対象ごとに実行場所が異なります。
-
-**導入先リポジトリで実行:** 変更範囲を確認し、対象プロジェクトが既に持つ検証手段（Markdownlint、リンク検査、サイトビルド、単体テストなど）を使います。すべてのプロジェクトに共通のテストコマンドはありません。
+Project ScopeのSkillsを更新する場合は対象を明示します。
 
 ```sh
-cd ~/projects/my-app
-git status --short
-git diff --check
+python3 scripts/manage_skills.py sync \
+  --scope project --target ~/projects/my-app --agent codex
 ```
 
-導入済みSkillsを検証するCLIは、DevConcord内のスクリプトから導入先を指定します。作業ディレクトリは任意です。
+計画を確認後、必要な場合だけ `--apply` を追加します。検証は次のとおりです。
 
 ```sh
-python3 ~/projects/devconcord/scripts/manage_skills.py validate \
-  --target ~/projects/my-app
+python3 scripts/manage_skills.py validate \
+  --scope project --target ~/projects/my-app
 ```
 
-**DevConcord自身の資料・テストを検証:** ここで初めてDevConcordリポジトリへ移動します。`validate_docs.py` はDevConcordの文書用であり、外部の `my-app/` に対する汎用検証器ではありません。
+通常同期は同じ出典からの前進と導入先の内容を検証します。意図した出典変更は `rebind-source`、中断操作はUser Scopeなら `recover --scope user`、Project Scopeなら `recover --scope project --target ...` をdry-runで確認します。journalやmanifestを手動削除しないでください。詳細は[Agent Skills運用ガイド](agent-skills.md)が正本です。
+
+### ローカルの詳細資料を読む
+
+ローカルDevConcord資料が必要なSkillは、設定ファイルの `source_root` とSkill manifestの `source_commit` を使い、通常は導入済みSkillと同じコミットの資料を読みます。例として、DevConcord cloneの `docs/common/documentation-design.md` を読むコマンドは次のとおりです。
+
+```sh
+python3 ~/projects/devconcord/scripts/manage_skills.py reference \
+  --skill documentation-architecture \
+  --path docs/common/documentation-design.md
+```
+
+`--revision head` は現在のコミット、`--revision working-tree` は意図的に未コミット変更を含む参照です。既定のinstalled revisionはネットワークを使いません。設定したcloneが移動した場合は、検証後 `config set-source --replace --source-root <新しい絶対パス>` で更新します。詳細な意味と失敗時の扱いは[Skill内のローカル参照手順](../.agents/skills/documentation-architecture/references/local-devconcord.md)を確認してください。
+
+## 10. よくあるエラーと対処
+
+| 状況 | 対処 |
+|---|---|
+| User Scopeのdry-runで設定がないと表示される | `config set-source --source-root <DevConcordリポジトリ>` を一度実行します。`source_root` はGit管理下のDevConcord rootでなければなりません。 |
+| 既存の `config.json` を上書きできない | `config show` と設定ファイルを確認し、意図して変更する場合のみ `set-source --replace` を使います。管理中のSkill manifestは設定変更で書き換わりません。 |
+| `source_root` が古い・移動した | 現在のcloneのルートとGit状態を確認し、`set-source --replace` で登録します。別出典を指す場合は同期を強行せず、出典変更の意図とSkillを確認してから `rebind-source` を検討します。 |
+| 同名Skill・重複探索先が報告される | User ScopeとProject Scopeの両方を確認し、どちらのSkillを使うか選択します。エージェント間の優先順位を推測せず、明示重複は実機確認後に限ります。 |
+| Skillのローカル変更が検出される | インストール先のSkillとmanifestを保全し、編集を確認・退避・統合してから再試行します。保護検査を回避しません。 |
+| `reference` がコミット・ファイルを読めない | 設定、source identity、Git履歴、対象コミット・ファイルの存在、エージェントのローカルアクセス権を個別に確認します。オンライン最新版やHEADへ黙って置き換えません。 |
+| `recover` が不整合を報告する | journal、manifest、バックアップを保持し、対象と状態を調査します。不明なデータを削除・上書きしません。 |
+| Bootstrapが既存対象として停止する | `my-new-app/` が本当に空か確認します。既存成果物や履歴を消さず、既存プロジェクトにはAdoptionを使います。 |
+| Codex CLI・VS Code拡張がSkillsや資料を読めない | 対象環境のホーム、ワークスペース権限、利用中の製品版、プロンプト手動実行を確認します。別マシンやクラウド環境からローカルDevConcordへアクセスできるとは限りません。 |
+
+## DevConcord自身の検証
+
+次の検証はDevConcordリポジトリ内で実行します。`validate_docs.py` は導入先用の汎用検証器ではありません。
 
 ```sh
 cd ~/projects/devconcord
@@ -273,16 +229,4 @@ python3 -B -m unittest discover -s tests -v
 npx --yes markdownlint-cli2@0.23.3 "**/*.md"
 ```
 
-コマンド例と入力パスはこの資料の想定レイアウトに対するものです。エージェントでBootstrap/Adoption/Synchronizationを実行した品質は、静的検証やPythonテストだけでは保証されません。
-
-## 10. よくあるエラー
-
-| 状況 | 対処 |
-|---|---|
-| Bootstrapが対象を既存リポジトリと判定して止まる | `my-new-app/` が空か確認します。既存成果物や履歴を消さず、既存プロジェクトならAdoptionを使います。Skillsを先に導入していた場合はmanifest・全Skillハッシュ等を確認するか、新規で空の対象を用意してBootstrap後にSkillを導入します。 |
-| CodexがDevConcordのプロンプト/設計書を読めない | CLIでパスを確認し、対象で起動したCodexへプロンプト全文を貼り付けます。必要な設計書や共通資料だけを対象に一時コピーする場合も、入力として明示し、元資料集を編集しないよう指定します。 |
-| `manage_skills.py` が `local modifications detected` と報告する | 対象Skillとmanifestを保全し、対象のローカル編集を確認・退避してから再試行します。上書きを強制する目的でmanifestを書き換えたり、検査を回避したりしません。 |
-| 同名Skillまたは複数探索先の重複が報告される | Skill名と各配置内容・利用agentを確認し、必要な配置だけに整理します。重複の明示許可は実エージェントでの挙動を確認した後に限ります。 |
-| 通常のSkills同期が出典変更・履歴巻き戻し・比較基準エラーで止まる | ソースremote・完全SHA・履歴とmanifest記録を確認します。意図した出典変更は[運用ガイド](agent-skills.md)の `rebind-source`、中断後は `recover` を参照し、通常syncで履歴を飛ばしたり復旧データを削除したりしません。 |
-| プロンプトのSynchronizationが資料別基準SHAやprovenanceを見つけられない | 初回Adoption記録の有無、各資料の比較基準と適用メモを確認します。SHAや適用状態を推測せず、不明なら作業を止めて確認します。 |
-| Codex CLIコマンドが見つからない、拡張にアクセスできない | [公式Codex CLI手順](https://developers.openai.com/codex/cli)または[IDE拡張手順](https://developers.openai.com/codex/ide)で導入・サインイン・ワークスペース権限を確認します。 |
+これらの静的検証・ユニットテストは、Codex、Claude Code、Copilot等がSkillsを発見・選択・実行する品質の証拠ではありません。実際のエージェントと版で確認した結果は分けて記録してください。対象環境・探索パス・権限・公式仕様の詳細は[Agent Skills運用ガイド](agent-skills.md)を参照してください。

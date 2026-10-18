@@ -22,3 +22,5 @@ When syncing installed Skills as well as documents, use the repository's `script
 ## Safety
 
 Do not resolve uncertain history by guessing. Stop automatic application on missing commits, behind/diverged history, incomplete shallow history, or Git errors. Never silently overwrite local changes or report a partial synchronization as complete.
+
+When exact shared guidance or a prompt is needed, use the [version-pinned local reference procedure](references/local-devconcord.md). The procedure does not replace target-side provenance or this Skill's source-history checks.

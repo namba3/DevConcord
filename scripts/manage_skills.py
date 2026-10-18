@@ -23,6 +23,7 @@ if __package__:
         DISCOVERY_PATHS,
         skill_directories,
         validate_repository_skills,
+        validate_skill_directory,
         validate_skill_roots,
     )
 else:
@@ -30,6 +31,7 @@ else:
         DISCOVERY_PATHS,
         skill_directories,
         validate_repository_skills,
+        validate_skill_directory,
         validate_skill_roots,
     )
 
@@ -37,8 +39,12 @@ else:
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = REPOSITORY_ROOT / ".agents" / "skills"
 MANIFEST_PATH = Path(".devconcord") / "skills-manifest.json"
+USER_CONFIG_PATH = Path(".devconcord") / "config.json"
 CURRENT_SCHEMA_VERSION = 2
 SKILL_HASH_VERSION = 2
+# Copilot also loads personal Skills from ~/.copilot/skills. This directory is
+# never a DevConcord destination, but it must participate in collision checks.
+GLOBAL_DISCOVERY_PATHS = (".agents/skills", ".claude/skills", ".copilot/skills")
 AGENT_ROOTS = {
     "codex": Path(".agents/skills"),
     "copilot": Path(".agents/skills"),
@@ -51,6 +57,124 @@ class SkillManagementError(ValueError):
 
 
 SkillAction = tuple[str, Path, str, str, str | None, tuple[str, ...]]
+
+
+def _user_home() -> Path:
+    try:
+        home = Path.home().resolve(strict=True)
+    except OSError as error:
+        raise SkillManagementError(
+            f"could not resolve the current user's home directory ({type(error).__name__})"
+        ) from error
+    if not home.is_dir():
+        raise SkillManagementError("the current user's home directory is not a directory")
+    return home
+
+
+def _user_state_directory(*, create: bool = False) -> Path:
+    state = _user_home() / ".devconcord"
+    if state.is_symlink():
+        raise SkillManagementError("user DevConcord state directory must not be a symlink")
+    if state.exists() and not state.is_dir():
+        raise SkillManagementError("user DevConcord state path is not a directory")
+    if create:
+        state.mkdir(mode=0o700, exist_ok=True)
+        if state.is_symlink() or not state.is_dir():
+            raise SkillManagementError("user DevConcord state directory changed during creation")
+    return state
+
+
+def _validate_source_repository(source_root: Path) -> tuple[Path, Path]:
+    try:
+        repository = source_root.expanduser().resolve(strict=True)
+    except OSError as error:
+        raise SkillManagementError(
+            f"DevConcord source path does not exist or cannot be resolved "
+            f"({type(error).__name__})"
+        ) from error
+    if not repository.is_dir():
+        raise SkillManagementError("DevConcord source root must be a directory")
+    git_root = _git(repository, "rev-parse", "--show-toplevel", check=False)
+    if git_root.returncode:
+        raise SkillManagementError("DevConcord source root must be inside a Git repository")
+    if Path(git_root.stdout.strip()).resolve() != repository:
+        raise SkillManagementError("source_root must be the root of the DevConcord Git repository")
+    if not (repository / "scripts" / "manage_skills.py").is_file():
+        raise SkillManagementError("source_root does not contain scripts/manage_skills.py")
+    skills_root = repository / ".agents" / "skills"
+    if not skills_root.is_dir() or skills_root.is_symlink():
+        raise SkillManagementError("source_root does not contain a regular .agents/skills directory")
+    validation_errors = validate_skill_roots([skills_root])
+    if validation_errors:
+        raise SkillManagementError(
+            "DevConcord Skill source validation failed:\n" + "\n".join(validation_errors)
+        )
+    return repository, skills_root
+
+
+def _read_user_config() -> tuple[dict[str, Any] | None, Path]:
+    _user_state_directory()
+    path = _user_home() / USER_CONFIG_PATH
+    if path.is_symlink():
+        raise SkillManagementError("user DevConcord config must not be a symlink")
+    if not path.exists():
+        return None, path
+    if not path.is_file():
+        raise SkillManagementError("user DevConcord config is not a regular file")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise SkillManagementError(
+            f"cannot read user DevConcord config ({type(error).__name__})"
+        ) from error
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"schema_version", "source_root"}
+        or type(value.get("schema_version")) is not int
+        or value["schema_version"] != 1
+        or not isinstance(value.get("source_root"), str)
+        or not Path(value["source_root"]).is_absolute()
+    ):
+        raise SkillManagementError(
+            "invalid user DevConcord config; expected schema_version 1 and an absolute source_root"
+        )
+    repository, _skills_root = _validate_source_repository(Path(value["source_root"]))
+    if value["source_root"] != str(repository):
+        raise SkillManagementError(
+            "user DevConcord config source_root is not normalized; use config set-source "
+            "to register the resolved repository path"
+        )
+    return value, path
+
+
+def _configured_source_skills(*, required: bool) -> Path | None:
+    config, _path = _read_user_config()
+    if config is None:
+        if required:
+            raise SkillManagementError(
+                "no local DevConcord source is registered; run "
+                "config set-source --source-root <repository>"
+            )
+        return None
+    return Path(config["source_root"]) / ".agents" / "skills"
+
+
+def _resolve_scope_target(args: argparse.Namespace) -> tuple[str, Path]:
+    target = getattr(args, "target", None)
+    scope = getattr(args, "scope", None)
+    if scope is None:
+        scope = "project" if target is not None else "user"
+    if scope == "user":
+        if target is not None:
+            raise SkillManagementError(
+                "--target cannot be combined with --scope user; omit --target to use User Scope"
+            )
+        return scope, _user_home()
+    if scope == "project":
+        if target is None:
+            raise SkillManagementError("--target is required with --scope project")
+        return scope, target.expanduser().resolve()
+    raise SkillManagementError(f"unsupported Skill scope: {scope}")
 
 
 def tree_digest(root: Path) -> str:
@@ -223,6 +347,21 @@ def source_revision(source_root: Path) -> tuple[str, bool, str]:
     return commit.stdout.strip(), bool(status.stdout.strip()), repository
 
 
+def _user_source_revision(source_root: Path) -> tuple[str, bool, str]:
+    revision, dirty, repository = source_revision(source_root)
+    if not repository.startswith("local-git-sha256:"):
+        return revision, dirty, repository
+    roots = _git(source_root, "rev-list", "--max-parents=0", "HEAD", check=False)
+    if roots.returncode or not roots.stdout.strip():
+        raise SkillManagementError(
+            "could not establish a stable identity for the local User Scope source"
+        )
+    identity = hashlib.sha256(
+        "\n".join(sorted(roots.stdout.splitlines())).encode("ascii")
+    ).hexdigest()
+    return revision, dirty, f"local-git-history-sha256:{identity}"
+
+
 def _local_repository_identity(repository_root: Path) -> str:
     common_dir = _git(repository_root, "rev-parse", "--git-common-dir")
     common_path = Path(common_dir.stdout.strip())
@@ -279,7 +418,7 @@ def _source_identity_is_verified(value: Any) -> bool:
 def _normalize_recorded_source_identity(value: str) -> str:
     if value == "local Git repository":
         return value
-    if value.startswith("local-git-sha256:"):
+    if value.startswith(("local-git-sha256:", "local-git-history-sha256:")):
         return value
     return _repository_identity(value)
 
@@ -610,25 +749,37 @@ def _discovery_state(
     *,
     actions: list[tuple[SkillAction, str]] | None = None,
     manifest: dict[str, Any],
+    discovery_paths: tuple[str, ...] = DISCOVERY_PATHS,
 ) -> dict[str, dict[str, tuple[str, str]]]:
     interested_names = {name.casefold() for name in names}
     state: dict[str, dict[str, tuple[str, str]]] = {}
-    for relative in DISCOVERY_PATHS:
+    for relative in discovery_paths:
         root = target_root / relative
         _check_destination_path(target_root, root)
         if not root.exists():
             continue
-        try:
-            installed_skills = skill_directories(root)
-        except (OSError, ValueError) as error:
-            raise SkillManagementError(
-                f"cannot inspect Skill discovery path {relative} ({error})"
-            ) from error
+        if root.is_symlink() or not root.is_dir():
+            raise SkillManagementError(f"cannot inspect Skill discovery path {relative}")
         recorded_skills = manifest["packages"].get(relative, {}).get("skills", {})
-        for skill_dir in installed_skills:
+        try:
+            entries = sorted(root.iterdir())
+        except OSError as error:
+            raise SkillManagementError(
+                f"cannot inspect Skill discovery path {relative} ({type(error).__name__})"
+            ) from error
+        for skill_dir in entries:
             name_key = skill_dir.name.casefold()
             if name_key not in interested_names:
                 continue
+            if skill_dir.is_symlink():
+                raise SkillManagementError(
+                    f"{relative}/{skill_dir.name}: same-name Skill path is a symlink; "
+                    "preserving it"
+                )
+            if not skill_dir.is_dir():
+                raise SkillManagementError(
+                    f"{relative}/{skill_dir.name}: same-name Skill path is not a directory"
+                )
             recorded = recorded_skills.get(skill_dir.name)
             if recorded is not None:
                 recorded_digest = _recorded_package_digest(skill_dir, recorded)
@@ -787,6 +938,8 @@ def _plan(
     selected: list[str] | None,
     allow_duplicate_discovery: bool,
     allow_dirty_source: bool,
+    discovery_paths: tuple[str, ...] = DISCOVERY_PATHS,
+    scope: str = "project",
 ) -> tuple[list[tuple[SkillAction, str]], dict[str, Any], Path, bool, bool, str, str, str]:
     target_root = target_root.resolve()
     source_root = source_root.resolve()
@@ -859,7 +1012,9 @@ def _plan(
     if len(set(names)) != len(names):
         raise SkillManagementError("Skill names were specified more than once")
     duplicate_exposure = False
-    revision, dirty, repository = source_revision(source_root)
+    revision, dirty, repository = (
+        _user_source_revision(source_root) if scope == "user" else source_revision(source_root)
+    )
     if dirty and not allow_dirty_source:
         raise SkillManagementError(
             "Skill source has uncommitted changes; commit them or explicitly pass "
@@ -1048,6 +1203,7 @@ def _plan(
                 set(names),
                 actions=actions,
                 manifest=manifest,
+                discovery_paths=discovery_paths,
             )
             duplicate_exposure, duplicate_conflicts = _check_duplicate_discovery(
                 projected,
@@ -1508,6 +1664,7 @@ def _apply(
     source_commit: str,
     source_repository: str,
     expected_manifest: bytes | None,
+    discovery_paths: tuple[str, ...] = DISCOVERY_PATHS,
 ) -> None:
     _check_destination_path(target_root, manifest_path.parent)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1647,6 +1804,7 @@ def _apply(
                 target_root,
                 changed_names,
                 manifest=manifest,
+                discovery_paths=discovery_paths,
             )
             _has_duplicates, duplicate_conflicts = _check_duplicate_discovery(
                 discovery_state,
@@ -1682,10 +1840,35 @@ def _apply(
 
 
 def _run(args: argparse.Namespace) -> int:
+    if args.command == "config":
+        return _config_command(args)
+    if args.command == "reference":
+        return _reference_command(args)
+    if args.command == "doctor":
+        return _doctor_command(args)
+
     if args.command == "validate":
         target = getattr(args, "target", None)
+        scope = getattr(args, "scope", None)
+        if scope == "user":
+            if target is not None:
+                print("ERROR: --target cannot be combined with --scope user", file=sys.stderr)
+                return 2
+            try:
+                _read_user_config()
+                errors = _validate_user_installation(_user_home())
+            except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+                errors = [f"User Scope validation stopped safely ({error})"]
+            if errors:
+                for error in errors:
+                    print(f"ERROR: {error}", file=sys.stderr)
+                return 1
+            return 0
+        if scope not in {None, "project"}:
+            print(f"ERROR: unsupported Skill scope: {scope}", file=sys.stderr)
+            return 2
         if target is not None:
-            root = target.resolve()
+            root = target.expanduser().resolve()
             if not root.is_dir():
                 print(f"ERROR: target repository does not exist: {root}", file=sys.stderr)
                 return 1
@@ -1696,6 +1879,9 @@ def _run(args: argparse.Namespace) -> int:
                 return 1
             print(f"Validated Agent Skills in target repository {root}")
             return 0
+        if scope == "project":
+            print("ERROR: --target is required with --scope project", file=sys.stderr)
+            return 2
         root = args.source.resolve()
         try:
             directories = skill_directories(root)
@@ -1713,7 +1899,12 @@ def _run(args: argparse.Namespace) -> int:
         print(f"Validated {len(directories)} Agent Skills in {root}")
         return 0
 
-    target_root = args.target.resolve()
+    try:
+        scope, target_root = _resolve_scope_target(args)
+    except (SkillManagementError, OSError, ValueError) as error:
+        print(f"ERROR: Skill scope could not be resolved safely: {error}", file=sys.stderr)
+        return 2
+
     if args.command == "recover":
         lock_path: Path | None = None
         status = 0
@@ -1729,6 +1920,8 @@ def _run(args: argparse.Namespace) -> int:
                         print(f"needs-recovery: {transaction}")
                     print("Dry run only; pass --apply to recover interrupted updates.")
             else:
+                if scope == "user":
+                    _user_state_directory(create=True)
                 lock_path = _acquire_lock(target_root, force=getattr(args, "force", False))
                 transactions = _transaction_directories(target_root)
                 if not transactions:
@@ -1749,9 +1942,39 @@ def _run(args: argparse.Namespace) -> int:
                     status = 2
         return status
 
-    target_root = args.target.resolve()
-    source_root = args.source.resolve()
-    requested_agents = set(getattr(args, "agents", None) or [args.agent])
+    explicit_agents = getattr(args, "agents", None)
+    single_agent = getattr(args, "agent", None)
+    requested_agents = set(explicit_agents or ([single_agent] if single_agent else []))
+    if not requested_agents:
+        try:
+            existing_manifest, _migrated = _read_manifest(target_root / MANIFEST_PATH)
+            requested_agents = {
+                    agent
+                    for package in existing_manifest["packages"].values()
+                    for agent in package["agents"]
+            }
+        except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+            print(f"ERROR: cannot determine managed agents safely: {error}", file=sys.stderr)
+            return 2
+    if not requested_agents:
+        print(
+            "ERROR: no managed Skills found; specify --agent or --agents",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        configured_source = (
+            _configured_source_skills(required=False) if scope == "user" else None
+        )
+        source_root = (
+            args.source.expanduser().resolve()
+            if getattr(args, "source", None) is not None
+            else configured_source or DEFAULT_SOURCE.resolve()
+        )
+    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+        print(f"ERROR: Skill source could not be resolved safely: {error}", file=sys.stderr)
+        return 2
+    discovery_paths = GLOBAL_DISCOVERY_PATHS if scope == "user" else DISCOVERY_PATHS
     if getattr(args, "command") == "rebind-source":
         print(
             "WARNING: rebind-source explicitly accepts a different or older Skill source; "
@@ -1761,8 +1984,12 @@ def _run(args: argparse.Namespace) -> int:
     status = 0
     try:
         if not target_root.is_dir():
-            raise SkillManagementError(f"target repository does not exist: {target_root}")
+            raise SkillManagementError(
+                f"{scope} Skill destination root does not exist: {target_root}"
+            )
         if args.apply:
+            if scope == "user":
+                _user_state_directory(create=True)
             lock_path = _acquire_lock(target_root)
             pending = _transaction_directories(target_root)
             if pending:
@@ -1804,6 +2031,8 @@ def _run(args: argparse.Namespace) -> int:
             args.skills,
             getattr(args, "allow_duplicate_discovery", False),
             getattr(args, "allow_dirty_source", False),
+            discovery_paths,
+            scope,
         )
         for (
             action,
@@ -1818,6 +2047,7 @@ def _run(args: argparse.Namespace) -> int:
             f"Source: {repository} @ {revision}"
             + (" (uncommitted Skill changes)" if dirty else "")
         )
+        print(f"Scope: {scope} ({target_root})")
         if duplicate_exposure:
             print(
                 "WARNING: duplicate discovery paths are exposed to Copilot; duplicate "
@@ -1846,6 +2076,7 @@ def _run(args: argparse.Namespace) -> int:
                     revision,
                     repository,
                     expected_manifest,
+                    discovery_paths,
                 )
                 print(f"Applied {len(changes)} Skill file change(s); manifest: {manifest_path}")
     except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
@@ -1873,22 +2104,372 @@ def _read_expected_manifest(target_root: Path) -> bytes | None:
     return manifest_path.read_bytes()
 
 
+def _config_command(args: argparse.Namespace) -> int:
+    try:
+        if args.config_command == "show":
+            config, path = _read_user_config()
+            if config is None:
+                raise SkillManagementError(
+                    f"no local DevConcord source is registered in {path}; "
+                    "run config set-source --source-root <repository>"
+                )
+            root = Path(config["source_root"])
+            revision, dirty, repository = _user_source_revision(root / ".agents" / "skills")
+            print(f"Config: {path}")
+            print(f"Source root: {root}")
+            print(f"Source: {repository} @ {revision}")
+            if dirty:
+                print("WARNING: DevConcord Skills have uncommitted changes.")
+            return 0
+
+        if args.config_command != "set-source":
+            raise SkillManagementError(f"unsupported config operation: {args.config_command}")
+
+        repository, _skills_root = _validate_source_repository(args.source_root)
+        _user_state_directory()
+        config_path = _user_home() / USER_CONFIG_PATH
+        if config_path.is_symlink():
+            raise SkillManagementError("user DevConcord config must not be a symlink")
+        if config_path.exists() and not args.replace:
+            raise SkillManagementError(
+                "user DevConcord config already exists; inspect it and pass --replace "
+                "to change or repair source_root"
+            )
+        home = _user_home()
+        lock_path = home / ".devconcord" / "skills.lock"
+        if lock_path.exists() or lock_path.is_symlink() or _transaction_directories(home):
+            raise SkillManagementError(
+                "cannot change source configuration while a Skill operation is active "
+                "or awaiting recovery"
+            )
+        _user_state_directory(create=True)
+        content = json.dumps(
+            {"schema_version": 1, "source_root": str(repository)},
+            ensure_ascii=False,
+            indent=2,
+        ) + "\n"
+        _write_atomically(config_path, content)
+        print(f"Registered local DevConcord source: {repository}")
+        print(f"Config: {config_path}")
+        if args.replace:
+            print(
+                "Existing Skill manifest was not changed; source changes still require "
+                "an explicit rebind-source operation."
+            )
+        return 0
+    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+        print(f"ERROR: user configuration operation stopped safely: {error}", file=sys.stderr)
+        return 2
+
+
+def _validate_user_installation(home: Path) -> list[str]:
+    manifest_path = home / MANIFEST_PATH
+    if manifest_path.is_symlink():
+        return ["user Skill manifest must not be a symlink"]
+    if not manifest_path.exists():
+        return ["no User Scope Skill manifest was found"]
+    try:
+        manifest, _migrated = _read_manifest(manifest_path)
+        pending = _transaction_directories(home)
+        if pending:
+            return [
+                "interrupted User Scope Skill transaction requires recovery: "
+                + ", ".join(path.name for path in pending)
+            ]
+        managed: dict[str, set[str]] = {}
+        names: set[str] = set()
+        errors: list[str] = []
+        for relative, package in manifest["packages"].items():
+            root = home / relative
+            _check_destination_path(home, root)
+            for name, record in package["skills"].items():
+                names.add(name)
+                managed.setdefault(name, set()).update(package["agents"])
+                skill_dir = root / name
+                if skill_dir.is_symlink() or not skill_dir.is_dir():
+                    errors.append(f"{relative}/{name}: managed Skill is missing or unsafe")
+                    continue
+                errors.extend(validate_skill_directory(skill_dir))
+                try:
+                    digest = _recorded_package_digest(skill_dir, record)
+                except (SkillManagementError, OSError, ValueError) as error:
+                    errors.append(f"{relative}/{name}: cannot verify managed Skill ({error})")
+                    continue
+                if digest != record["installed_tree_sha256"]:
+                    errors.append(f"{relative}/{name}: installed Skill hash differs from manifest")
+        if names:
+            state = _discovery_state(
+                home,
+                names,
+                manifest=manifest,
+                discovery_paths=GLOBAL_DISCOVERY_PATHS,
+            )
+            _has_duplicates, conflicts = _check_duplicate_discovery(
+                state, manifest, allow_duplicates=False
+            )
+            errors.extend(conflicts)
+        count = sum(len(package["skills"]) for package in manifest["packages"].values())
+        if not errors:
+            print(f"Validated {count} DevConcord-managed Skill package(s) in User Scope")
+        return errors
+    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+        return [f"cannot validate User Scope Skills safely ({type(error).__name__}: {error})"]
+
+
+def _safe_reference_path(value: str) -> str:
+    path = Path(value)
+    allowed_roots = {"docs", "prompts", ".agents"}
+    if (
+        not value
+        or path.is_absolute()
+        or "\\" in value
+        or "\0" in value
+        or any(part in {"", ".", ".."} for part in value.split("/"))
+        or value.split("/", maxsplit=1)[0] not in allowed_roots
+    ):
+        raise SkillManagementError(
+            "reference path must be a repository-relative file under docs/, prompts/, or .agents/"
+        )
+    return path.as_posix()
+
+
+def _reference_command(args: argparse.Namespace) -> int:
+    try:
+        config, _config_path = _read_user_config()
+        if config is None:
+            raise SkillManagementError(
+                "no local DevConcord source is registered; run "
+                "config set-source --source-root <repository>"
+            )
+        source_root = Path(config["source_root"])
+        relative = _safe_reference_path(args.path)
+        source_path = source_root / relative
+        target = getattr(args, "target", None)
+        scope = getattr(args, "scope", None)
+        if scope is None:
+            scope = "project" if target is not None else "user"
+        if scope == "user":
+            if target is not None:
+                raise SkillManagementError(
+                    "--target cannot be combined with --scope user"
+                )
+            installation_root = _user_home()
+        elif scope == "project":
+            if target is None:
+                raise SkillManagementError("--target is required with --scope project")
+            installation_root = target.expanduser().resolve()
+            if not installation_root.is_dir():
+                raise SkillManagementError("Project Scope reference target does not exist")
+        else:
+            raise SkillManagementError(f"unsupported Skill scope: {scope}")
+        current_source_revision = (
+            _user_source_revision if scope == "user" else source_revision
+        )
+        for parent in (source_path, *source_path.parents):
+            if parent == source_root.parent:
+                break
+            if parent.is_symlink():
+                raise SkillManagementError("refusing to read a symlinked local reference path")
+
+        if args.revision == "working-tree":
+            if not source_path.is_file():
+                raise SkillManagementError(f"local reference does not exist: {relative}")
+            content = source_path.read_text(encoding="utf-8")
+            changed = _git(
+                source_root, "status", "--porcelain", "--", relative, check=False
+            )
+            if changed.returncode:
+                raise SkillManagementError("could not inspect local reference Git state")
+            print(
+                f"Reference: local working tree"
+                + (" (uncommitted or untracked changes)" if changed.stdout.strip() else "")
+            )
+        else:
+            if not source_path.resolve().is_relative_to(source_root):
+                raise SkillManagementError("local reference path escapes source_root")
+            if args.revision == "installed":
+                manifest, _migrated = _read_manifest(installation_root / MANIFEST_PATH)
+                records = [
+                    (package_path, record)
+                    for package_path, package in manifest["packages"].items()
+                    if args.skill in package["skills"]
+                    for record in [package["skills"][args.skill]]
+                ]
+                if not records:
+                    raise SkillManagementError(
+                        f"Skill {args.skill!r} is not installed in User Scope"
+                    )
+                baselines = {
+                    (record["source_commit"], record["source_repository"])
+                    for _package_path, record in records
+                }
+                if len(baselines) != 1:
+                    raise SkillManagementError(
+                        f"User Scope copies of {args.skill!r} have different source baselines"
+                    )
+                commit, recorded_repository = next(iter(baselines))
+                if commit == "unversioned":
+                    raise SkillManagementError(
+                        "installed Skill has no Git commit baseline; use --revision head "
+                        "or --revision working-tree"
+                    )
+                revision, _dirty, current_repository = current_source_revision(
+                    source_root / ".agents" / "skills"
+                )
+                if (
+                    not _source_identity_is_verified(recorded_repository)
+                    or not _source_identity_is_verified(current_repository)
+                    or _normalize_recorded_source_identity(recorded_repository)
+                    != _normalize_recorded_source_identity(current_repository)
+                ):
+                    raise SkillManagementError(
+                        "configured source identity differs from the installed Skill; "
+                        "review the source and use rebind-source only if the change is intentional"
+                    )
+                for package_path, record in records:
+                    skill_dir = installation_root / package_path / args.skill
+                    if skill_dir.is_symlink() or not skill_dir.is_dir():
+                        raise SkillManagementError(
+                            f"installed Skill package is missing or unsafe: {package_path}/{args.skill}"
+                        )
+                    if _recorded_package_digest(skill_dir, record) != record["installed_tree_sha256"]:
+                        raise SkillManagementError(
+                            f"installed Skill was locally modified: {package_path}/{args.skill}"
+                        )
+                if not _full_commit_id(commit):
+                    raise SkillManagementError("installed Skill source commit is invalid")
+                print(
+                    f"Reference: installed Skill {args.skill} source commit {commit}"
+                    f" (current source HEAD {revision})"
+                )
+            else:
+                revision, _dirty, _repository = current_source_revision(
+                    source_root / ".agents" / "skills"
+                )
+                commit = revision
+                print(f"Reference: configured source HEAD {commit}; uncommitted edits excluded")
+            commit_check = _git(
+                source_root,
+                "cat-file",
+                "-e",
+                f"{commit}^{{commit}}",
+                check=False,
+            )
+            if commit_check.returncode:
+                raise SkillManagementError(
+                    f"required Git commit {commit} is not available in the configured local repository"
+                )
+            file_check = _git(
+                source_root, "cat-file", "-e", f"{commit}:{relative}", check=False
+            )
+            if file_check.returncode:
+                raise SkillManagementError(
+                    f"reference {relative!r} does not exist at Git commit {commit}"
+                )
+            result = _git(
+                source_root, "show", f"{commit}:{relative}", check=False
+            )
+            if result.returncode:
+                raise SkillManagementError(
+                    f"Git could not read reference {relative!r} at commit {commit}"
+                )
+            content = result.stdout
+        sys.stdout.write(content)
+        if content and not content.endswith("\n"):
+            sys.stdout.write("\n")
+        return 0
+    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+        print(f"ERROR: local DevConcord reference unavailable: {error}", file=sys.stderr)
+        return 2
+
+
+def _doctor_command(args: argparse.Namespace) -> int:
+    try:
+        config, config_path = _read_user_config()
+        if config is None:
+            print(
+                f"Local DevConcord source is not configured ({config_path}); "
+                "run config set-source when local reference access is needed."
+            )
+        home = _user_home()
+        manifest_path = home / MANIFEST_PATH
+        managed: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+        if manifest_path.exists():
+            manifest, _migrated = _read_manifest(manifest_path)
+            errors = _validate_user_installation(home)
+            if errors:
+                raise SkillManagementError("; ".join(errors))
+            for package_path, package in manifest["packages"].items():
+                for name, record in package["skills"].items():
+                    managed.setdefault(name.casefold(), []).append((package_path, record))
+        else:
+            print("No User Scope DevConcord Skill manifest is installed.")
+
+        target = getattr(args, "target", None)
+        if target is None:
+            print(f"User Scope Skills validated: {len(managed)}")
+            return 0
+        project = target.expanduser().resolve()
+        if not project.is_dir():
+            raise SkillManagementError(f"project directory does not exist: {project}")
+        found = False
+        for relative in DISCOVERY_PATHS:
+            root = project / relative
+            if not root.exists():
+                continue
+            if root.is_symlink() or not root.is_dir():
+                raise SkillManagementError(f"project Skill discovery path is unsafe: {relative}")
+            for local in sorted(root.iterdir()):
+                key = local.name.casefold()
+                if key not in managed:
+                    continue
+                found = True
+                global_records = ", ".join(
+                    f"{package_path} @ {record['source_commit']}"
+                    for package_path, record in managed[key]
+                )
+                print(
+                    f"WARNING: same-name User/Project Skill: {local.name} "
+                    f"(global {global_records}; project {relative}/{local.name})"
+                )
+                print(
+                    "  Host-specific selection and precedence are not normalized by "
+                    "DevConcord; compare both definitions before relying on either."
+                )
+        if not found:
+            print("No same-name User Scope and Project Scope Skills found.")
+        return 0
+    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+        print(f"ERROR: Skill environment diagnosis stopped safely: {error}", file=sys.stderr)
+        return 2
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
     validate = commands.add_parser("validate", help="validate Skill source directories")
     validate.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
+    validate.add_argument("--scope", choices=("user", "project"))
     validate.add_argument(
         "--target",
         type=Path,
-        help="validate installed package hashes and duplicate discovery in a repository",
+        help="Project Scope repository to validate; omit with --scope user",
     )
 
     for command in ("install", "sync", "rebind-source"):
         action = commands.add_parser(command, help=f"plan and optionally {command} Skills")
-        action.add_argument("--target", type=Path, required=True, help="target repository root")
-        agent_group = action.add_mutually_exclusive_group(required=True)
+        action.add_argument(
+            "--scope",
+            choices=("user", "project"),
+            help="installation scope; defaults to user without --target and project with it",
+        )
+        action.add_argument(
+            "--target",
+            type=Path,
+            help="Project Scope repository root; must be omitted for User Scope",
+        )
+        agent_group = action.add_mutually_exclusive_group(required=command == "install")
         agent_group.add_argument(
             "--agent", choices=sorted(AGENT_ROOTS), help="single agent discovery path"
         )
@@ -1896,9 +2477,13 @@ def build_parser() -> argparse.ArgumentParser:
             "--agents",
             nargs="+",
             choices=sorted(AGENT_ROOTS),
-            help="agents sharing or discovering the selected Skill package(s)",
+            help="agents sharing or discovering the selected Skill package(s); sync/rebind default to all managed agents",
         )
-        action.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
+        action.add_argument(
+            "--source",
+            type=Path,
+            help="Skill source directory; User Scope defaults to the configured DevConcord repository",
+        )
         action.add_argument(
             "--skills",
             nargs="+",
@@ -1920,12 +2505,58 @@ def build_parser() -> argparse.ArgumentParser:
             help="explicitly install from a source checkout with uncommitted changes",
         )
     recover = commands.add_parser("recover", help="inspect or recover interrupted Skill updates")
-    recover.add_argument("--target", type=Path, required=True, help="target repository root")
+    recover.add_argument("--scope", choices=("user", "project"))
+    recover.add_argument("--target", type=Path, help="Project Scope repository root")
     recover.add_argument("--apply", action="store_true", help="apply safe transaction recovery")
     recover.add_argument(
         "--force",
         action="store_true",
         help="remove a lock only when its recorded process no longer exists",
+    )
+
+    config = commands.add_parser("config", help="inspect or set the per-user DevConcord source")
+    config_commands = config.add_subparsers(dest="config_command", required=True)
+    config_commands.add_parser("show", help="show the validated local DevConcord source")
+    set_source = config_commands.add_parser(
+        "set-source", help="register a local DevConcord repository for User Scope"
+    )
+    set_source.add_argument("--source-root", type=Path, required=True)
+    set_source.add_argument(
+        "--replace",
+        action="store_true",
+        help="explicitly replace or repair an existing config without changing the Skill manifest",
+    )
+
+    reference = commands.add_parser(
+        "reference",
+        help="print a local DevConcord document for the installed Skill version",
+    )
+    reference.add_argument("--skill", required=True, help="installed User Scope Skill name")
+    reference.add_argument("--path", required=True, help="repository-relative docs/, prompts/, or .agents/ path")
+    reference.add_argument(
+        "--scope",
+        choices=("user", "project"),
+        help="Skill installation scope; defaults to user without --target and project with it",
+    )
+    reference.add_argument(
+        "--target",
+        type=Path,
+        help="Project Scope repository containing the Skill manifest",
+    )
+    reference.add_argument(
+        "--revision",
+        choices=("installed", "head", "working-tree"),
+        default="installed",
+        help="which local source version to read (default: installed Skill commit)",
+    )
+    doctor = commands.add_parser(
+        "doctor",
+        help="validate User Scope management state and optionally report project name collisions",
+    )
+    doctor.add_argument(
+        "--target",
+        type=Path,
+        help="project repository to inspect for same-name local Skills",
     )
     return parser
 

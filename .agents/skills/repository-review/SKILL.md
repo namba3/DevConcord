@@ -17,6 +17,8 @@ description: "Review a repository's code, architecture, requirements, tests, CI,
 
 Summarize scope and evidence, prioritized findings, checks performed and limitations. Do not treat a score or successful CI as proof of correctness.
 
+For detailed DevConcord review criteria or templates, use the [version-pinned local reference procedure](references/local-devconcord.md) when relevant. Do not depend on local checkout access for general repository reviews.
+
 ## References
 
 The links below follow `main` and can be newer than this installed Skill. For version-matched detail, read this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` in the DevConcord links with that full SHA. If no commit is recorded or the revision is unavailable, do not assume the linked guide matches; the workflow above remains the usable baseline.

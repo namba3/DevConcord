@@ -36,6 +36,8 @@ Identify all design-document paths, target directory, project name and constrain
 
 Stop before destructive changes or consequential unresolved design decisions. Preserve existing Git history and worktree. Report inputs and unread portions, starting state, decisions/assumptions, changed outputs, checks and results, unresolved issues and residual risks. Bootstrap completion does not imply feature completion or verified quality claims.
 
+When detailed DevConcord templates or rationale are needed, follow the [version-pinned local reference procedure](references/local-devconcord.md). The bootstrap workflow remains usable without that checkout; do not claim an unread guide was applied.
+
 ## References
 
 - [Bootstrap workflow prompt](https://github.com/namba3/DevConcord/blob/main/prompts/bootstrap-from-design.md)

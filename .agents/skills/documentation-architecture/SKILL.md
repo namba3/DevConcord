@@ -30,6 +30,8 @@ Improve documentation around real reader tasks while preserving the project's ex
 
 Prioritize reader task completion, correctness, discoverability, information hierarchy, single-source ownership, consistency with implementation, stable navigation, traceability where needed, and ease of future updates. Do not equate more pages, shorter documents, or a numeric score with better documentation. Keep necessary constraints, edge cases and technical detail even when simplifying prose.
 
+For the canonical DevConcord documentation-design guide, use the [version-pinned local reference procedure](references/local-devconcord.md) when available. This is optional for general documentation tasks; report unavailable local guidance rather than silently switching to a different version.
+
 ## References
 
 The detailed reusable principles are maintained in the DevConcord documentation-design guide. These optional links may require network access and may follow a newer revision than this Skill. For version-matched guidance, read `source_commit` for this Skill in `.devconcord/skills-manifest.json` and replace `main` in the URL with that full SHA. The workflow above is self-contained if the reference is unavailable.

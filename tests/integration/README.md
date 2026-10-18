@@ -26,13 +26,27 @@ python3 -B -m unittest tests.integration.test_guidance_assertions -v
 
 ## Agent Skillsの決定的な配布・検証テスト
 
-[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、相対リンク、権限frontmatter、探索先の名前衝突、明示許可のmanifest記録を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリに対してdry-run、7通りのagent組み合わせ、段階的agent追加と全体重複状態、許可記録の再実行保持、片側同期拒否・複数側の一括同期、schema 1移行、選択インストール、HTTPS/SSH表記切替、同履歴の別remote拒否、比較基準Git treeとsource hash、前進/巻き戻し/分岐/欠落履歴、dirty source、ローカル編集保護を検査します。recover系は複数パッケージ中断、後続対象の外部変更による全体preflight拒否、破損backup、manifest書込後の完了判定、I/O失敗後の再試行を確認し、preflight拒否時の既存Skill・manifest不変をアサートします。
+[`test_agent_skills.py`](../test_agent_skills.py) はfrontmatter、Skill名とディレクトリ名、相対リンク、権限frontmatter、探索先の名前衝突、明示許可のmanifest記録を検査します。[`test_manage_skills.py`](../test_manage_skills.py) は一時リポジトリと一時ユーザーホームに対してdry-run、7通りのagent組み合わせ、段階的agent追加と全体重複状態、許可記録の再実行保持、片側同期拒否・複数側の一括同期、schema 1移行、選択インストール、HTTPS/SSH表記切替、同履歴の別remote拒否、比較基準Git treeとsource hash、前進/巻き戻し/分岐/欠落履歴、dirty source、ローカル編集保護を検査します。User Scopeではdry-runのホーム無変更、他ユーザーSkillsの保護、configの置換・破損・symlink、source checkout移動後の版固定参照と同期、衝突診断、User Scope独立のrecoverも確認します。recover系は複数パッケージ中断、後続対象の外部変更による全体preflight拒否、破損backup、manifest書込後の完了判定、I/O失敗後の再試行を確認し、preflight拒否時の既存Skill・manifest不変をアサートします。テストは実際の `Path.home()` を変更せず、`Path.home()` を一時ディレクトリへ差し替えます。
 
 ```sh
 python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 ```
 
 これはファイルシステム操作とメタデータの決定的なテストです。実際のエージェントがSkillを発見・選択・実行することを証明しません。
+
+## User Scopeの手動E2E受け入れ
+
+実際のエージェントから個人SkillsやローカルDevConcord checkoutへアクセスできるかを評価する場合は、通常の開発者ホームを使わず、使い捨てOSユーザー、VM、または専用テストマシンで実施します。CIとユニットテストはホームに書き込みません。実エージェントE2Eは通常のCIでは実行されておらず、以下は手動評価の期待条件です。
+
+1. 専用環境にDevConcordをcloneし、`config set-source` でその環境のローカルcloneを登録します。`config show` で正規化されたパスを確認します。
+2. User Scopeのdry-runと適用を行い、対象が `~/.agents/skills/` または `~/.claude/skills/` と `~/.devconcord/` のみで、プロジェクトにはmanifestやSkillのコピーがないことを確認します。
+3. `validate --scope user` と `doctor --target <temporary-project>` を実行します。DevConcord管理外のSkillと対象プロジェクトのローカルSkillが変更されないことを確認します。
+4. 新規の空プロジェクトでは、エージェントをその作業ディレクトリから起動し、Bootstrap Skillにローカル参照元の版固定ガイドと設計書を使わせます。生成先がその対象だけであること、未実装機能・未確認コマンドを断定しないことを確認します。
+5. Adoptionでは専用の既存fixtureを使い、既存構成・規約・公開リンク・独自文書とprovenanceを保護し、対象自身の検証方法を使うことを確認します。
+6. source checkoutを別の絶対パスへ移動してconfigだけ更新し、元のSkill commitのreferenceとUser Scopeのno-op syncが継続できることを確認します。remote付き・remoteなしの両方を必要に応じて記録します。
+7. エージェント、製品版、OS/実行環境、参照できたcommit、生成差分、検証結果、未実施項目を記録します。別マシンやクラウドでユーザーのローカルファイルが参照できない場合は、その制約を未対応または別スコープの要件として報告します。
+
+意味的な品質、スキル選択、読者タスク達成をテスト文字列だけで合否判定しません。変更した文書は対象の既存リンク検証・サイトビルド・API生成・テスト等で確認し、DevConcordの `validate_docs.py` を外部プロジェクトへ無条件に適用しません。
 
 ## ドキュメント設計の受け入れシナリオ
 

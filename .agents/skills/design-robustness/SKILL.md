@@ -18,6 +18,8 @@ description: "Design contracts and recovery for failures, partial success, cance
 
 For each critical operation, state the normal contract, important failure outcomes, preserved invariants, recovery/retry semantics, observable diagnostics and concrete verification evidence.
 
+When the task requires DevConcord's detailed robustness guidance or issue-management rules, use the [version-pinned local reference procedure](references/local-devconcord.md). Do not let missing local references block general robustness analysis.
+
 ## References
 
 The links below follow `main` and can be newer than this installed Skill. For version-matched detail, read this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` in the DevConcord links with that full SHA. If no commit is recorded or the revision is unavailable, do not assume the linked guide matches; the workflow above remains the usable baseline.

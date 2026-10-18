@@ -27,11 +27,21 @@ class SkillManagementTests(unittest.TestCase):
         self.target.mkdir()
         self.write_skill("sample-skill", "v1")
         source_repo = self.source.parents[1]
+        source_repo.joinpath("scripts").mkdir()
+        source_repo.joinpath("scripts", "manage_skills.py").write_text(
+            "# test source marker\n", encoding="utf-8"
+        )
+        source_repo.joinpath("docs").mkdir()
+        source_repo.joinpath("docs", "reference.md").write_text(
+            "# Versioned reference\n\nInitial committed guidance.\n", encoding="utf-8"
+        )
         self.git(source_repo, "init", "-q")
         self.git(source_repo, "config", "user.email", "test@example.invalid")
         self.git(source_repo, "config", "user.name", "Test")
         self.git(source_repo, "add", ".")
         self.git(source_repo, "commit", "-qm", "v1")
+        self.user_home = self.root / "user-home"
+        self.user_home.mkdir()
 
     def git(self, root: Path, *args: str) -> str:
         result = subprocess.run(
@@ -156,6 +166,59 @@ Version: {version}
             result = manage_skills._run(args)
         return result, stdout.getvalue(), stderr.getvalue()
 
+    def run_user_operation(
+        self,
+        command: str,
+        *,
+        agents: list[str] | None = None,
+        skills: list[str] | None = None,
+        apply: bool = False,
+        source: Path | None = None,
+    ) -> tuple[int, str, str]:
+        args = SimpleNamespace(
+            command=command,
+            scope="user",
+            target=None,
+            source=source,
+            agent=None,
+            agents=agents,
+            skills=skills,
+            apply=apply,
+            allow_duplicate_discovery=False,
+            allow_dirty_source=False,
+            force=False,
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def run_config(self, command: str, **kwargs: object) -> tuple[int, str, str]:
+        args = SimpleNamespace(command="config", config_command=command, **kwargs)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def run_user_recovery(self, *, apply: bool = False, force: bool = False) -> tuple[int, str, str]:
+        args = SimpleNamespace(
+            command="recover",
+            scope="user",
+            target=None,
+            apply=apply,
+            force=force,
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        return result, stdout.getvalue(), stderr.getvalue()
+
     def run_recovery(self, *, apply: bool = False, force: bool = False) -> tuple[int, str, str]:
         args = SimpleNamespace(
             command="recover",
@@ -198,6 +261,370 @@ Version: {version}
             with self.assertRaises(KeyboardInterrupt):
                 self.run_operation("sync", apply=True)
         return manifest_path
+
+    def test_user_scope_defaults_without_target_and_dry_run_does_not_write_home(self) -> None:
+        result, output, error = self.run_user_operation(
+            "install",
+            agents=["codex"],
+            skills=["sample-skill"],
+            source=self.source,
+        )
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Scope: user", output)
+        self.assertIn("Dry run only", output)
+        self.assertFalse((self.user_home / ".agents").exists())
+        self.assertFalse((self.user_home / ".devconcord").exists())
+
+    def test_user_scope_installs_under_home_and_preserves_unrelated_skills(self) -> None:
+        unrelated = self.user_home / ".agents" / "skills" / "my-private-skill"
+        unrelated.mkdir(parents=True)
+        unrelated.joinpath("SKILL.md").write_text("user-authored\n", encoding="utf-8")
+        snapshot = unrelated.joinpath("SKILL.md").read_bytes()
+
+        result, _, error = self.run_user_operation(
+            "install",
+            agents=["codex", "copilot"],
+            skills=["sample-skill"],
+            apply=True,
+            source=self.source,
+        )
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertTrue(
+            (self.user_home / ".agents" / "skills" / "sample-skill" / "SKILL.md").is_file()
+        )
+        self.assertTrue(
+            (self.user_home / ".devconcord" / "skills-manifest.json").is_file()
+        )
+        if os.name != "nt":
+            self.assertEqual(
+                stat.S_IMODE((self.user_home / ".devconcord").stat().st_mode),
+                0o700,
+            )
+        self.assertFalse((self.target / ".devconcord").exists())
+        self.assertEqual(unrelated.joinpath("SKILL.md").read_bytes(), snapshot)
+        self.assertEqual(self.run_user_operation("validate")[0], 0)
+
+    def test_user_scope_detects_copilot_native_personal_skill_collision(self) -> None:
+        existing = self.user_home / ".copilot" / "skills" / "sample-skill"
+        existing.mkdir(parents=True)
+        skill_file = existing / "SKILL.md"
+        skill_file.write_text("user-authored Copilot Skill\n", encoding="utf-8")
+        original = skill_file.read_bytes()
+
+        result, _, error = self.run_user_operation(
+            "install",
+            agents=["copilot"],
+            skills=["sample-skill"],
+            apply=True,
+            source=self.source,
+        )
+
+        self.assertEqual(result, 2)
+        self.assertIn("same-name", error)
+        self.assertEqual(skill_file.read_bytes(), original)
+        self.assertFalse(
+            (self.user_home / ".agents" / "skills" / "sample-skill").exists()
+        )
+
+    def test_user_scope_rejects_explicit_project_target_without_writing(self) -> None:
+        args = SimpleNamespace(
+            command="install",
+            scope="user",
+            target=self.target,
+            source=self.source,
+            agent="codex",
+            agents=None,
+            skills=["sample-skill"],
+            apply=True,
+        )
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+
+        self.assertEqual(result, 2)
+        self.assertIn("--target cannot be combined", stderr.getvalue())
+        self.assertFalse((self.target / ".agents").exists())
+        self.assertFalse((self.user_home / ".agents").exists())
+
+    def test_cli_scope_defaults_preserve_legacy_target_behavior(self) -> None:
+        parser = manage_skills.build_parser()
+        user_args = parser.parse_args(
+            ["install", "--agents", "codex", "copilot", "--skills", "sample-skill"]
+        )
+        project_args = parser.parse_args(
+            [
+                "install",
+                "--target",
+                str(self.target),
+                "--agent",
+                "codex",
+                "--skills",
+                "sample-skill",
+            ]
+        )
+
+        self.assertEqual(manage_skills._resolve_scope_target(user_args), ("user", Path.home().resolve()))
+        scope, target = manage_skills._resolve_scope_target(project_args)
+        self.assertEqual(scope, "project")
+        self.assertEqual(target, self.target.resolve())
+
+    def test_user_config_requires_explicit_replace_and_does_not_rewrite_manifest(self) -> None:
+        repository = self.source.parents[1]
+        result, _, error = self.run_config("set-source", source_root=repository, replace=False)
+        self.assertEqual((result, error), (0, ""))
+        config_path = self.user_home / ".devconcord" / "config.json"
+        first = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual(first, {"schema_version": 1, "source_root": str(repository.resolve())})
+        self.assertEqual(self.run_config("set-source", source_root=repository, replace=False)[0], 2)
+
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        manifest_path = self.user_home / ".devconcord" / "skills-manifest.json"
+        manifest_before = manifest_path.read_bytes()
+        result, output, error = self.run_config(
+            "set-source", source_root=repository, replace=True
+        )
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("manifest was not changed", output)
+        self.assertEqual(manifest_path.read_bytes(), manifest_before)
+        self.assertEqual(self.run_config("show")[0], 0)
+
+    def test_user_source_move_preserves_local_git_identity(self) -> None:
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        result, _, error = self.run_user_operation(
+            "install",
+            agents=["codex"],
+            skills=["sample-skill"],
+            apply=True,
+        )
+        self.assertEqual((result, error), (0, ""))
+
+        moved_repository = self.root / "relocated-devconcord"
+        shutil.move(str(repository), moved_repository)
+        self.source = moved_repository / ".agents" / "skills"
+        self.assertEqual(
+            self.run_config("set-source", source_root=moved_repository, replace=True)[0],
+            0,
+        )
+
+        args = SimpleNamespace(
+            command="reference",
+            skill="sample-skill",
+            path="docs/reference.md",
+            scope="user",
+            target=None,
+            revision="installed",
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertIn("Initial committed guidance.", stdout.getvalue())
+
+        result, output, error = self.run_user_operation("sync", agents=["codex"])
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("unchanged: .agents/skills/sample-skill", output)
+        result, output, error = self.run_user_operation(
+            "sync", agents=["codex"], apply=True
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("No Skill or manifest changes are needed.", output)
+
+    def test_user_config_rejects_malformed_settings_and_symlinks(self) -> None:
+        state = self.user_home / ".devconcord"
+        state.mkdir()
+        config = state / "config.json"
+        config.write_text('{"schema_version": 99}', encoding="utf-8")
+        result, _, error = self.run_user_operation(
+            "install", agents=["codex"], source=self.source
+        )
+        self.assertEqual(result, 2)
+        self.assertIn("invalid user DevConcord config", error)
+        config.unlink()
+        config.symlink_to(self.source / "sample-skill" / "SKILL.md")
+        result, _, error = self.run_config("show")
+        self.assertEqual(result, 2)
+        self.assertIn("must not be a symlink", error)
+
+    def test_user_sync_defaults_to_all_managed_agents_and_protects_edits(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex", "copilot"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        result, output, error = self.run_user_operation("sync", source=self.source)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Dry run only", output)
+
+        skill_file = self.user_home / ".agents" / "skills" / "sample-skill" / "SKILL.md"
+        skill_file.write_text(skill_file.read_text(encoding="utf-8") + "\nlocal edit\n", encoding="utf-8")
+        result, _, error = self.run_user_operation("sync", apply=True, source=self.source)
+        self.assertEqual(result, 2)
+        self.assertIn("local modifications detected", error.lower())
+        self.assertIn("local edit", skill_file.read_text(encoding="utf-8"))
+
+    def test_user_scope_recovers_interrupted_sync_in_its_own_state_directory(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        self.write_skill("sample-skill", "v2")
+        self.git(self.source.parents[1], "add", ".")
+        self.git(self.source.parents[1], "commit", "-qm", "v2")
+        manifest_path = self.user_home / ".devconcord" / "skills-manifest.json"
+        real_write = manage_skills._write_atomically
+
+        def interrupt_manifest(path: Path, text: str) -> None:
+            if path == manifest_path:
+                raise KeyboardInterrupt()
+            real_write(path, text)
+
+        with patch.object(Path, "home", return_value=self.user_home):
+            with patch.object(manage_skills, "_write_atomically", side_effect=interrupt_manifest):
+                with self.assertRaises(KeyboardInterrupt):
+                    self.run_user_operation("sync", apply=True, source=self.source)
+        self.assertTrue(
+            (self.user_home / ".devconcord" / "skills-transactions").is_dir()
+        )
+        self.assertEqual(self.run_user_recovery()[0], 0)
+        result, output, error = self.run_user_recovery(apply=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("rolled back", output)
+        installed_file = self.user_home / ".agents" / "skills" / "sample-skill" / "SKILL.md"
+        self.assertIn("Version: v1", installed_file.read_text(encoding="utf-8"))
+        self.assertEqual(self.run_user_operation("validate")[0], 0)
+
+    def test_reference_uses_installed_commit_and_head_or_worktree_are_explicit(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        repository = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        args = SimpleNamespace(
+            command="reference",
+            skill="sample-skill",
+            path="docs/reference.md",
+            revision="installed",
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertIn("Initial committed guidance.", stdout.getvalue())
+        self.assertIn("source commit", stdout.getvalue())
+
+        reference_file = repository / "docs" / "reference.md"
+        reference_file.write_text("# Versioned reference\n\nWorking tree guidance.\n", encoding="utf-8")
+        args.revision = "installed"
+        stdout = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(io.StringIO()):
+                result = manage_skills._run(args)
+        self.assertEqual(result, 0)
+        self.assertIn("Initial committed guidance.", stdout.getvalue())
+        args.revision = "working-tree"
+        stdout = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(io.StringIO()):
+                result = manage_skills._run(args)
+        self.assertEqual(result, 0)
+        self.assertIn("Working tree guidance.", stdout.getvalue())
+        self.assertIn("uncommitted", stdout.getvalue())
+
+        head_only = repository / "docs" / "head-only.md"
+        head_only.write_text("Committed after Skill installation.\n", encoding="utf-8")
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "add newer reference")
+        args.path = "docs/head-only.md"
+        args.revision = "installed"
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        self.assertEqual(result, 2)
+        self.assertIn("does not exist at Git commit", stderr.getvalue())
+        args.revision = "head"
+        stdout = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(io.StringIO()):
+                result = manage_skills._run(args)
+        self.assertEqual(result, 0)
+        self.assertIn("Committed after Skill installation.", stdout.getvalue())
+
+    def test_doctor_reports_user_project_name_collisions_without_modifying_either_scope(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install",
+                agents=["codex"],
+                skills=["sample-skill"],
+                apply=True,
+                source=self.source,
+            )[0],
+            0,
+        )
+        project_skill = self.target / ".agents" / "skills" / "sample-skill"
+        project_skill.mkdir(parents=True)
+        project_skill.joinpath("SKILL.md").write_text(
+            "project-owned version\n", encoding="utf-8"
+        )
+        before_global = (
+            self.user_home / ".agents" / "skills" / "sample-skill" / "SKILL.md"
+        ).read_bytes()
+        before_project = project_skill.joinpath("SKILL.md").read_bytes()
+        args = SimpleNamespace(command="doctor", target=self.target)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+
+        self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertIn("same-name User/Project Skill", stdout.getvalue())
+        self.assertIn("precedence are not normalized", stdout.getvalue())
+        self.assertEqual(
+            (self.user_home / ".agents" / "skills" / "sample-skill" / "SKILL.md").read_bytes(),
+            before_global,
+        )
+        self.assertEqual(project_skill.joinpath("SKILL.md").read_bytes(), before_project)
 
     def test_dry_run_does_not_write_then_install_records_provenance(self) -> None:
         source_before = {

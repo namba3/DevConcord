@@ -28,6 +28,8 @@ Safely select and integrate reusable guidance into a project that already exists
 
 The optional [documentation-design guide](https://github.com/namba3/DevConcord/blob/main/docs/common/documentation-design.md) provides reusable reader-centred principles. It may require network access and may follow a newer revision than this Skill. For version-matched guidance, resolve this Skill's `source_commit` from `.devconcord/skills-manifest.json` and replace `main` with that full SHA. The workflow remains usable if the guide is unavailable.
 
+For a configured local checkout and an exact-commit copy of this guide or the adoption prompt, use the [version-pinned local reference procedure](references/local-devconcord.md). Do not assume access to the user's home directory from a remote or cloud agent.
+
 ## Safety and completion
 
 Do not overwrite an unexamined file with the same name, change Git history/remotes, or make remote changes. Report selected and excluded material, preserved local rules, conflicts/holds, exact revision, changed paths, checks and unresolved items. A successful document copy alone does not prove the guidance was correctly adopted.

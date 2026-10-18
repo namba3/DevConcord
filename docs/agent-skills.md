@@ -1,10 +1,61 @@
 # Agent Skillsの導入・同期・検証
 
-この資料は、Skillsを外部プロジェクトへ導入・共有・更新するときの運用リファレンスです。最初の導入で必要な最小手順は[はじめての導入と運用](getting-started.md)を参照してください。Skillの選択・発見・実行ワークフローは [Agent Skills一覧](../prompts/README.md#agent-skills) にあります。
+この資料はUser Scopeを標準とするAgent Skillsの運用リファレンスです。チーム共有・CI・バージョン固定等ではProject Scopeも利用できます。初回導入の実行例は[はじめての導入と運用](getting-started.md)を参照してください。Skillの選択・発見・実行ワークフローは [Agent Skills一覧](../prompts/README.md#agent-skills) にあります。
+
+## User Scope
+
+User Scopeは、個人のローカル環境でSkillsを複数プロジェクトから使う標準方式です。Skillをインストールしても個々のプロジェクトへファイルやmanifestを作りません。
+
+| 対象エージェント | ユーザースコープの配置先 | 公式仕様上の範囲 |
+|---|---|---|
+| OpenAI Codex | `~/.agents/skills/` | [Codex Skills](https://developers.openai.com/codex/skills)で案内されるローカルユーザーの探索先 |
+| GitHub Copilot CLI | `~/.agents/skills/` | [Copilot CLI Skills](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)で案内される個人Skillsの探索先。`~/.copilot/skills/`も利用でき、DevConcordは内容を変更せず同名Skillを検出する |
+| Claude Code | `~/.claude/skills/` | [Claude Code Skills](https://code.claude.com/docs/en/skills)の個人Skills。このマシンのセッション向けで、Cowork/cloud session等とは共有されない |
+
+CodexとCopilotに共通するSkillは一つの `~/.agents/skills/` パッケージとして管理し、Claude Code用は `~/.claude/skills/` に複製します。Copilotの`~/.copilot/skills/`にある同名SkillはCopilot側の探索順に従い、DevConcordは上書きしません。Copilotが`~/.agents/skills/`と`~/.claude/skills/`の両方を探索する可能性もあるため、重複可否はエージェント・版ごとに確認してください。ベンダーが同名Skillの優先順位を共通化しているとは限りません。
+
+一度だけDevConcordの実際のGit checkoutをユーザー設定へ登録します。絶対パスは `~/.devconcord/config.json` に保存され、プロジェクトのSkill、manifest、provenanceへコピーしません。
+
+```sh
+python3 scripts/manage_skills.py config set-source \
+  --source-root /absolute/path/to/DevConcord
+python3 scripts/manage_skills.py config show
+```
+
+既存設定は無断で上書きされません。検証して意図的に変更するときだけ `set-source --replace` を使います。Windows、WSL2、コンテナ、リモート実行環境は別々のユーザーホーム・ファイル権限を持つ場合があり、各エージェントから同じローカルcloneを読めるとは限りません。
+
+User ScopeのSkillsと管理情報は次のように分離されています。非DevConcord SkillやDevConcord管理外の名前は管理対象にせず、変更・削除しません。
+
+| 用途 | 配置先 |
+|---|---|
+| Codex/Copilot Skills | `~/.agents/skills/` |
+| Claude Code Skills | `~/.claude/skills/` |
+| source設定 | `~/.devconcord/config.json` |
+| manifest・lock・transactions | `~/.devconcord/skills-manifest.json`、`skills.lock`、`skills-transactions/` |
+
+Copilot CLIが公式にサポートする`~/.copilot/skills/`は別の個人探索先です。DevConcordはそこへSkillsを導入・同期・削除しませんが、同名のSkillがある場合はUser Scopeの導入・検証を停止して、既存内容を保護します。CopilotではプロジェクトSkillsが個人Skillsより優先されるため、同名時は`doctor --target <project>`でも診断してください。
+
+`doctor --target <project>` はユーザー状態を検証し、指定リポジトリとの同名Skillを診断します。これは静的な名前・配置診断であり、エージェントの実際の選択順位を示しません。
+
+### ローカルDevConcord資料の参照
+
+各Skillは必要な場合だけSkill配布単位内の `references/local-devconcord.md` を読みます。共通のローカル参照手順を各Skillへコピーしないため、参照helperとして `manage_skills.py reference` を使います。helperはユーザー設定から `source_root` を解決し、既定ではインストール済みSkillのmanifestに記録されたコミットから資料を読みます。
+
+```sh
+python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
+  --skill documentation-architecture \
+  --path docs/common/documentation-design.md
+```
+
+`--revision head` はcheckoutの現在のコミット、`--revision working-tree` は指定したcheckoutの作業ツリー（未コミット・未追跡内容を含む）を明示的に参照します。いずれもネットワークから取得しません。通常は `installed` を優先し、最新版や未コミット変更へ切り替える場合は版差を報告します。
+
+設定、source identity、必要コミット、参照ファイル、ファイルアクセス、ネットワーク有無は別々の状態です。ローカル参照に失敗した場合、読んだことにしてはいけません。修正方法または明示的に許可された代替版を確認し、根拠資料が不可欠なら作業を止めます。Skill単体の基本ワークフローはローカル参照が不要な作業で利用可能なままです。
 
 ## 配置とエージェントの共用
 
 Skillsは作業時に必要な手順だけを選択的に読み込む標準形式のワークフローです。Skillの正本はDevConcordの `.agents/skills/<skill-name>/SKILL.md` に一つだけ置きます。既存プロンプトと `AGENTS.md` / `REVIEWS.md` / `docs/` は引き続き利用でき、Skills非対応環境では従来のプロンプトを使えます。
+
+以下の表は **Project Scope** でリポジトリ内にSkillを配置する場合の探索先です。User Scopeの配置先は前節を参照してください。
 
 | エージェント | リポジトリ探索先 | 導入方法 |
 |---|---|---|
@@ -27,9 +78,27 @@ Copilotが複数のSkill探索先を実際に発見するかはホスト・版�
 
 以下はDevConcordのcloneを `~/projects/devconcord`、対象を `~/projects/my-app` とする例です。まず `--apply` なしで計画を確認します。これは既定のdry-runで、ファイルを変更しません。
 
+### User Scopeの導入・同期
+
+DevConcord cloneのルートから実行します。`--scope user` を指定し、`--target` は付けません。`--apply` のない操作はdry-runです。
+
+```sh
+python3 scripts/manage_skills.py install \
+  --scope user --agents codex copilot --skills bootstrap-from-design adopt-guidance
+python3 scripts/manage_skills.py install \
+  --scope user --agents codex copilot --skills bootstrap-from-design adopt-guidance --apply
+python3 scripts/manage_skills.py validate --scope user
+```
+
+Claude Codeだけに導入する場合は `--agent claude` を選びます。Codex/Copilot用の `.agents/skills/` とClaude用の `.claude/skills/` を同時に公開するとCopilotに重複して見える可能性があります。実機で挙動を確認し、必要な場合に限り `--allow-duplicate-discovery` をdry-runと適用の両方へ指定してください。`sync --scope user` はmanifestに記録されたSkillsとagentを既定で対象とし、dry-runの後 `--apply` を指定します。
+
+### Project Scope
+
+以下はDevConcordのcloneを `~/projects/devconcord`、対象を `~/projects/my-app` とするProject Scopeの例です。既存CLI互換のため `--target` だけを指定してもProject Scopeですが、新規コマンドでは明示的な `--scope project` を推奨します。まず `--apply` なしで計画を確認します。これはdry-runでファイルを変更しません。
+
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py install \
-  --target ~/projects/my-app --agent codex \
+  --scope project --target ~/projects/my-app --agent codex \
   --skills bootstrap-from-design design-robustness
 ```
 
@@ -56,23 +125,25 @@ python3 ~/projects/devconcord/scripts/manage_skills.py install \
 
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py sync \
-  --target ~/projects/my-app --agent codex
+  --scope project --target ~/projects/my-app --agent codex
 python3 ~/projects/devconcord/scripts/manage_skills.py sync \
-  --target ~/projects/my-app --agent codex --apply
+  --scope project --target ~/projects/my-app --agent codex --apply
 ```
 
 意図した出典変更や巻き戻しは、出典とローカル編集を確認した後に限り `rebind-source` を明示します。rebindもローカル編集の上書きは許可せず、`--apply` が必要です。
 
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py rebind-source \
-  --target ~/projects/my-app --agent codex
+  --scope project --target ~/projects/my-app --agent codex
 python3 ~/projects/devconcord/scripts/manage_skills.py rebind-source \
-  --target ~/projects/my-app --agent codex --apply
+  --scope project --target ~/projects/my-app --agent codex --apply
 ```
 
 ## 出典・manifest・ローカル変更保護
 
 初回導入時は `.devconcord/skills-manifest.json` にSkillごとの出典識別子・完全コミットSHA、出典ツリーと導入済みツリーのSHA-256を記録します。HTTPS/SSHのscheme差やremote名変更（単一remoteの場合）は正規化し、credential・query・fragmentを識別子へ含めません。remoteのないローカルGit cloneはGit common directoryのパスを一方向SHA-256化して識別します。同じremote・履歴だけでも出典の真正性を暗号学的に証明するものではないため、更新元を信頼できることは利用者が確認してください。
+
+User Scopeでもmanifest schema 2とhash version 2を使いますが、User Scopeのmanifestは `~/.devconcord/skills-manifest.json` です。Project Scopeの `.devconcord/skills-manifest.json` とは独立し、対象プロジェクトには個人固有パスやglobal manifestを記録しません。remoteがないUser Scope sourceはGit root historyに基づく安定した識別子を使うため、同じ履歴を持つcloneを移動して `config set-source --replace` で再登録してもパス差だけでSkillの出典が変わりません。Project Scopeの既存識別子方式は維持します。
 
 通常同期は、記録された出典識別子、完全コミットSHAの存在と祖先関係、記録コミット時点のSkill内容と記録された出典ツリーハッシュ、導入先のローカルハッシュをそれぞれ検査します。同じ出典からの同一コミットまたは前進だけを許可し、別remote、巻き戻し、分岐、欠落/浅い履歴、比較基準不一致、ローカル編集、dirty sourceは止めます。fetch / unshallow / reset は行いません。出典URL/remoteの識別子は信頼の暗号学的証明ではなく、リモート所有権・commit署名検証も実施しません。`guidance-provenance.md` は共通ガイド資料の記録であり、Skill導入記録には使用しません。
 
@@ -85,6 +156,8 @@ remoteを照合できない、複数remoteから現在の出典を選べない�
 適用は対象リポジトリ内の排他ロックとトランザクションジャーナルを使い、パッケージ内容を検証してから置換し、最後にmanifestを更新します。コマンドが異常終了した場合、次のinstall/syncは残った処理を検知して停止します。まずdry-runで対象と状態を確認してください。
 
 ```sh
+python3 ~/projects/devconcord/scripts/manage_skills.py recover --scope user
+python3 ~/projects/devconcord/scripts/manage_skills.py recover --scope user --apply
 python3 ~/projects/devconcord/scripts/manage_skills.py recover --target ~/projects/my-app
 python3 ~/projects/devconcord/scripts/manage_skills.py recover --target ~/projects/my-app --apply
 ```
@@ -102,13 +175,14 @@ DevConcordルートで `requirements-dev.txt` の依存が導入済みのPython�
 ```sh
 cd ~/projects/devconcord
 python3 scripts/manage_skills.py validate
-python3 scripts/manage_skills.py validate --target ~/projects/my-app
+python3 scripts/manage_skills.py validate --scope user
+python3 scripts/manage_skills.py validate --scope project --target ~/projects/my-app
 python3 scripts/validate_docs.py
 python3 -B -m unittest tests.test_agent_skills tests.test_manage_skills -v
 ```
 
-`validate --target` は導入済みmanifestとSkill実体のハッシュ、記録されていない/欠落したSkill、探索先の名前衝突を照合します。引数なしの `validate` はSkillソースを検証します。決定的な検証で確認できるのは構造・メタデータ・参照・ファイル状態です。対象エージェントでのSkill発見、選択、適用は[統合シナリオ](../tests/integration/README.md)に従って個別に評価します。
+`validate --scope user` と `validate --scope project --target ...` は各scopeのmanifestとSkill実体のハッシュ、記録されていない/欠落したSkill、探索先の名前衝突を照合します。引数なしの `validate` はDevConcordのSkillソースを検証します。決定的な検証で確認できるのは構造・メタデータ・参照・ファイル状態です。対象エージェントでのSkill発見、選択、適用は[統合シナリオ](../tests/integration/README.md)に従って個別に評価します。
 
 異常状態の診断や手動復旧ではmanifestとtransaction journalを保持し、内容を確認せず削除しないでください。`recover` が不整合を報告した場合は自動修復を繰り返さず、対象・manifest・transaction backupを保全して調査します。
 
-Claude Code・Codex・Copilotでの実際の発見・呼び出し動作は各エージェントと環境のバージョンに依存します。静的検証や配布テストは実エージェントによる実行確認の代替ではありません。未実行のエージェントは未検証として報告してください。探索先・仕様は[Agent Skills specification](https://agentskills.io/specification)、[Claude Code Skills](https://code.claude.com/docs/en/skills)、[OpenAI Codex Skills](https://developers.openai.com/codex/skills)、[GitHub Copilot Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)を参照してください。
+Claude Code・Codex・Copilotでの実際の発見・呼び出し動作は各エージェントと環境のバージョンに依存します。ローカルユーザースコープの記載はCopilot CLI、Codex CLI/IDE、Claude Codeのそれぞれに対するもので、GitHub-hosted/cloud agentにユーザーのローカルSkillsや `source_root` が見えることを意味しません。静的検証や配布テストは実エージェントによる実行確認の代替ではありません。未実行のエージェントは未検証として報告してください。探索先・仕様は[Agent Skills specification](https://agentskills.io/specification)、[Claude Code Skills](https://code.claude.com/docs/en/skills)、[OpenAI Codex Skills](https://developers.openai.com/codex/skills)、[GitHub Copilot Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)を参照してください。
