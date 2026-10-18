@@ -89,7 +89,7 @@ Self-documenting Code（自己説明的なコード）は、命名やコメン�
 
 **S = 特に重視 / A = 積極採用 / B = 選択的採用**。優先度は「常に全部入れる」という意味ではない。
 
-手法は役割を区別して組み合わせる。UI/UXガイドは人間中心の要求・機能設計、SDDは要求から検証への追跡、DbCは契約、DDDはドメイン表現、Self-documenting Codeは理解可能性、Performance / Robustness / Replaceability by Designは横断的な設計品質、TDD・テストは振る舞いの検証を担う。ツールや成果物の導入自体を目的にせず、リスクと規模に応じて必要な部分を使う。優先度は「常に全部入れる」という意味ではない。
+手法は役割を区別して組み合わせる。UI/UXガイドは人間中心の要求・機能設計、SDDは要求から検証への追跡、DbCは契約、DDDはドメイン表現、Self-documenting Codeは理解可能性、Performance / Robustness / Replaceability / Security by Designは横断的な設計品質、TDD・テストは振る舞いの検証を担う。ツールや成果物の導入自体を目的にせず、リスクと規模に応じて必要な部分を使う。優先度は「常に全部入れる」という意味ではない。
 
 ### 2.1 Self-documenting Codeへの貢献
 

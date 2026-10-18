@@ -20,7 +20,7 @@
 ## 設計・実装
 
 - 意味・責務・契約・振る舞いをコードの名前、型、API、構造、テストで表現できるか考える。自己説明性はコメントを減らすことではなく、コードで伝わらない理由・制約をコメントや設計資料で補うこと。
-- DDDで概念と責務を、Self-documenting Codeで理解可能性を、Performance by Designで処理構造の効率性を、Robustness by Designで異常条件・整合性・回復可能性を、Replaceability by Designで必要な技術依存境界を考える。UI/UXは利用者の要求と機能設計を方向付ける入力とする。DbC・テスト・計測で契約と品質を確かめる。
+- DDDで概念と責務を、Self-documenting Codeで理解可能性を、Performance by Designで処理構造の効率性を、Robustness by Designで異常条件・整合性・回復可能性を、Replaceability by Designで必要な技術依存境界を、Security by Designで資産・脅威・信頼境界に応じた制御と検証を考える。UI/UXは利用者の要求と機能設計を方向付ける入力とする。DbC・テスト・計測で契約と品質を確かめる。
 - ドメイン用語と既存の責務境界を保ち、必要な箇所だけ抽象化する。
 - 交換可能性は将来変更の可能性・影響と抽象化の費用対効果で境界を選ぶ。単一実装で十分なら具体型を使い、ライブラリAPIの一対一ラッパーや未使用の抽象を増やさない。
 - UI/バックエンド固有型、状態、エラーが必要な境界を越えてコアへ漏れないか、交換後のデータ移行・意味的契約・性能・セキュリティ・UX影響を確認する。完全無変更の交換を前提にしない。
@@ -69,5 +69,6 @@
 | Doc Comments、Annotation Comments | [開発ガイド §2.2](ai-assisted-development.md#22-doc-commentsとannotation-comments) |
 | 性能・堅牢性設計 | [Performance by Design §9.4](ai-assisted-development.md#94-performance-by-design)、[Robustness by Design §9.5](ai-assisted-development.md#95-robustness-by-design)、[要求仕様テンプレート](../application-design/templates/requirements.md) |
 | 交換可能性・技術依存境界 | [Replaceability by Design §9.6](ai-assisted-development.md#96-replaceability-by-design)、[ADRテンプレート](../application-design/templates/adr.md) |
+| セキュリティ設計・脅威分析 | [Security by Design §9.7](ai-assisted-development.md#97-security-by-design)、[Threat Modeling §11.1](ai-assisted-development.md#111-threat-modeling)、[`devconcord-design-security` Skill](../../.agents/skills/devconcord-design-security/SKILL.md) |
 | UI/UXを機能設計へ接続 | [UI/UX設計ガイド §2.5](../application-design/ui-ux-guide.md#sec02-design-to-function)、[UI/UXクイックチェック](../application-design/ui-ux-quick-reference.md) |
 | プライバシー・環境衛生 | [Privacy & Environment Hygiene §11.3](ai-assisted-development.md#113-privacy-environment-hygiene) |

@@ -13,7 +13,7 @@ description: >
 
 1. Read repository `AGENTS.md` and `REVIEWS.md` before reviewing. If `REVIEWS.md` is absent, say so and use evidence-based general review criteria without inventing project-specific guarantees.
 2. Establish review scope and inspect relevant source, tests, CI, requirements, ADRs, issue/risk records and actual diff. Distinguish observed behavior from documented intent.
-3. Evaluate correctness, user task/function fit, contracts and invariants, boundary/failure behavior, security/privacy, compatibility, resource/performance implications, dependency direction and verification evidence where relevant.
+3. Evaluate correctness, user task/function fit, contracts and invariants, boundary/failure behavior, and—where relevant—assets, trust boundaries, threats, least privilege, secure defaults, data lifecycle, dependency/supply-chain risk, security invariants, compatibility, resource/performance implications, dependency direction and verification evidence.
 4. Report only actionable findings with severity, file/line, concrete impact, reproduction or evidence, confidence and a minimal remedy. Separate findings from questions, residual risks, and unverified assumptions.
 5. Do not infer missing code or tests as present; do not claim tests passed unless run. Avoid speculative findings, style-only comments and fixes unless the user requests implementation.
 

@@ -14,6 +14,7 @@
 | [`devconcord-design-performance`](../.agents/skills/devconcord-design-performance/SKILL.md) | ワークロードに基づく性能設計と測定条件を定義 |
 | [`devconcord-design-robustness`](../.agents/skills/devconcord-design-robustness/SKILL.md) | 不変条件・失敗時契約・回復・検証を設計 |
 | [`devconcord-design-replaceability`](../.agents/skills/devconcord-design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |
+| [`devconcord-design-security`](../.agents/skills/devconcord-design-security/SKILL.md) | 資産・信頼境界・脅威・不変条件に応じてセキュリティ要求と検証を設計 |
 | [`devconcord-repository-review`](../.agents/skills/devconcord-repository-review/SKILL.md) | 実装・設計・テスト・CI・運用記録を根拠にレビュー |
 | [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEWS.md` の作成・更新 |
 | [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |

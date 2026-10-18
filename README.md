@@ -15,6 +15,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 既存プロジェクトへ規約を選んで導入する | [`devconcord-adopt-guidance` Skill](.agents/skills/devconcord-adopt-guidance/SKILL.md) |
 | 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
+| 資産・脅威・信頼境界からセキュリティ設計する | [`devconcord-design-security` Skill](.agents/skills/devconcord-design-security/SKILL.md)と[Security by Design](docs/common/ai-assisted-development.md#97-security-by-design) |
 | Agent Skillsを選ぶ | [Skills一覧](docs/agent-skills.md#skills) |
 | ローカルDevConcord資料を版固定で参照する | [`devconcord-reference` Skill](.agents/skills/devconcord-reference/SKILL.md)と[参照運用](docs/agent-skills.md#ローカルdevconcord資料の参照) |
 | Skill非対応環境で手動利用する | [Skill本体と参照資料を渡す方法](docs/agent-skills.md#skills非対応環境で手動利用) |
@@ -24,7 +25,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 
 ## 収録内容
 
-- DDD、Self-documenting Code、SDD、DbC、TDD、Performance / Robustness / Replaceability by Design等の開発・設計ガイド
+- DDD、Self-documenting Code、SDD、DbC、TDD、Performance / Robustness / Replaceability / Security by Design等の開発・設計ガイド
 - 要求仕様、ADR、課題管理、リスク管理、完成度評価の規約とテンプレート
 - READMEを含む文書設計、導入、更新、検証のための共通指針
 - `AGENTS.md`・`REVIEWS.md`生成、Bootstrap、Adoption、Synchronization用Agent Skills

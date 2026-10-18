@@ -1,8 +1,8 @@
 # DevConcord リポジトリ作業指示
 
 - リポジトリの目的と入口は `README.md`、資料体系は `docs/README.md` と `docs/agent-skills.md` を確認してください。
-- DDD、SDD、TDD、DbC、Self-documenting Code、Doc Comments、Annotation Comments、Performance by Design、Robustness by Design、Replaceability by Design等の原則と、課題表を作業管理の正本とする運用を維持してください。UI/UXは機能要求を方向付ける人間中心設計の入力として扱います。
-- 要求・設計では、必要に応じて利用者の目的/タスク、受け入れ条件、性能ワークロード、異常時の契約・状態整合性・回復方法、交換価値のある技術依存境界を接続してください。交換性のために全依存を抽象化せず、費用対効果を考慮します。
+- DDD、SDD、TDD、DbC、Self-documenting Code、Doc Comments、Annotation Comments、Performance by Design、Robustness by Design、Replaceability by Design、Security by Design等の原則と、課題表を作業管理の正本とする運用を維持してください。UI/UXは機能要求を方向付ける人間中心設計の入力として扱います。
+- 要求・設計では、必要に応じて利用者の目的/タスク、受け入れ条件、性能ワークロード、異常時の契約・状態整合性・回復方法、交換価値のある技術依存境界、資産・脅威・信頼境界・セキュリティ不変条件・検証を接続してください。脅威と変更影響に応じて分析範囲を選び、交換性のために全依存を抽象化せず、費用対効果を考慮します。
 - 品質評価では既存の完成度10軸・重みを維持し、UI/UX・性能・堅牢性を関連する既存軸へ、交換可能性は主に設計・アーキテクチャとコード品質・保守性へ反映してください。新しい軸や課題・リスクの二重台帳は追加しません。
 - 資料を変更するときは、関連するガイド、テンプレート、Skills、READMEの用語とリンクを確認し、必要な範囲だけを更新してください。
 - コード・仕様・設定の変更では関連文書への影響を確認し、対象読者・正本・既存導線を保って必要な資料だけ更新してください。文書設計の詳細は[共通ガイド](docs/common/documentation-design.md)を参照し、大きな文書体系のレビュー・改善には利用可能なら `devconcord-documentation-architecture` Skillを使います。
