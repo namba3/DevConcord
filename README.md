@@ -12,7 +12,8 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 導入済み資料を安全に更新する | [Synchronizationプロンプト](prompts/sync-guidance.md) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
 | プロンプトを使う・選ぶ | [プロンプト一覧](prompts/README.md) |
-| 特定タスク向けAgent Skillを使う | [Skills一覧](prompts/README.md#agent-skills) |
+| 特定タスク向けAgent Skillを選ぶ | [Skills一覧](prompts/README.md#agent-skills) |
+| Skillsを導入・同期・検証する | [Agent Skills運用ガイド](docs/agent-skills.md) |
 | ドキュメント体系を設計・改善する | [ドキュメント設計ガイド](docs/common/documentation-design.md) |
 
 ## 収録内容

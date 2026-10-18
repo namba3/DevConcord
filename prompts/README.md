@@ -18,11 +18,7 @@
 
 ## Agent Skills
 
-作業単位の再利用可能なSkillは [`.agents/skills/`](../.agents/skills/) に標準形式の正本を置きます。導入先に応じてOpenAI Codex / GitHub Copilotは `.agents/skills/`、Claude Codeは `.claude/skills/` を選びます。外部リポジトリへは [`manage_skills.py`](../scripts/manage_skills.py) で選択導入・同期できます。`install` / `sync` は `--apply` がなければdry-runで、既存Skillの編集・同名衝突を上書きせず保護します。配置方法、重複探索の回避、記録形式は[導入ガイド](../docs/getting-started.md#agent-skillsを利用する)を参照してください。
-
-CodexとCopilotは `.agents/skills/` を共同利用でき、Claude CodeとCopilotは `.claude/skills/` を共同利用できます。CodexとClaude Codeは別々の探索先へ配置します。三者併用時はCopilotの同名重複解決が未検証のため、確認後に限り `--allow-duplicate-discovery` を明示してください。Claude Code用の配置は正本からの生成コピーで、シンボリックリンクを前提にしません。コピーを直接編集せず、Skill更新ツールで差分を確認してください。
-
-manifest schema 2は配置先ごとに共有agentとSkill provenanceを保存します。段階的なagent追加でも操作後の全探索先を確認し、Copilotを含む状態の同一内容重複だけ明示的に許可できます。許可はSkill名と配置先ペアとしてmanifestに記録され、片側更新で内容が不一致なら拒否します。旧schema 1は読み込み時に保護的に移行し、未知・破損形式は変更しません。通常同期は記録された出典識別子、完全コミット、祖先関係、比較基準Skillの内容ハッシュをそれぞれ検証します。意図した出典変更・巻き戻しは `rebind-source` で明示します。中断更新の `recover` は全対象を変更前に事前検証し、不整合があれば何も復元せず停止します。どの操作もdry-runで計画を確認してから適用し、異常時は不明な状態を自動破棄しません。コマンドと保証限界は[導入ガイド](../docs/getting-started.md#agent-skillsを利用する)を参照してください。
+作業単位の再利用可能なSkillは [`.agents/skills/`](../.agents/skills/) に標準形式の正本を置きます。Skill一覧から目的に合うワークフローを選び、対象エージェントへの導入・共有・同期・復旧が必要な場合は[Agent Skills運用ガイド](../docs/agent-skills.md)を参照してください。`install` / `sync` は `--apply` がなければdry-runで、ローカル変更や同名衝突を上書きせず保護します。
 
 | Skill | 用途 |
 |---|---|

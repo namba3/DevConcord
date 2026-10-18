@@ -64,6 +64,32 @@ description: Use this Skill for a focused task.
         self.assertIn("documentation-architecture", prompts_index)
         self.assertIn("documentation-design.md", docs_index)
 
+    def test_reader_navigation_connects_quick_start_and_skill_operations(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        readme = (repository_root / "README.md").read_text(encoding="utf-8")
+        getting_started = (repository_root / "docs" / "getting-started.md").read_text(
+            encoding="utf-8"
+        )
+        skills_guide = (repository_root / "docs" / "agent-skills.md").read_text(
+            encoding="utf-8"
+        )
+        docs_index = (repository_root / "docs" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        prompts_index = (repository_root / "prompts" / "README.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("(docs/getting-started.md)", readme)
+        self.assertIn("(prompts/bootstrap-from-design.md)", readme)
+        self.assertIn("(docs/agent-skills.md)", readme)
+        self.assertIn("## Agent Skillsを利用する", getting_started)
+        self.assertIn("(agent-skills.md)", getting_started)
+        self.assertIn("## 中断した操作の回復", skills_guide)
+        self.assertIn("## 検証とトラブルシューティング", skills_guide)
+        self.assertIn("(agent-skills.md)", docs_index)
+        self.assertIn("(../docs/agent-skills.md)", prompts_index)
+
     def test_rejects_invalid_metadata_and_name_mismatch(self) -> None:
         skill_dir = self.make_skill(
             "sample-skill",

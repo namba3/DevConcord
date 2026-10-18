@@ -2,7 +2,7 @@
 
 このディレクトリには、複数のソフトウェア開発プロジェクトで再利用する運用ガイドと文書テンプレートを置きます。プロジェクト固有の仕様・設計・運用記録は、それぞれの対象リポジトリへ配置してください。
 
-初回導入・更新適用の手順は[はじめての導入と運用](getting-started.md)を参照してください。
+初回導入・更新適用の最短手順は[はじめての導入と運用](getting-started.md)を参照してください。Agent Skillsの配布・同期・出典管理・復旧は[Agent Skills運用ガイド](agent-skills.md)が詳細の正本です。
 
 作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。Skillsはプロンプトを置き換えるのではなく、選択時に読み込む実行ワークフローです。外部プロジェクトへの配布と同期は [`manage_skills.py`](../scripts/manage_skills.py) を使います。
 
@@ -12,6 +12,7 @@
 |---|---|
 | [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness / Replaceability by Design、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
 | [ドキュメント設計ガイド](common/documentation-design.md) | 読者中心の情報設計、README・文書の役割、ナビゲーション、Single Source of Truth、変更影響、Docs as Code |
+| [Agent Skills運用ガイド](agent-skills.md) | 導入先へのSkillsの選択導入、共用、更新、manifest、復旧、検証 |
 
 ## アプリ設計
 
@@ -32,28 +33,29 @@
 | [課題一覧テンプレート](work-management/templates/issue-register.md) | 課題の優先度、状態、完了条件、根拠の管理 |
 | [リリースチェックリスト](work-management/templates/release-checklist.md) | リリース前の検証、配布、周知、ロールバック確認 |
 
-## 選び方
+## 目的から探す
 
-- 新規プロジェクトでは、まず[プロジェクト概要テンプレート](work-management/templates/project-overview.md)を埋め、必要な文書だけを選びます。
-- 要求や設計判断を追跡する場合は、アプリ設計の要求仕様やADRを追加します。
-- 課題一覧の評価基準や更新手順は[課題管理・完成度評価規約](work-management/issue-tracking.md)を参照します。
-- コードの自己説明性とSDSの基準は、AI支援開発ガイドと課題管理規約にあります。SDSは独立した補助指標で、既存の総合完成度へ加算しません。
-- Doc CommentsとAnnotation Commentsの記法・対象・課題表との連携は、[AI支援開発ガイド §2.2](common/ai-assisted-development.md#22-doc-commentsとannotation-comments)を参照してください。コメント数を品質指標にはしません。
-- UI/UXは利用者の目的、タスク、操作、状態、回復条件を導き、機能要求と検証へつなぐ設計入力です。Web・デスクトップ・CLI・ライブラリ等の製品形態に合わせ、GUI固有要件を一律強制しません。
-- DDD・Self-documenting Code・Performance by Design・Robustness by Design・Replaceability by Designは横断的な設計原則として扱います。Performance / Robustnessとプライバシー・環境衛生は既存の完成度10評価軸へ反映し、新しい評価軸は追加しません。絶対パス、性能計測、故障注入を一律禁止・強制せず、必要性・影響・対象環境に応じて適用します。
-- Robustness by Designは、重要な異常条件・データ整合性・原子性・再実行・復旧・診断を初期設計へ含める考え方です。対応作業は既存課題表で管理し、別の作業台帳を作りません。
-- Replaceability by Designは、変更価値のある技術依存だけを費用対効果に基づいて境界化します。全依存の抽象化や無変更の交換を要求せず、主に既存の設計・アーキテクチャ、コード品質・保守性の評価根拠として扱います。
-- 要求と受け入れ条件は要求仕様書で管理し、要求IDからADR・実装・検証・課題を必要な範囲で参照します。将来の不確実性を管理する場合はリスク規約を使い、対応作業は課題表に置きます。
-- 設計書起点の初期化では、入力出典・節からTASK/REQ/NFR、ADR、初期構造、課題、受け入れ条件へ必要な範囲で追跡します。設計書自体の出典と共通資料の `guidance-provenance.md` を混同せず、未確認事項を確定仕様として補いません。
-- 課題表と規約のリンクを保つ場合は `work-management/` をディレクトリごと対象リポジトリの `docs/` へコピーします。テンプレートだけをコピーする場合は、規約へのリンク先を対象内の配置に合わせて変更します。
-- AIエージェントに常時適用する作業ルールは対象リポジトリの `AGENTS.md`、レビュー専用の観点は `REVIEWS.md` に置くための[生成プロンプト](../prompts/README.md)も用意しています。
-- 文書の読者・情報構造・入口・正本・更新影響は[ドキュメント設計ガイド](common/documentation-design.md)を参照します。導入先の既存構成・公開URL・規約を尊重し、文書数や特定のREADME形式を品質目標にしません。
-- Agent Skillsは必要なタスクに応じて個別に読み込むワークフローです。CodexとCopilotは `.agents/skills/` を共有でき、Claude CodeとCopilotは `.claude/skills/` を共有できます。CodexとClaude Codeは異なる探索先を使います。三者併用はCopilotの重複解決が未保証のため明示的なopt-inが必要です。導入・同期はdry-runが既定で、ローカル編集や衝突を検出した場合は上書きせず停止します。schema 2の `.devconcord/skills-manifest.json` は配置パッケージ単位のagent共有とSkill出典・ハッシュを記録し、schema 1は次回適用時に保護的に移行します。共通資料の `docs/guidance-provenance.md` とは別に管理します。更新は同じGit履歴の前進のみを受け入れ、出典変更・巻き戻しは `rebind-source`、中断したトランザクションの確認・回復は `recover` を使います。
-- 設計書を入力に新しいリポジトリの開発基盤・初期構造を作る場合は[Design-to-Repository Bootstrap](../prompts/bootstrap-from-design.md)を使います。これは既存成果物を調査・保持しながら規約を選択導入する初回導入とは別のワークフローです。
-- 既存プロジェクトへ導入するときは、[導入プロンプト](../prompts/adopt-guidance.md)で既存規約との重複・差異を確認してから適用します。
-- 導入済み資料を更新するときは、[更新プロンプト](../prompts/sync-guidance.md)で資料ごとの比較基準コミット以降の差分と、適用メモに残る保留項目を確認します。
-- 読みやすさや情報構造を専門的に改善する場合は [`documentation-architecture` Skill](../.agents/skills/documentation-architecture/SKILL.md) を利用できます。詳細な判断原則は共通ガイドを参照し、Skillに大量複製しません。
-- AIへ詳細ガイドを渡す際は、全文ではなく必要な節を指定してください。[AI開発クイックリファレンス](common/ai-development-quick-reference.md)と[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md)から関連する詳細節を選べます。
+| 読者の目的 | まず読む資料 |
+|---|---|
+| 設計原則とAI支援開発の共通ルールを理解する | [AI支援開発ガイド](common/ai-assisted-development.md)、[AI開発クイックリファレンス](common/ai-development-quick-reference.md) |
+| 要求仕様や設計判断を記録する | [要求仕様テンプレート](application-design/templates/requirements.md)、[ADRテンプレート](application-design/templates/adr.md) |
+| 利用者タスクから機能を設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md) |
+| 性能・堅牢性・依存境界を検討する | [設計原則](common/ai-assisted-development.md)と個別の `design-performance`、`design-robustness`、`design-replaceability` [Skills](../prompts/README.md#agent-skills) |
+| READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`documentation-architecture` Skill](../.agents/skills/documentation-architecture/SKILL.md) |
+| 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
+| レビュー基準を作る・調べる | [`REVIEWS.md`生成プロンプト](../prompts/create-reviews-md.md)、[レビュー指針](../REVIEWS.md) |
+| 設計書から新規リポジトリを始める | [Bootstrapプロンプト](../prompts/bootstrap-from-design.md)、[はじめての導入と運用](getting-started.md) |
+| 既存プロジェクトへ規約を導入する | [Adoptionプロンプト](../prompts/adopt-guidance.md)、[はじめての導入と運用](getting-started.md) |
+| 導入済み規約を安全に更新する | [Synchronizationプロンプト](../prompts/sync-guidance.md)、[はじめての導入と運用](getting-started.md) |
+| Agent Skillsを導入・更新・検証する | [Agent Skills運用ガイド](agent-skills.md) |
+
+## 選択と適用
+
+これらの資料は適用先に合わせて選びます。README、公開サイト、ディレクトリ構造、既存規約を調査し、必要な部分だけを導入してください。Bootstrapは設計書から新規構成を作る手順、Adoptionは既存成果物を保護した初回導入、Synchronizationは導入済み資料の差分更新を扱います。詳しい操作は[はじめての導入と運用](getting-started.md)を参照してください。
+
+要求IDからADR・実装・検証・課題への参照は変更リスクに応じて設けます。設計書の出典と共通資料の `guidance-provenance.md` を区別し、未確認事項を確定仕様にしません。課題表を作業管理の正本とし、リスク対応作業の別台帳は追加しません。完成度は既存10軸で評価し、SDSは独立した補助指標として総合完成度へ加算しません。新しい品質評価軸は追加しません。
+
+文書品質の詳しい原則は[ドキュメント設計ガイド](common/documentation-design.md)、Skillsの安全な配置・重複・出典・復旧は[Agent Skills運用ガイド](agent-skills.md)、個別設計原則はリンク先のガイド・Skillを正本として参照してください。資料やテンプレートを一部だけ導入する場合は、相対リンクを対象リポジトリ内で解決できる配置へ合わせます。
 
 ## 自動検証
 

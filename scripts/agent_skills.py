@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import stat
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -157,6 +159,71 @@ def _skill_fingerprint(skill_dir: Path) -> str:
     return digest.hexdigest()
 
 
+def _mode_is_reliable(root: Path) -> bool:
+    if os.name == "nt":
+        return False
+    try:
+        repository = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if repository.returncode:
+            return True
+        configured = subprocess.run(
+            ["git", "-C", str(root), "config", "--bool", "--get", "core.filemode"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return True
+    return configured.returncode != 0 or configured.stdout.strip() == "true"
+
+
+def _filesystem_executable_files(skill_dir: Path) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            path.relative_to(skill_dir).as_posix()
+            for path in skill_dir.rglob("*")
+            if path.is_file() and path.stat().st_mode & 0o111
+        )
+    )
+
+
+def _portable_skill_fingerprint(
+    skill_dir: Path,
+    executable_files: tuple[str, ...],
+) -> str:
+    executable_set = set(executable_files)
+    digest = hashlib.sha256()
+    regular_files: set[str] = set()
+    for path in sorted(skill_dir.rglob("*")):
+        if path.is_symlink():
+            raise ValueError(f"cannot fingerprint symlinked Skill content: {path}")
+        relative_path = path.relative_to(skill_dir).as_posix()
+        relative = relative_path.encode("utf-8")
+        if not path.is_dir() and not path.is_file():
+            raise ValueError(f"unsupported non-regular Skill content: {path}")
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative)
+        digest.update(b"D" if path.is_dir() else b"F")
+        if path.is_file():
+            regular_files.add(relative_path)
+            digest.update(b"X" if relative_path in executable_set else b"-")
+            content = path.read_bytes()
+            digest.update(len(content).to_bytes(8, "big"))
+            digest.update(content)
+    missing = executable_set - regular_files
+    if missing:
+        raise ValueError(
+            "executable-file metadata references missing package paths: "
+            + ", ".join(sorted(missing))
+        )
+    return digest.hexdigest()
+
+
 def validate_skill_roots(
     skills_roots: list[Path],
     *,
@@ -180,7 +247,19 @@ def validate_skill_roots(
             if previous_locations:
                 for previous, previous_root in previous_locations:
                     try:
-                        identical = _skill_fingerprint(skill_dir) == _skill_fingerprint(previous)
+                        current_exec = (
+                            _filesystem_executable_files(skill_dir)
+                            if _mode_is_reliable(root)
+                            else ()
+                        )
+                        previous_exec = (
+                            _filesystem_executable_files(previous)
+                            if _mode_is_reliable(previous_root)
+                            else ()
+                        )
+                        identical = _portable_skill_fingerprint(
+                            skill_dir, current_exec
+                        ) == _portable_skill_fingerprint(previous, previous_exec)
                     except (OSError, ValueError) as error:
                         errors.append(
                             f"{skill_dir}: cannot compare duplicate Skill package "
@@ -373,12 +452,50 @@ def _validate_installed_package(
         ):
             errors.append(f"{manifest_path}: invalid provenance record for Skill {name!r}")
             continue
+        hash_version = record.get("hash_version", 1)
+        executable_files = record.get("source_executable_files")
+        if type(hash_version) is int and hash_version == 2:
+            if (
+                not isinstance(executable_files, list)
+                or any(
+                    not isinstance(path, str)
+                    or not path
+                    or path.startswith("/")
+                    or "\\" in path
+                    or any(part in {"", ".", ".."} for part in path.split("/"))
+                    for path in executable_files
+                )
+                or executable_files != sorted(set(executable_files))
+            ):
+                errors.append(
+                    f"{manifest_path}: invalid executable-file metadata for Skill {name!r}"
+                )
+                continue
+        elif type(hash_version) is not int or hash_version != 1 or executable_files is not None:
+            errors.append(f"{manifest_path}: unsupported hash version for Skill {name!r}")
+            continue
         skill_dir = actual_skills.get(name)
         if skill_dir is None:
             errors.append(f"{skills_root / name}: manifest records a missing Skill")
             continue
         try:
-            digest = _skill_fingerprint(skill_dir)
+            if hash_version == 2:
+                expected_executable_files = tuple(executable_files)
+                if (
+                    _mode_is_reliable(skills_root)
+                    and _filesystem_executable_files(skill_dir)
+                    != expected_executable_files
+                ):
+                    errors.append(
+                        f"{skill_dir}: executable bits differ from manifest"
+                    )
+                    continue
+                digest = _portable_skill_fingerprint(
+                    skill_dir,
+                    expected_executable_files,
+                )
+            else:
+                digest = _skill_fingerprint(skill_dir)
         except (OSError, ValueError) as error:
             errors.append(
                 f"{skill_dir}: cannot verify installed Skill hash ({type(error).__name__})"

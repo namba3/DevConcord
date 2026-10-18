@@ -3,6 +3,8 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
+import stat
 import shutil
 import subprocess
 import tempfile
@@ -39,6 +41,71 @@ class SkillManagementTests(unittest.TestCase):
             check=True,
         )
         return result.stdout.strip()
+
+    @unittest.skipIf(os.name == "nt", "POSIX permission bits are not reliable on Windows")
+    def test_install_and_validate_ignore_non_executable_permission_differences(self) -> None:
+        source_repo = self.source.parents[1]
+        for path in (self.source / "sample-skill").rglob("*"):
+            if path.is_file():
+                path.chmod(0o600)
+        self.assertEqual(self.git(source_repo, "status", "--porcelain"), "")
+
+        result, _, error = self.run_operation("install", apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        target_skill = self.target / ".agents" / "skills" / "sample-skill"
+        for path in target_skill.rglob("*"):
+            if path.is_file():
+                path.chmod(0o644)
+        self.assertEqual(self.run_validation()[0], 0)
+
+    @unittest.skipIf(os.name == "nt", "POSIX permission bits are not reliable on Windows")
+    def test_local_executable_bit_change_is_protected(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        installed_skill = self.target / ".agents" / "skills" / "sample-skill"
+        skill_file = installed_skill / "SKILL.md"
+        skill_file.chmod(stat.S_IMODE(skill_file.stat().st_mode) | 0o100)
+
+        self.assertEqual(self.run_validation()[0], 1)
+        result, _, error = self.run_operation("sync", apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertIn("local modifications detected", error.lower())
+
+    @unittest.skipIf(os.name == "nt", "POSIX permission bits are not reliable on Windows")
+    def test_source_core_filemode_false_ignores_non_executable_permission_changes(self) -> None:
+        source_repo = self.source.parents[1]
+        self.git(source_repo, "config", "core.fileMode", "false")
+        for path in (self.source / "sample-skill").rglob("*"):
+            if path.is_file():
+                path.chmod(0o600)
+        self.assertEqual(self.git(source_repo, "status", "--porcelain"), "")
+
+        result, _, error = self.run_operation("install", apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+
+    @unittest.skipIf(os.name == "nt", "POSIX permission bits are not reliable on Windows")
+    def test_committed_executable_bit_change_is_synchronized(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        source_repo = self.source.parents[1]
+        source_file = self.source / "sample-skill" / "SKILL.md"
+        source_file.chmod(stat.S_IMODE(source_file.stat().st_mode) | 0o100)
+        self.git(
+            source_repo,
+            "update-index",
+            "--chmod=+x",
+            source_file.relative_to(source_repo).as_posix(),
+        )
+        self.git(source_repo, "commit", "-qm", "mark Skill executable")
+
+        result, _, error = self.run_operation("sync", apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        installed_file = (
+            self.target / ".agents" / "skills" / "sample-skill" / "SKILL.md"
+        )
+        self.assertTrue(installed_file.stat().st_mode & 0o100)
 
     def write_skill(self, name: str, version: str) -> Path:
         skill = self.source / name
@@ -158,6 +225,8 @@ Version: {version}
         )
         record = manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
         self.assertEqual(record["source_tree_sha256"], record["installed_tree_sha256"])
+        self.assertEqual(record["hash_version"], 2)
+        self.assertEqual(record["source_executable_files"], [])
         self.assertIn("source_commit", record)
         self.assertTrue(record["source_repository"].startswith("local-git-sha256:"))
         self.assertEqual(
@@ -251,6 +320,33 @@ Version: {version}
         result, _, error = self.run_validation()
         self.assertEqual(result, 1)
         self.assertIn("not recorded in manifest", error)
+
+    def test_legacy_manifest_hashes_are_verified_then_migrated(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        record = manifest["packages"][".agents/skills"]["skills"]["sample-skill"]
+        skill_dir = self.target / ".agents" / "skills" / "sample-skill"
+        record.pop("hash_version")
+        record.pop("source_executable_files")
+        record["source_tree_sha256"] = manage_skills._git_skill_digest(
+            self.source,
+            record["source_commit"],
+            "sample-skill",
+            legacy=True,
+        )
+        record["installed_tree_sha256"] = manage_skills.tree_digest(skill_dir)
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.assertEqual(self.run_validation()[0], 0)
+
+        result, _, error = self.run_operation("sync", apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        migrated = json.loads(manifest_path.read_text(encoding="utf-8"))
+        migrated_record = migrated["packages"][".agents/skills"]["skills"]["sample-skill"]
+        self.assertEqual(migrated_record["hash_version"], 2)
+        self.assertEqual(migrated_record["source_executable_files"], [])
+        self.assertEqual(self.run_validation()[0], 0)
 
     def test_local_edits_and_untracked_collisions_are_preserved(self) -> None:
         self.assertEqual(self.run_operation("install", apply=True)[0], 0)
@@ -356,7 +452,14 @@ Version: {version}
                     ))
                     installed_skill = self.target / root_name / "sample-skill"
                     self.assertEqual(
-                        manage_skills.tree_digest(installed_skill),
+                        manage_skills._portable_tree_digest(
+                            installed_skill,
+                            tuple(
+                                package["skills"]["sample-skill"][
+                                    "source_executable_files"
+                                ]
+                            ),
+                        ),
                         package["skills"]["sample-skill"]["installed_tree_sha256"],
                     )
                     package_hashes.add(

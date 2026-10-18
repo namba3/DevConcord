@@ -38,6 +38,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = REPOSITORY_ROOT / ".agents" / "skills"
 MANIFEST_PATH = Path(".devconcord") / "skills-manifest.json"
 CURRENT_SCHEMA_VERSION = 2
+SKILL_HASH_VERSION = 2
 AGENT_ROOTS = {
     "codex": Path(".agents/skills"),
     "copilot": Path(".agents/skills"),
@@ -49,7 +50,7 @@ class SkillManagementError(ValueError):
     """An unsafe or inconsistent skill operation was requested."""
 
 
-SkillAction = tuple[str, Path, str, str, str | None]
+SkillAction = tuple[str, Path, str, str, str | None, tuple[str, ...]]
 
 
 def tree_digest(root: Path) -> str:
@@ -71,6 +72,129 @@ def tree_digest(root: Path) -> str:
         digest.update(len(content).to_bytes(8, "big"))
         digest.update(content)
     return digest.hexdigest()
+
+
+def _executable_mode_is_reliable(root: Path) -> bool:
+    if os.name == "nt":
+        return False
+    if _git(root, "rev-parse", "--show-toplevel", check=False).returncode:
+        return True
+    configured = _git(root, "config", "--bool", "--get", "core.filemode", check=False)
+    return configured.returncode != 0 or configured.stdout.strip() == "true"
+
+
+def _filesystem_executable_files(root: Path) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            path.relative_to(root).as_posix()
+            for path in root.rglob("*")
+            if path.is_file() and path.stat().st_mode & 0o111
+        )
+    )
+
+
+def _portable_tree_digest(root: Path, executable_files: tuple[str, ...]) -> str:
+    executable_set = set(executable_files)
+    regular_files: set[str] = set()
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise SkillManagementError(f"symlinks are not supported in skill packages: {path}")
+        if not path.is_dir() and not path.is_file():
+            raise SkillManagementError(f"unsupported non-regular file in skill package: {path}")
+        relative_path = path.relative_to(root).as_posix()
+        relative = relative_path.encode("utf-8")
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative)
+        digest.update(b"D" if path.is_dir() else b"F")
+        if path.is_file():
+            regular_files.add(relative_path)
+            digest.update(b"X" if relative_path in executable_set else b"-")
+            content = path.read_bytes()
+            digest.update(len(content).to_bytes(8, "big"))
+            digest.update(content)
+    missing = executable_set - regular_files
+    if missing:
+        raise SkillManagementError(
+            "executable-file metadata references missing package paths: "
+            + ", ".join(sorted(missing))
+        )
+    return digest.hexdigest()
+
+
+def _git_skill_executable_files(source_root: Path, commit: str, skill_name: str) -> tuple[str, ...]:
+    source_prefix = _git(source_root, "rev-parse", "--show-prefix").stdout.strip().strip("/")
+    git_path = "/".join(part for part in (source_prefix, skill_name) if part)
+    result = _git(
+        source_root,
+        "ls-tree",
+        "-rz",
+        "--full-tree",
+        commit,
+        "--",
+        git_path,
+    )
+    executable_files: list[str] = []
+    prefix = f"{git_path}/"
+    for entry in result.stdout.split("\0"):
+        if not entry:
+            continue
+        metadata, path = entry.split("\t", maxsplit=1)
+        mode, _object_type, _object_id = metadata.split()
+        if mode == "100755":
+            if not path.startswith(prefix):
+                raise SkillManagementError(
+                    f"Git returned an unexpected path for Skill {skill_name!r}"
+                )
+            executable_files.append(path[len(prefix):])
+    return tuple(sorted(executable_files))
+
+
+def _source_executable_files(
+    source_root: Path,
+    revision: str,
+    skill_name: str,
+    *,
+    dirty: bool,
+) -> tuple[str, ...]:
+    if revision == "unversioned":
+        return (
+            _filesystem_executable_files(source_root / skill_name)
+            if _executable_mode_is_reliable(source_root)
+            else ()
+        )
+    committed = _git_skill_executable_files(source_root, revision, skill_name)
+    if not _executable_mode_is_reliable(source_root):
+        return committed
+    actual = _filesystem_executable_files(source_root / skill_name)
+    if not dirty and actual != committed:
+        raise SkillManagementError(
+            f"Skill {skill_name!r} executable bits differ from Git; commit the change "
+            "or explicitly pass --allow-dirty-source"
+        )
+    return actual if dirty else committed
+
+
+def _verify_executable_files(
+    root: Path,
+    expected: tuple[str, ...],
+) -> bool:
+    if not _executable_mode_is_reliable(root):
+        return True
+    return _filesystem_executable_files(root) == expected
+
+
+def _apply_executable_files(root: Path, executable_files: tuple[str, ...]) -> None:
+    executable_set = set(executable_files)
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        mode = stat.S_IMODE(path.stat().st_mode)
+        if path.relative_to(root).as_posix() in executable_set:
+            mode |= 0o100
+        else:
+            mode &= ~0o111
+        path.chmod(mode)
 
 
 def source_revision(source_root: Path) -> tuple[str, bool, str]:
@@ -160,7 +284,13 @@ def _normalize_recorded_source_identity(value: str) -> str:
     return _repository_identity(value)
 
 
-def _git_skill_digest(source_root: Path, commit: str, skill_name: str) -> str:
+def _git_skill_digest(
+    source_root: Path,
+    commit: str,
+    skill_name: str,
+    *,
+    legacy: bool = False,
+) -> str:
     with tempfile.TemporaryDirectory(prefix="devconcord-skill-baseline-") as temporary:
         temporary_root = Path(temporary)
         archive_path = temporary_root / "skill.tar"
@@ -227,7 +357,12 @@ def _git_skill_digest(source_root: Path, commit: str, skill_name: str) -> str:
             raise SkillManagementError(
                 f"baseline commit {commit} does not contain Skill {skill_name!r}"
             )
-        return tree_digest(skill_root)
+        if legacy:
+            return tree_digest(skill_root)
+        return _portable_tree_digest(
+            skill_root,
+            _git_skill_executable_files(source_root, commit, skill_name),
+        )
 
 
 def _git(root: Path, *arguments: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -394,6 +529,40 @@ def _validate_packages(packages: dict[str, Any]) -> None:
                 raise SkillManagementError(
                     f"invalid provenance for Skill {name!r} at {package_path!r}"
                 )
+            hash_version = record.get("hash_version", 1)
+            executable_files = record.get("source_executable_files")
+            if type(hash_version) is int and hash_version == SKILL_HASH_VERSION:
+                if (
+                    not isinstance(executable_files, list)
+                    or any(
+                        not isinstance(path, str)
+                        or not path
+                        or path.startswith("/")
+                        or "\\" in path
+                        or any(part in {"", ".", ".."} for part in path.split("/"))
+                        for path in executable_files
+                    )
+                    or executable_files != sorted(set(executable_files))
+                ):
+                    raise SkillManagementError(
+                        f"invalid executable-file metadata for Skill {name!r} "
+                        f"at {package_path!r}"
+                    )
+            elif type(hash_version) is not int or hash_version != 1 or executable_files is not None:
+                raise SkillManagementError(
+                    f"unsupported Skill hash version for {name!r} at {package_path!r}"
+                )
+
+
+def _recorded_package_digest(skill_dir: Path, record: dict[str, Any]) -> str:
+    if record.get("hash_version", 1) == SKILL_HASH_VERSION:
+        executable_files = tuple(record["source_executable_files"])
+        if not _verify_executable_files(skill_dir, executable_files):
+            raise SkillManagementError(
+                f"installed Skill executable bits differ from manifest: {skill_dir}"
+            )
+        return _portable_tree_digest(skill_dir, executable_files)
+    return tree_digest(skill_dir)
 
 
 def _duplicate_allowances(
@@ -460,12 +629,29 @@ def _discovery_state(
             name_key = skill_dir.name.casefold()
             if name_key not in interested_names:
                 continue
-            digest = tree_digest(skill_dir)
             recorded = recorded_skills.get(skill_dir.name)
-            if recorded is not None and digest != recorded.get("installed_tree_sha256"):
-                raise SkillManagementError(
-                    f"{relative}/{skill_dir.name}: installed Skill differs from its "
-                    "manifest hash; refusing to plan around an externally changed package"
+            if recorded is not None:
+                recorded_digest = _recorded_package_digest(skill_dir, recorded)
+                if recorded_digest != recorded.get("installed_tree_sha256"):
+                    raise SkillManagementError(
+                        f"{relative}/{skill_dir.name}: installed Skill differs from its "
+                        "manifest hash; refusing to plan around an externally changed package"
+                    )
+                if recorded.get("hash_version", 1) == SKILL_HASH_VERSION:
+                    executable_files = tuple(recorded["source_executable_files"])
+                else:
+                    executable_files = (
+                        _filesystem_executable_files(skill_dir)
+                        if _executable_mode_is_reliable(target_root)
+                        else ()
+                    )
+                digest = _portable_tree_digest(skill_dir, executable_files)
+            else:
+                digest = _portable_tree_digest(
+                    skill_dir,
+                    _filesystem_executable_files(skill_dir)
+                    if _executable_mode_is_reliable(target_root)
+                    else (),
                 )
             roots = state.setdefault(name_key, {})
             if relative in roots:
@@ -475,7 +661,7 @@ def _discovery_state(
             roots[relative] = (skill_dir.name, digest)
 
     for action_tuple, relative in actions or []:
-        action, _source, name, source_hash, _expected_target_hash = action_tuple
+        action, _source, name, source_hash, _expected_target_hash, _executable_files = action_tuple
         if action not in {"install", "update", "metadata", "unchanged"}:
             continue
         if name.casefold() in interested_names:
@@ -672,9 +858,6 @@ def _plan(
 
     if len(set(names)) != len(names):
         raise SkillManagementError("Skill names were specified more than once")
-    source_hashes = {
-        name: tree_digest(available[name]) for name in names if name in available
-    }
     duplicate_exposure = False
     revision, dirty, repository = source_revision(source_root)
     if dirty and not allow_dirty_source:
@@ -682,6 +865,20 @@ def _plan(
             "Skill source has uncommitted changes; commit them or explicitly pass "
             "--allow-dirty-source"
         )
+    source_executable_files = {
+        name: _source_executable_files(
+            source_root,
+            revision,
+            name,
+            dirty=dirty,
+        )
+        for name in names
+        if name in available
+    }
+    source_hashes = {
+        name: _portable_tree_digest(available[name], executable_files)
+        for name, executable_files in source_executable_files.items()
+    }
     if revision != "unversioned" and not dirty:
         for name, source_hash in source_hashes.items():
             committed_hash = _git_skill_digest(source_root, revision, name)
@@ -736,9 +933,14 @@ def _plan(
                 continue
             if target.exists():
                 current_hash = tree_digest(target)
-                if not isinstance(recorded, dict) or current_hash != recorded.get(
-                    "installed_tree_sha256"
-                ):
+                if not isinstance(recorded, dict):
+                    conflicts.append(f"{name}: local modifications detected; target preserved")
+                    continue
+                try:
+                    recorded_digest = _recorded_package_digest(target, recorded)
+                except SkillManagementError:
+                    recorded_digest = None
+                if recorded_digest != recorded.get("installed_tree_sha256"):
                     conflicts.append(f"{name}: local modifications detected; target preserved")
                     continue
                 baseline = recorded.get("source_commit", "unversioned")
@@ -771,7 +973,10 @@ def _plan(
                         baseline_digest = baseline_digest_cache.get(digest_key)
                         if baseline_digest is None:
                             baseline_digest = _git_skill_digest(
-                                source_root, baseline, name
+                                source_root,
+                                baseline,
+                                name,
+                                legacy=recorded.get("hash_version", 1) == 1,
                             )
                             baseline_digest_cache[digest_key] = baseline_digest
                         if baseline_digest != recorded.get("source_tree_sha256"):
@@ -782,11 +987,25 @@ def _plan(
                     except SkillManagementError as error:
                         conflicts.append(f"{name} ({relative}): {error}")
                         continue
-                source_is_same = source_hash == recorded.get("source_tree_sha256")
+                if recorded.get("hash_version", 1) == 1:
+                    if baseline != "unversioned":
+                        source_is_same = (
+                            source_hash == _git_skill_digest(source_root, baseline, name)
+                        )
+                    else:
+                        source_is_same = source_hash == _portable_tree_digest(
+                            target,
+                            source_executable_files[name],
+                        )
+                else:
+                    source_is_same = source_hash == recorded.get("source_tree_sha256")
                 if source_is_same:
                     action = (
                         "unchanged"
-                        if history == "unchanged" or operation == "install"
+                        if (
+                            recorded.get("hash_version", 1) == SKILL_HASH_VERSION
+                            and (history == "unchanged" or operation == "install")
+                        )
                         else "metadata"
                     )
                 elif operation in {"sync", "rebind-source"}:
@@ -794,9 +1013,33 @@ def _plan(
                 else:
                     conflicts.append(f"{name}: source has changed; run sync to review update")
                     continue
-                actions.append(((action, source, name, source_hash, current_hash), relative))
+                actions.append(
+                    (
+                        (
+                            action,
+                            source,
+                            name,
+                            source_hash,
+                            current_hash,
+                            source_executable_files[name],
+                        ),
+                        relative,
+                    )
+                )
             else:
-                actions.append((("install", source, name, source_hash, None), relative))
+                actions.append(
+                    (
+                        (
+                            "install",
+                            source,
+                            name,
+                            source_hash,
+                            None,
+                            source_executable_files[name],
+                        ),
+                        relative,
+                    )
+                )
 
     if "copilot" in requested_agents or _copilot_is_exposed(manifest):
         try:
@@ -1286,7 +1529,14 @@ def _apply(
         staged_root.mkdir()
         backups_root.mkdir()
         for index, (action_tuple, relative) in enumerate(actions):
-            action, source, name, source_hash, expected_target_hash = action_tuple
+            (
+                action,
+                source,
+                name,
+                source_hash,
+                expected_target_hash,
+                executable_files,
+            ) = action_tuple
             if action not in {"install", "update"}:
                 continue
             staged_dir = staged_root / relative / name
@@ -1300,20 +1550,29 @@ def _apply(
                     "cross-filesystem atomic recovery is unavailable"
                 )
             shutil.copytree(source, staged_dir)
-            if tree_digest(staged_dir) != source_hash:
+            if _executable_mode_is_reliable(target_root):
+                _apply_executable_files(staged_dir, executable_files)
+            if _portable_tree_digest(staged_dir, executable_files) != source_hash:
                 raise SkillManagementError(f"staged Skill differs from source: {name}")
             journal_entries.append(
                 {
                     "destination": destination.relative_to(target_root).as_posix(),
                     "staged": staged_dir.relative_to(transaction_root).as_posix(),
                     "backup": f"backups/{index}",
-                    "new_tree_sha256": source_hash,
+                    "new_tree_sha256": tree_digest(staged_dir),
                     "old_tree_sha256": expected_target_hash,
                 }
             )
 
         for action_tuple, relative in actions:
-            action, _source, name, source_hash, _expected_target_hash = action_tuple
+            (
+                action,
+                _source,
+                name,
+                source_hash,
+                _expected_target_hash,
+                executable_files,
+            ) = action_tuple
             package = manifest["packages"][relative]
             if action in {"install", "update", "metadata", "unchanged"}:
                 package["skills"][name] = {
@@ -1322,6 +1581,8 @@ def _apply(
                     "source_dirty": source_dirty,
                     "source_tree_sha256": source_hash,
                     "installed_tree_sha256": source_hash,
+                    "hash_version": SKILL_HASH_VERSION,
+                    "source_executable_files": list(executable_files),
                 }
         rendered_manifest = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
         manifest_backup = None
@@ -1544,7 +1805,14 @@ def _run(args: argparse.Namespace) -> int:
             getattr(args, "allow_duplicate_discovery", False),
             getattr(args, "allow_dirty_source", False),
         )
-        for (action, _source, name, _source_hash, _expected_target_hash), package_path in actions:
+        for (
+            action,
+            _source,
+            name,
+            _source_hash,
+            _expected_target_hash,
+            _executable_files,
+        ), package_path in actions:
             print(f"{action}: {package_path}/{name}")
         print(
             f"Source: {repository} @ {revision}"
