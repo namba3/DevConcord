@@ -45,7 +45,7 @@ class SkillManagementTests(unittest.TestCase):
         source_repo.joinpath("docs", "subdir", "nested.md").write_text(
             "Nested fixture.\n", encoding="utf-8"
         )
-        for name in ("README.md", "AGENTS.md", "REVIEWS.md"):
+        for name in ("README.md", "AGENTS.md", "REVIEW.md", "REVIEWS.md"):
             source_repo.joinpath(name).write_text(
                 f"# {name}\n\nRoot reference fixture.\n", encoding="utf-8"
             )
@@ -853,7 +853,7 @@ Version: {version}
             self.run_config("set-source", source_root=repository, replace=False)[0], 0
         )
 
-        for filename in ("README.md", "AGENTS.md", "REVIEWS.md"):
+        for filename in ("README.md", "AGENTS.md", "REVIEW.md", "REVIEWS.md"):
             with self.subTest(filename=filename):
                 result, output, error = self.run_reference(path=filename)
                 self.assertEqual((result, error), (0, ""))
@@ -886,6 +886,7 @@ Version: {version}
         self.assertEqual(manage_skills._safe_reference_path("docs/reference.md"), "docs/reference.md")
         self.assertEqual(manage_skills._safe_reference_path(".agents/skills/sample/SKILL.md"), ".agents/skills/sample/SKILL.md")
         self.assertEqual(manage_skills._safe_reference_path("prompts/old.md"), "prompts/old.md")
+        self.assertEqual(manage_skills._safe_reference_path("REVIEW.md"), "REVIEW.md")
         self.assertEqual(manage_skills._safe_reference_path("REVIEWS.md"), "REVIEWS.md")
 
     def test_reference_reads_deleted_prompt_from_installed_commit_only(self) -> None:

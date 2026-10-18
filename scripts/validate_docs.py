@@ -532,13 +532,12 @@ def check_conventions(files: list[Path]) -> list[str]:
         skill_references / "agents-md.md", "AGENTS.md generation guidance", errors
     ) or ""
     review_guidance = read_utf8(
-        skill_references / "reviews-md.md", "REVIEWS.md generation guidance", errors
+        skill_references / "reviews-md.md", "REVIEW.md generation guidance", errors
     ) or ""
-    if "## コードレビュー" not in agents_guidance or "REVIEWS.md" not in agents_guidance:
-        errors.append("devconcord-generate-agent-guidance/agents-md.md: must require a review-time REVIEWS.md instruction")
+    if "## コードレビュー" not in agents_guidance or "REVIEW.md" not in agents_guidance:
+        errors.append("devconcord-generate-agent-guidance/agents-md.md: must require a review-time REVIEW.md instruction")
     if "AGENTS.md" not in review_guidance or "レビュー開始前" not in review_guidance:
-        errors.append("devconcord-generate-agent-guidance/reviews-md.md: must connect REVIEWS.md to AGENTS.md loading")
-
+        errors.append("devconcord-generate-agent-guidance/reviews-md.md: must connect REVIEW.md to AGENTS.md loading")
     if (ROOT / "prompts").exists():
         errors.append("prompts/: remove the retired directory; Skills are the canonical workflow sources")
     return errors

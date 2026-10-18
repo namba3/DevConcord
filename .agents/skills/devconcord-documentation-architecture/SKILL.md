@@ -21,7 +21,7 @@ Improve documentation around real reader tasks while preserving the project's ex
 
 ## Workflow
 
-1. Inspect the target's `AGENTS.md`, `REVIEWS.md`, README, docs tree, source/configuration, existing publishing system, documentation conventions, tests and CI. Establish current worktree state and protect local changes.
+1. Inspect the target's `AGENTS.md`, `REVIEW.md`, README, docs tree, source/configuration, existing publishing system, documentation conventions, tests and CI. Establish current worktree state and protect local changes.
 2. Identify actual readers, their tasks, current entry points, canonical sources, and high-impact paths such as published URLs, anchors, generated references, sidebars and examples. Separate observed facts from assumptions and unverified claims.
 3. Review whether the information is findable and accurate: purpose and audience, grouping and naming, headings, progressive detail, concise but complete explanations, consistent terminology, links, examples, duplication and conflicts with code or configuration.
 4. Trace only relevant change impact: features to user guidance/specifications; public APIs to API references, examples and migration notes; CLI changes to command guidance; configuration to references/deployment; architecture to design records/ADRs; CI or development-environment changes to setup; release changes to release/runbook material. Do not rewrite unaffected documents. When implementation, requirements and docs disagree, compare verifiable evidence and intended change; surface unresolved ownership instead of guessing.

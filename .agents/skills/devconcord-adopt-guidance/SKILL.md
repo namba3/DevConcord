@@ -21,7 +21,7 @@ Use this workflow for first-time adoption into an existing project. Use `devconc
 
 ## Workflow
 
-Read [the detailed Adoption workflow](references/workflow.md) before making changes. It covers target and source inspection, selective adoption, link and provenance handling, test evidence, and reporting. Use `devconcord-generate-agent-guidance` when AGENTS.md or REVIEWS.md generation is in scope.
+Read [the detailed Adoption workflow](references/workflow.md) before making changes. It covers target and source inspection, selective adoption, link and provenance handling, test evidence, and reporting. Use `devconcord-generate-agent-guidance` when AGENTS.md or REVIEW.md generation is in scope.
 
 ## DevConcord References
 

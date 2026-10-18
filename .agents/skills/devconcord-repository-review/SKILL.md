@@ -13,7 +13,7 @@ description: >
 
 ## Workflow
 
-1. Read repository `AGENTS.md` and `REVIEWS.md` before reviewing. If `REVIEWS.md` is absent, say so and use evidence-based general review criteria without inventing project-specific guarantees.
+1. Read repository `AGENTS.md` and `REVIEW.md` before reviewing. If `REVIEW.md` is absent, say so and use evidence-based general review criteria without inventing project-specific guarantees.
 2. Establish review scope and inspect relevant source, tests, CI, requirements, ADRs, issue/risk records and actual diff. Distinguish observed behavior from documented intent.
 3. Evaluate correctness, user task/function fit, contracts and invariants, boundary/failure behavior, and—where relevant—assets, trust boundaries, threats, least privilege, secure defaults, data lifecycle, dependency/supply-chain risk, security invariants, compatibility, resource/performance implications, dependency direction and verification evidence.
 4. Report only actionable findings with severity, file/line, concrete impact, reproduction or evidence, confidence and a minimal remedy. Separate findings from questions, residual risks, and unverified assumptions.
@@ -27,7 +27,7 @@ Summarize scope and evidence, prioritized findings, checks performed and limitat
 
 When one of these canonical references is needed, use `devconcord-reference` if available. Identify this Skill as the requester and pass only the needed repository-relative path.
 
-- `REVIEWS.md`
+- `REVIEW.md`
 - `docs/common/ai-assisted-development.md`
 - `docs/work-management/issue-tracking.md`
 
@@ -37,7 +37,7 @@ If the common Skill cannot be selected, run the configured source checkout's `sc
 
 The GitHub `main` links below are for browsing and may show newer material than this Skill. Use the `DevConcord References` CLI flow above for authoritative, version-pinned guidance; online content is not an automatic fallback.
 
-- [DevConcord review criteria](https://github.com/namba3/DevConcord/blob/main/REVIEWS.md)
+- [DevConcord review criteria](https://github.com/namba3/DevConcord/blob/main/REVIEW.md)
 - [Repository review workflow](https://github.com/namba3/DevConcord/blob/main/docs/README.md)
 
-For an external target, apply its local `REVIEWS.md` as the project-specific source of review criteria. These upstream references are optional and may require network access.
+For an external target, apply its local `REVIEW.md` as the project-specific source of review criteria. These upstream references are optional and may require network access.

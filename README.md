@@ -29,7 +29,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 - DDD、Self-documenting Code、SDD、DbC、TDD、Performance / Robustness / Replaceability / Security by Design等の開発・設計ガイド
 - 要求仕様、ADR、課題管理、リスク管理、完成度評価の規約とテンプレート
 - READMEを含む文書設計、導入、更新、検証のための共通指針
-- `AGENTS.md`・`REVIEWS.md`生成、Bootstrap、Adoption、Synchronization、品質ギャップ分析用Agent Skills
+- `AGENTS.md`・`REVIEW.md`生成、Bootstrap、Adoption、Synchronization、品質ギャップ分析用Agent Skills
 - 複数エージェントで再利用するAgent Skillsと、安全な配布・同期スクリプト
 
 ## 適用方針

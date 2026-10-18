@@ -14,6 +14,14 @@ from scripts.agent_skills import (
 
 
 class AgentSkillValidationTests(unittest.TestCase):
+    def test_repository_uses_canonical_review_filename_and_agents_link(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        self.assertTrue((repository_root / "REVIEW.md").is_file())
+        self.assertFalse((repository_root / "REVIEWS.md").exists())
+        agents_text = (repository_root / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertIn("[`REVIEW.md`](REVIEW.md)", agents_text)
+        self.assertNotIn("REVIEWS.md", agents_text)
+
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp_dir.cleanup)
@@ -237,7 +245,7 @@ description: Use this Skill for a focused task.
             "文書構造と情報の正本",
             "前回レポートからの差分診断",
             "DevConcord規約を導入していない対象",
-            "`AGENTS.md`と`REVIEWS.md`がない対象",
+            "`AGENTS.md`と`REVIEW.md`がない対象",
             "適用不要な原則の判断",
             "証拠不足による未評価",
             "既存課題との重複検出",
@@ -310,7 +318,7 @@ description: Use this Skill for a focused task.
         issues = (
             repository_root / "docs" / "work-management" / "issue-tracking.md"
         ).read_text(encoding="utf-8")
-        reviews = (repository_root / "REVIEWS.md").read_text(encoding="utf-8")
+        reviews = (repository_root / "REVIEW.md").read_text(encoding="utf-8")
         integration = (
             repository_root / "tests" / "integration" / "README.md"
         ).read_text(encoding="utf-8")
@@ -464,7 +472,7 @@ description: Use this Skill for a focused task.
     def test_agent_guidance_connects_risk_based_principles_and_specialist_skills(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         agents = (repository_root / "AGENTS.md").read_text(encoding="utf-8")
-        reviews = (repository_root / "REVIEWS.md").read_text(encoding="utf-8")
+        reviews = (repository_root / "REVIEW.md").read_text(encoding="utf-8")
         skill_root = (
             repository_root
             / ".agents"
@@ -491,9 +499,9 @@ description: Use this Skill for a focused task.
 
         for text, label in (
             (agents, "AGENTS"),
-            (reviews, "REVIEWS"),
+            (reviews, "REVIEW"),
             (agents_procedure, "AGENTS procedure"),
-            (reviews_procedure, "REVIEWS procedure"),
+            (reviews_procedure, "REVIEW procedure"),
         ):
             with self.subTest(guidance=label):
                 self.assertIn("利用可能", text)
@@ -553,17 +561,25 @@ description: Use this Skill for a focused task.
 
         for mode in ("`agents`", "`reviews`", "`both`"):
             self.assertIn(mode, skill_text)
-        self.assertIn("writing `REVIEWS.md` first", skill_text)
+        self.assertIn("writing `REVIEW.md` first", skill_text)
+        self.assertIn("`agents`", skill_text)
+        self.assertIn("`reviews`", skill_text)
+        self.assertIn("`both`", skill_text)
         self.assertIn("do not change it as a side effect", skill_text)
         self.assertIn("only that narrow safety correction", skill_text)
+        self.assertIn("Existing review-file migration", skill_text)
+        self.assertIn("Do not delete it automatically", skill_text)
+        self.assertIn("stop before changing either file or `AGENTS.md`", skill_text)
         self.assertIn("Never install Skills as part of guidance generation", skill_text)
         self.assertIn("A DevConcord source update does not update existing target guidance", skill_text)
         self.assertIn("## コードレビュー", agents_text)
-        self.assertIn("REVIEWS.md", agents_text)
+        self.assertIn("REVIEW.md", agents_text)
         self.assertIn("レビュー開始前", reviews_text)
         self.assertIn("AGENTS.md", reviews_text)
         self.assertIn("実装済み", agents_text)
         self.assertIn("未確認", reviews_text)
+        self.assertIn("REVIEWS.md", reviews_text)
+        self.assertIn("実質的な競合", reviews_text)
 
     def test_guidance_generation_scenarios_cover_project_and_user_scope(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
@@ -581,7 +597,7 @@ description: Use this Skill for a focused task.
             if line.startswith("|") and not line.startswith("|---")
         ]
 
-        self.assertEqual(len(table_rows) - 1, 14)
+        self.assertEqual(len(table_rows) - 1, 20)
         for expected in (
             "小規模CLI",
             "GUI中心",
@@ -593,10 +609,16 @@ description: Use this Skill for a focused task.
             "User Scope",
             "Project Scope",
             "既存`AGENTS.md`",
-            "既存`REVIEWS.md`",
+            "どちらのレビュー基準ファイルもない",
+            "`REVIEW.md`だけがある",
+            "既存`REVIEW.md`",
             "同じ生成を再実行",
             "軽微な変更",
             "専門Skill未導入",
+            "旧`REVIEWS.md`だけ",
+            "内容が異なる",
+            "両ファイルの内容が同一",
+            "移行後に再実行",
         ):
             with self.subTest(generation_scenario=expected):
                 self.assertIn(expected, section)

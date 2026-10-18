@@ -46,7 +46,7 @@ maintainability; do not audit for formal conformity to DevConcord.
 Inspect the target's purpose and entry points, HEAD, working-tree state,
 product form, users, environments, stack, important features, public APIs,
 external dependencies, maturity, constraints, and existing development rules.
-Read `AGENTS.md` and `REVIEWS.md` when present; their absence is not itself a
+Read `AGENTS.md` and `REVIEW.md` when present; their absence is not itself a
 defect. Identify whether the request calls for a Full or Incremental
 Assessment. Agree or state the scope, important paths, excluded areas, and
 available evidence. Preserve uncommitted work and do not infer the target's
@@ -288,7 +288,7 @@ report is an assessment artifact, not a new source of truth for issues or risks.
 
 By default, deliver the report in the conversation. Save it in the target only
 when explicitly requested. Do not edit source, documents, `AGENTS.md`,
-`REVIEWS.md`, issues, or risks as part of an assessment. Any separately
+`REVIEW.md`, issues, or risks as part of an assessment. Any separately
 requested implementation or record update is a separate scope and follows the
 target's rules.
 

@@ -17,14 +17,14 @@
 | [`devconcord-design-security`](../.agents/skills/devconcord-design-security/SKILL.md) | 資産・信頼境界・脅威・不変条件に応じてセキュリティ要求と検証を設計 |
 | [`devconcord-repository-review`](../.agents/skills/devconcord-repository-review/SKILL.md) | 実装・設計・テスト・CI・運用記録を根拠にレビュー |
 | [`devconcord-gap-analysis`](../.agents/skills/devconcord-gap-analysis/SKILL.md) | DevConcord原則への適合・ギャップ・未検証領域・改善優先度を横断評価 |
-| [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEWS.md` の作成・更新 |
+| [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEW.md` の作成・更新 |
 | [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
 
 `devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を整理します。具体的なコード上の欠陥を詳しく調べる `devconcord-repository-review` や、文書体系を設計する `devconcord-documentation-architecture` の手順を複製しません。詳細な設計作業や共通規約の導入・更新が必要な場合は該当Skillを次の作業として選べます。エージェント間の自動Skill呼び出しは前提にしません。
 
-リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用とSkill活用判断、`REVIEWS.md` は具体的な品質基準と根拠付き指摘を担います。原則を考慮してもSkill実行は自動的に必要にならず、詳細検討が有益な未解決事項がある場合に、利用可能性を確認した専門Skillを候補にできます。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
+リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用とSkill活用判断、`REVIEW.md` は具体的な品質基準と根拠付き指摘を担います。原則を考慮してもSkill実行は自動的に必要にならず、詳細検討が有益な未解決事項がある場合に、利用可能性を確認した専門Skillを候補にできます。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
 
-導入先の `AGENTS.md` / `REVIEWS.md` は `devconcord-generate-agent-guidance` の `agents` / `reviews` / `both` モードで対象リポジトリ上から生成・更新できます。DevConcord本体や生成Skillを更新しても、既存導入先の指示ファイルは自動更新されません。更新された生成手順を使う場合は、必要なScopeへSkillをインストールまたは同期した後、対象リポジトリで明示的に生成Skillを実行してください。Skillの配置だけで対象文書を書き換えることはありません。
+導入先の `AGENTS.md` / `REVIEW.md` は `devconcord-generate-agent-guidance` の `agents` / `reviews` / `both` モードで対象リポジトリ上から生成・更新できます。DevConcord本体や生成Skillを更新しても、既存導入先の指示ファイルは自動更新されません。更新された生成手順を使う場合は、必要なScopeへSkillをインストールまたは同期した後、対象リポジトリで明示的に生成Skillを実行してください。Skillの配置だけで対象文書を書き換えることはありません。
 
 Bootstrap後は初期設計で解決できなかった重要事項に限り、Adoption後は既に確認した証拠からGap Analysisまたは関連する専門Skillを必要に応じて推奨します。実施状態、対象、理由、時期、期待成果物を根拠とともに示し、推奨だけでSkillを実行・導入したり、作業範囲を拡張したりしません。状態と候補の判断基準は[AI支援開発ガイドの§17.3](common/ai-assisted-development.md)を参照してください。
 
@@ -241,4 +241,4 @@ Claude Code・Codex・Copilotでの実際の発見・呼び出し動作は各エ
 
 ## Skills非対応環境で手動利用
 
-以前の汎用プロンプトを使っていた場合も、該当するSkillの `SKILL.md` とタスクに必要な `references/` の全文を読み、対象エージェントへ渡します。AGENTS/REVIEWS生成では依頼内容に応じたreferenceを選びます。Skillの本文だけ、あるいは共通ガイドだけで必要な詳細手順を読んだことにしないでください。ローカル共通資料が必要な場合は、該当Skillの `DevConcord References` セクションにある共通Skill利用または直接CLI手順を使います。
+以前の汎用プロンプトを使っていた場合も、該当するSkillの `SKILL.md` とタスクに必要な `references/` の全文を読み、対象エージェントへ渡します。AGENTS/REVIEW生成では依頼内容に応じたreferenceを選びます。Skillの本文だけ、あるいは共通ガイドだけで必要な詳細手順を読んだことにしないでください。ローカル共通資料が必要な場合は、該当Skillの `DevConcord References` セクションにある共通Skill利用または直接CLI手順を使います。

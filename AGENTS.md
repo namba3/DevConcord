@@ -7,7 +7,7 @@
 - 品質評価では既存の完成度10軸・重みを維持し、UI/UX・性能・堅牢性を関連する既存軸へ、交換可能性は主に設計・アーキテクチャとコード品質・保守性へ反映してください。新しい軸や課題・リスクの二重台帳は追加しません。
 - 資料を変更するときは、関連するガイド、テンプレート、Skills、READMEの用語とリンクを確認し、必要な範囲だけを更新してください。
 - コード・仕様・設定の変更では関連文書への影響を確認し、対象読者・正本・既存導線を保って必要な資料だけ更新してください。文書設計の詳細は[共通ガイド](docs/common/documentation-design.md)を参照し、大きな文書体系のレビュー・改善には利用可能なら `devconcord-documentation-architecture` Skillを使います。
-- レビュー作業では [`REVIEWS.md`](REVIEWS.md) を先に読み、リポジトリ固有の確認観点を適用してください。
+- レビュー作業では [`REVIEW.md`](REVIEW.md) を先に読み、リポジトリ固有の確認観点を適用してください。
 - 外部の導入先リポジトリを編集せず、このリポジトリの資料・検証コードだけを対象にしてください。
 - 資料・検証コードを変更した場合は、`python3 scripts/validate_docs.py`、`python3 -B -m unittest discover -s tests -v`、`npx --yes markdownlint-cli2@0.23.3 "**/*.md"` を実行し、未実施の検証を成功として報告しないでください。
 - Python検証器の依存は [`requirements-dev.txt`](requirements-dev.txt) に固定しています。必要な場合は [`docs/README.md`](docs/README.md) の手順で隔離環境へ導入してください。

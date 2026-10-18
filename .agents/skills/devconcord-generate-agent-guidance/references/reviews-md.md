@@ -1,14 +1,16 @@
-# REVIEWS.md Generation Procedure
+# REVIEW.md Generation Procedure
 
 This distributable reference contains the detailed procedure for its selected output mode. Use the direct CLI fallback described in this Skill's `SKILL.md` DevConcord References section only when optional shared DevConcord guidance is needed; do not assume access to the source checkout.
 
-あなたはこのリポジトリのコードレビュー基準を整備します。リポジトリの実装・テスト・設定・CIを調査し、根拠に基づく `REVIEWS.md` を作成または更新してください。
+あなたはこのリポジトリのコードレビュー基準を整備します。リポジトリの実装・テスト・設定・CIを調査し、根拠に基づく `REVIEW.md` を作成または更新してください。
+
+作業前に、Skill本文の「Existing review-file migration」に従って `REVIEW.md` と旧名 `REVIEWS.md` の存在、Git状態、内容、参照先を確認します。旧名だけがある場合は内容を新ファイルへ完全に引き継いで検証し、旧ファイルは保持します。両方がある場合は比較し、実質的な競合があればどちらも変更せず、`AGENTS.md` の参照も切り替えません。
 
 ## 調査
 
 変更リスクを把握するため、少なくとも次を確認してください。
 
-- 既存の `REVIEWS.md`、`AGENTS.md`、設計・運用文書
+- 既存の `REVIEW.md` または移行対象の旧名 `REVIEWS.md`、`AGENTS.md`、設計・運用文書
 - 主要なモジュール境界、公開API、データ形式、状態遷移
 - エラー処理、権限、入力検証、データ保全に関わる箇所
 - テストの構成、CI・静的解析、対応環境
@@ -44,10 +46,10 @@ This distributable reference contains the detailed procedure for its selected ou
 - 一般論の長いチェックリストや、好みだけの指摘を避けます。重要度と、問題が起きる具体的な影響を示します。
 - 既存のレビュー基準を黙って削除・弱体化しません。矛盾や古い記述を見つけた場合は根拠を示して整理し、変更を報告します。
 - `AGENTS.md` の日常作業ルールを重複させず、必要なら相互参照します。
-- `AGENTS.md` が存在する場合、レビュー開始前にこの `REVIEWS.md` を読むよう明記されているか確認します。指示がなければ短い適用指示を追加し、その変更も報告します。
+- `AGENTS.md` が存在する場合、レビュー開始前に `REVIEW.md` を読むよう明記されているか確認します。安全な旧名移行が完了して `REVIEW.md` が存在する場合に限り、必要な短い参照修正を行い、その変更も報告します。
 - 重要な設計不足を指摘するときは、根拠・具体的な影響を先に示し、追加の専門検討が有益な場合だけ、利用可能と確認できた対応Skillを改善候補として結び付けます。原則を考慮すること、Skillを推奨すること、Skillを実行することを区別し、Skill推奨を欠陥指摘・修正・検証の代用にしません。利用可否が未確認のSkillを利用可能と書かず、Skillの実行を品質保証と扱わず、既存の重大度・課題管理・具体的指摘を維持します。詳細な候補条件は必要な場合に限って共通ガイドや対象リポジトリのSkill一覧へ接続し、AGENTS.mdの日常ルールを重複させません。
 - 指摘と改善提案は、(1)再現可能な根拠、(2)実際の影響と重要度、(3)不足する要求・契約・設計判断、(4)追加の専門的な設計検討が必要か、(5)必要な場合の利用可能な対応Skillと期待成果物、(6)受け入れ条件・検証方法の順に結び付けます。「原則に問題がある」だけでSkillを割り当てず、詳細設計を要しない直接修正には推奨を付けません。
-- 生成する`REVIEWS.md`は専門Skillのカタログにせず、実際の対象と変更リスクに合わせた指摘基準にします。Skill名を記す場合も発見・選択を保証する表現を避け、存在が確認できないSkillは候補として案内しません。
+- 生成する`REVIEW.md`は専門Skillのカタログにせず、実際の対象と変更リスクに合わせた指摘基準にします。Skill名を記す場合も発見・選択を保証する表現を避け、存在が確認できないSkillは候補として案内しません。
 - 個人の絶対パス、秘密情報、環境依存の資格情報を記載しません。
 
 ## 推奨構成
@@ -60,7 +62,7 @@ This distributable reference contains the detailed procedure for its selected ou
 
 ## 出力
 
-1. `REVIEWS.md` を更新します。既存ファイルがある場合は有効な内容を維持し、古い記述は根拠を確認して更新します。
+1. `REVIEW.md` を更新します。既存ファイルがある場合は有効な内容を維持し、古い記述は根拠を確認して更新します。
 2. すべてのリンク、パス、コマンド例、技術的主張に根拠があるかを確認します。
 3. 報告では、変更したファイル、確認した実装根拠、未確認事項、実行した確認を簡潔に示します。
 

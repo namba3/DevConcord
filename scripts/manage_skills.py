@@ -2282,7 +2282,8 @@ def _safe_reference_path(value: str) -> str:
     parts = value.split("/")
     # Retain prompts/ for version-pinned reads of files in older Skill commits.
     allowed_directory_roots = {"docs", ".agents", "prompts"}
-    allowed_root_files = {"README.md", "AGENTS.md", "REVIEWS.md"}
+    # Keep REVIEWS.md readable for version-pinned references from older Skills.
+    allowed_root_files = {"README.md", "AGENTS.md", "REVIEW.md", "REVIEWS.md"}
     if (
         not value
         or path.is_absolute()
@@ -2296,7 +2297,7 @@ def _safe_reference_path(value: str) -> str:
     ):
         raise SkillManagementError(
             "reference path must be under docs/, .agents/, historical prompts/, "
-            "or one of README.md, AGENTS.md, and REVIEWS.md"
+            "or one of README.md, AGENTS.md, REVIEW.md, and legacy REVIEWS.md"
         )
     return path.as_posix()
 
@@ -2686,7 +2687,7 @@ def build_parser() -> argparse.ArgumentParser:
     reference.add_argument(
         "--path",
         required=True,
-        help="path under docs/, .agents/, historical prompts/, or README.md, AGENTS.md, REVIEWS.md",
+        help="path under docs/, .agents/, historical prompts/, or README.md, AGENTS.md, REVIEW.md, legacy REVIEWS.md",
     )
     reference.add_argument(
         "--scope",
