@@ -113,6 +113,41 @@ description: Use this Skill for a focused task.
             with self.subTest(expected=expected):
                 self.assertIn(expected, skill_text)
 
+    def test_security_design_is_integrated_without_adding_quality_axes_or_ledgers(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        docs_index = (repository_root / "docs" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        skills_index = (repository_root / "docs" / "agent-skills.md").read_text(
+            encoding="utf-8"
+        )
+        requirements = (
+            repository_root / "docs" / "application-design" / "templates" / "requirements.md"
+        ).read_text(encoding="utf-8")
+        issues = (
+            repository_root / "docs" / "work-management" / "issue-tracking.md"
+        ).read_text(encoding="utf-8")
+        reviews = (repository_root / "REVIEWS.md").read_text(encoding="utf-8")
+        integration = (
+            repository_root / "tests" / "integration" / "README.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("devconcord-design-security", docs_index)
+        self.assertIn("devconcord-design-security", skills_index)
+        for expected in (
+            "保護対象の資産",
+            "信頼境界",
+            "脅威・影響",
+            "受け入れ条件",
+            "Security by Design",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, requirements)
+        self.assertIn("| セキュリティ | 10% |", issues)
+        self.assertIn("Security by Design", reviews)
+        self.assertIn("外部ファイル取込サービス", integration)
+        self.assertIn("AIエージェントを実行しません", integration)
+
     def test_bootstrap_workflow_reference_preserves_safety_and_scope_contracts(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skill = repository_root / ".agents" / "skills" / "devconcord-bootstrap-from-design"
