@@ -451,6 +451,15 @@ def _normalize_recorded_source_identity(value: str) -> str:
     return _repository_identity(value)
 
 
+def _source_identities_match(recorded: Any, current: Any) -> bool:
+    return (
+        _source_identity_is_verified(recorded)
+        and _source_identity_is_verified(current)
+        and _normalize_recorded_source_identity(recorded)
+        == _normalize_recorded_source_identity(current)
+    )
+
+
 def _git_skill_digest(
     source_root: Path,
     commit: str,
@@ -1137,12 +1146,7 @@ def _plan(
                             history = _validate_history(source_root, baseline, revision)
                             history_cache[history_key] = history
                         recorded_source = recorded.get("source_repository")
-                        if (
-                            not _source_identity_is_verified(recorded_source)
-                            or not _source_identity_is_verified(repository)
-                            or _normalize_recorded_source_identity(recorded_source)
-                            != _normalize_recorded_source_identity(repository)
-                        ):
+                        if not _source_identities_match(recorded_source, repository):
                             raise SkillManagementError(
                                 "Skill source identity changed or cannot be verified; "
                                 "use rebind-source only after reviewing the new source"
@@ -2367,12 +2371,7 @@ def _reference_command(args: argparse.Namespace) -> int:
                 revision, _dirty, current_repository = current_source_revision(
                     source_root / ".agents" / "skills"
                 )
-                if (
-                    not _source_identity_is_verified(recorded_repository)
-                    or not _source_identity_is_verified(current_repository)
-                    or _normalize_recorded_source_identity(recorded_repository)
-                    != _normalize_recorded_source_identity(current_repository)
-                ):
+                if not _source_identities_match(recorded_repository, current_repository):
                     raise SkillManagementError(
                         "configured source identity differs from the installed Skill; "
                         "review the source and use rebind-source only if the change is intentional"
