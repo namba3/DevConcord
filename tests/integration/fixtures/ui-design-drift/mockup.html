@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archive Transfer · UI design fixture</title>
+  <link rel="stylesheet" href="mockup.css">
+  <script src="mockup.js" defer></script>
+</head>
+<body>
+  <main class="transfer-card" aria-labelledby="page-title">
+    <header class="card-header">
+      <svg class="archive-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 4h16v4H4zM5 9h14v11H5zM10 13h4" />
+      </svg>
+      <div>
+        <p class="eyebrow">DESIGN PREVIEW</p>
+        <h1 id="page-title">Archive transfer</h1>
+      </div>
+    </header>
+
+    <section class="preview-controls" aria-label="Preview states">
+      <p class="section-label">Show a state</p>
+      <div class="state-buttons">
+        <button type="button" data-state-switch="idle" aria-pressed="true">Idle</button>
+        <button type="button" data-state-switch="loading" aria-pressed="false">Loading</button>
+        <button type="button" data-state-switch="error" aria-pressed="false">Error</button>
+        <button type="button" data-state-switch="success" aria-pressed="false">Success</button>
+      </div>
+      <p class="preview-note">These controls only preview presentation; no files are transferred.</p>
+    </section>
+
+    <section class="state-panel" data-state-panel="idle" aria-labelledby="idle-title">
+      <p class="eyebrow">READY</p>
+      <h2 id="idle-title">Ready to transfer</h2>
+      <p>Quarterly archive · 128 items</p>
+      <p class="destination">Destination <strong>External drive / Archives</strong></p>
+      <button class="primary-action" type="button">Start transfer</button>
+    </section>
+
+    <section class="state-panel" data-state-panel="loading" aria-labelledby="loading-title" hidden>
+      <p class="eyebrow">IN PROGRESS</p>
+      <h2 id="loading-title">Transferring archive</h2>
+      <p role="status" aria-live="polite">42 of 128 items · 32%</p>
+      <progress value="32" max="100" aria-label="Transfer progress">32%</progress>
+      <p>Completed items stay in the destination if the transfer is cancelled.</p>
+      <button type="button">Cancel transfer</button>
+    </section>
+
+    <section class="state-panel" data-state-panel="error" aria-labelledby="error-title" hidden>
+      <p class="eyebrow">NEEDS ATTENTION</p>
+      <h2 id="error-title">Transfer paused</h2>
+      <p role="alert">The destination is temporarily unavailable. 42 items were transferred; the remaining items were not.</p>
+      <button class="primary-action" type="button">Retry remaining items</button>
+    </section>
+
+    <section class="state-panel" data-state-panel="success" aria-labelledby="success-title" hidden>
+      <p class="eyebrow">COMPLETE</p>
+      <h2 id="success-title">Transfer complete</h2>
+      <p role="status" aria-live="polite">128 items are in External drive / Archives.</p>
+      <button type="button">Done</button>
+    </section>
+
+    <footer>This sample illustrates structure and state presentation, not product behavior.</footer>
+  </main>
+</body>
+</html>

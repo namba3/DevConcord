@@ -1,0 +1,61 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  --color-ink: #17252c;
+  --color-muted: #53636b;
+  --color-border: #c7d1d5;
+  --color-surface: #ffffff;
+  --color-canvas: #eef3f4;
+  --color-accent: #075c70;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --radius-card: 1rem;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: var(--space-3);
+  color: var(--color-ink);
+  background: var(--color-canvas);
+}
+
+button { font: inherit; }
+button:focus-visible {
+  outline: 3px solid #b54800;
+  outline-offset: 3px;
+}
+
+.transfer-card {
+  width: min(100%, 42rem);
+  margin: 3rem auto;
+  padding: clamp(1rem, 5vw, 2rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: 0 0.75rem 2rem rgb(23 37 44 / 8%);
+}
+
+.card-header { display: flex; align-items: center; gap: var(--space-2); }
+.archive-icon { width: 2.5rem; fill: none; stroke: var(--color-accent); stroke-width: 1.7; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-size: clamp(1.5rem, 5vw, 2rem); }
+h2 { margin-bottom: var(--space-1); font-size: 1.35rem; }
+.eyebrow, .section-label { margin-bottom: var(--space-1); color: var(--color-muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; }
+.preview-controls, .state-panel { margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--color-border); }
+.state-buttons { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.state-buttons button, .state-panel button { min-height: 2.75rem; padding: 0.5rem 0.85rem; border: 1px solid var(--color-border); border-radius: 0.5rem; background: white; color: var(--color-ink); }
+.state-buttons button[aria-pressed="true"], .primary-action { border-color: var(--color-accent); background: var(--color-accent); color: white; }
+.preview-note, .destination, footer { color: var(--color-muted); font-size: 0.9rem; }
+.destination strong { display: block; margin-top: 0.25rem; color: var(--color-ink); }
+progress { display: block; width: 100%; height: 0.8rem; margin: var(--space-2) 0; accent-color: var(--color-accent); }
+footer { margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--color-border); }
+
+@media (max-width: 40rem) {
+  body { padding: var(--space-1); }
+  .transfer-card { margin: var(--space-1) auto; }
+  .state-buttons button { flex: 1 1 40%; }
+}

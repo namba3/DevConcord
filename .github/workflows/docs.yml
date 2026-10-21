@@ -58,3 +58,6 @@ jobs:
 
       - name: Lint Markdown
         run: npx --yes markdownlint-cli2@0.23.3 "**/*.md"
+
+      - name: Test UI Design Drift fixture behavior
+        run: node --test tests/integration/fixtures/ui-design-drift/mockup.test.cjs

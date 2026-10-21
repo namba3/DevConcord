@@ -1,2 +1,23 @@
 __pycache__/
 *.py[cod]
+
+# Local Python environments and caches
+.venv/
+venv/
+env/
+.tox/
+.nox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Test, coverage, and build output
+.coverage
+.coverage.*
+htmlcov/
+/build/
+/dist/
+*.egg-info/
+
+# Local JavaScript dependencies
+node_modules/

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import re
+import stat
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -43,6 +44,20 @@ ISSUE_STATUSES = ["未着手", "進行中", "レビュー待ち", "ブロック"
 ADR_STATUSES = ["提案", "承認", "却下", "置換", "廃止"]
 RISK_STATUSES = ["特定", "軽減中", "受容", "顕在化", "解消"]
 REQUIREMENT_STATUSES = ["未着手", "実装中", "実装済み", "検証済み", "廃止"]
+IGNORED_MARKDOWN_DIRS = {
+    ".git",
+    ".mypy_cache",
+    ".nox",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    "__pycache__",
+    "env",
+    "htmlcov",
+    "node_modules",
+    "venv",
+}
 UNIX_HOME_PATH = re.compile(r"(?<![\w])/(?:home|Users)/([^/\s<>]+)", flags=re.IGNORECASE)
 WINDOWS_USER_PATH = re.compile(r"\b[A-Z]:\\Users\\([^\\\s<>]+)", flags=re.IGNORECASE)
 EMAIL_ADDRESS = re.compile(
@@ -106,12 +121,70 @@ def read_utf8(path: Path, purpose: str, errors: list[str]) -> str | None:
         return None
 
 
-def markdown_files() -> list[Path]:
+def markdown_files(errors: list[str] | None = None) -> list[Path]:
+    """Find regular Markdown files without entering generated/dependency trees."""
+    found: list[Path] = []
+    scan_errors = errors if errors is not None else []
+
+    def on_walk_error(error: OSError) -> None:
+        location = Path(error.filename) if error.filename else ROOT
+        scan_errors.append(
+            f"{relative_path(location)}: cannot scan Markdown directory ({type(error).__name__})"
+        )
+
+    for directory, directory_names, filenames in os.walk(
+        ROOT, topdown=True, followlinks=False, onerror=on_walk_error
+    ):
+        parent = Path(directory)
+        retained: list[str] = []
+        for name in sorted(directory_names, key=lambda item: (item.casefold(), item)):
+            child = parent / name
+            ignored_egg_info = name.casefold().endswith(".egg-info")
+            root_build_output = parent == ROOT and name.casefold() in {"build", "dist"}
+            if (
+                name.casefold() in IGNORED_MARKDOWN_DIRS
+                or ignored_egg_info
+                or root_build_output
+            ):
+                continue
+            try:
+                is_directory_link = child.is_symlink() or getattr(
+                    child, "is_junction", lambda: False
+                )()
+            except OSError as error:
+                scan_errors.append(
+                    f"{relative_path(child)}: cannot inspect Markdown directory ({type(error).__name__})"
+                )
+                continue
+            if is_directory_link:
+                scan_errors.append(
+                    f"{relative_path(child)}: Markdown discovery does not follow directory links"
+                )
+                continue
+            retained.append(name)
+        directory_names[:] = retained
+
+        for name in sorted(filenames, key=lambda item: (item.casefold(), item)):
+            path = parent / name
+            if path.suffix.casefold() not in {".md", ".markdown"}:
+                continue
+            try:
+                metadata = path.lstat()
+            except OSError as error:
+                scan_errors.append(
+                    f"{relative_path(path)}: cannot inspect Markdown file ({type(error).__name__})"
+                )
+                continue
+            if not stat.S_ISREG(metadata.st_mode):
+                scan_errors.append(
+                    f"{relative_path(path)}: Markdown discovery accepts regular files only"
+                )
+                continue
+            found.append(path)
+
     return sorted(
-        path
-        for path in ROOT.rglob("*.md")
-        if ".git" not in path.relative_to(ROOT).parts
-        and "node_modules" not in path.relative_to(ROOT).parts
+        found,
+        key=lambda path: (relative_path(path).casefold(), relative_path(path)),
     )
 
 
@@ -544,8 +617,9 @@ def check_conventions(files: list[Path]) -> list[str]:
 
 
 def main() -> int:
-    files = markdown_files()
-    errors = check_links(files)
+    errors: list[str] = []
+    files = markdown_files(errors)
+    errors.extend(check_links(files))
     errors.extend(check_privacy_hygiene(files))
     errors.extend(check_conventions(files))
     if __package__:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import tempfile
 import unittest
@@ -196,6 +197,98 @@ class LinkValidationTests(unittest.TestCase):
         errors = validate_docs.check_links([source])
 
         self.assertTrue(any("cannot read fragment" in error for error in errors))
+
+
+class MarkdownDiscoveryTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        self.root = Path(self.temp_dir.name)
+        self.root_patch = patch.object(validate_docs, "ROOT", self.root)
+        self.root_patch.start()
+        self.addCleanup(self.root_patch.stop)
+
+    def write(self, name: str, content: str = "# Document\n") -> Path:
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return path
+
+    def test_includes_new_markdown_and_checks_its_links(self) -> None:
+        self.write("guide.md")
+        added = self.write("new/added.MD", "[broken](missing.md)\n")
+        self.write("reference.markdown")
+
+        files = validate_docs.markdown_files()
+
+        self.assertIn(added, files)
+        self.assertEqual(
+            [validate_docs.relative_path(path) for path in files],
+            ["guide.md", "new/added.MD", "reference.markdown"],
+        )
+        errors = validate_docs.check_links(files)
+        self.assertTrue(any("new/added.MD" in error and "missing.md" in error for error in errors))
+
+    def test_skips_dependency_environment_and_generated_trees(self) -> None:
+        self.write("guide.md")
+        for directory in (
+            ".git",
+            ".venv",
+            "venv",
+            "env",
+            "node_modules",
+            "__pycache__",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".tox",
+            ".nox",
+            "htmlcov",
+            "package.egg-info",
+            "build",
+            "dist",
+        ):
+            self.write(f"{directory}/nested/ignored.md", "[broken](missing.md)\n")
+
+        self.assertEqual(
+            [validate_docs.relative_path(path) for path in validate_docs.markdown_files()],
+            ["guide.md"],
+        )
+
+    def test_keeps_markdown_under_nested_build_named_directory(self) -> None:
+        document = self.write("docs/build/guide.md")
+
+        self.assertEqual(validate_docs.markdown_files(), [document])
+
+    def test_does_not_follow_symlinked_markdown_or_directory(self) -> None:
+        self.write("guide.md")
+        outside = Path(self.temp_dir.name).parent / f"{self.root.name}-outside.md"
+        outside.write_text("# Outside\n", encoding="utf-8")
+        self.addCleanup(lambda: outside.unlink(missing_ok=True))
+        try:
+            (self.root / "linked.md").symlink_to(outside)
+            (self.root / "linked-dir").symlink_to(outside.parent, target_is_directory=True)
+        except (OSError, NotImplementedError) as error:
+            self.skipTest(f"symlinks are unavailable: {type(error).__name__}")
+
+        errors: list[str] = []
+        files = validate_docs.markdown_files(errors)
+
+        self.assertEqual([validate_docs.relative_path(path) for path in files], ["guide.md"])
+        self.assertTrue(any("linked.md" in error and "regular files only" in error for error in errors))
+        self.assertTrue(any("linked-dir" in error and "does not follow directory links" in error for error in errors))
+        self.assertNotIn(str(outside), "\n".join(errors))
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "named pipes are unavailable")
+    def test_rejects_special_markdown_files_without_opening_them(self) -> None:
+        fifo = self.root / "pipe.md"
+        os.mkfifo(fifo)
+
+        errors: list[str] = []
+        files = validate_docs.markdown_files(errors)
+
+        self.assertEqual(files, [])
+        self.assertTrue(any("pipe.md" in error and "regular files only" in error for error in errors))
 
 
 class PrivacyHygieneTests(unittest.TestCase):
