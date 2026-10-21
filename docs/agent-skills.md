@@ -10,7 +10,7 @@
 | [`devconcord-bootstrap-from-design`](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) | 設計要求から新規リポジトリのFoundation/Scaffold/Initial Implementationを構築 |
 | [`devconcord-adopt-guidance`](../.agents/skills/devconcord-adopt-guidance/SKILL.md) | 既存プロジェクトへ共通資料を選択導入 |
 | [`devconcord-sync-guidance`](../.agents/skills/devconcord-sync-guidance/SKILL.md) | 導入済み資料・Skillsをローカル変更を保護しながら同期 |
-| [`devconcord-ux-functional-design`](../.agents/skills/devconcord-ux-functional-design/SKILL.md) | ユーザー目標を機能・状態・受け入れ条件へ接続 |
+| [`devconcord-ux-functional-design`](../.agents/skills/devconcord-ux-functional-design/SKILL.md) | ユーザー目標を機能・状態・受け入れ条件へ接続し、必要に応じてUIモックアップを設計・検証 |
 | [`devconcord-design-performance`](../.agents/skills/devconcord-design-performance/SKILL.md) | ワークロードに基づく性能設計と測定条件を定義 |
 | [`devconcord-design-robustness`](../.agents/skills/devconcord-design-robustness/SKILL.md) | 不変条件・失敗時契約・回復・検証を設計 |
 | [`devconcord-design-replaceability`](../.agents/skills/devconcord-design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |

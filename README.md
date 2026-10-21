@@ -16,6 +16,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 実装前に変更の影響範囲を評価する | [`devconcord-repository-review` Skill](.agents/skills/devconcord-repository-review/SKILL.md)のChange Impact Assessment |
 | 要求・契約から独立したテスト戦略を設計する | [`devconcord-test-design` Skill](.agents/skills/devconcord-test-design/SKILL.md) |
 | 複雑な変更を検証可能な実装単位へ分ける | [`devconcord-implementation-planning` Skill](.agents/skills/devconcord-implementation-planning/SKILL.md) |
+| 利用者タスクからUIを設計し、必要なモックアップを検証する | [UI/UX設計ガイド](docs/application-design/ui-ux-guide.md)、[`devconcord-ux-functional-design` Skill](.agents/skills/devconcord-ux-functional-design/SKILL.md) |
 | DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](.agents/skills/devconcord-gap-analysis/SKILL.md) |
 | 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |

@@ -4,7 +4,7 @@ description: >
   DevConcord design workflow for deriving functional requirements and
   application behavior from user goals, tasks, and usability evidence. Use for
   feature workflows, interaction states, cancellation, recovery,
-  accessibility, and non-GUI user touchpoints.
+  accessibility, proportionate GUI mockups, and non-GUI user touchpoints.
 ---
 
 # UX-Driven Functional Design
@@ -17,10 +17,12 @@ description: >
 4. Convert the rationale into verifiable TASK/REQ acceptance criteria and suitable user, accessibility, state-machine, boundary or integration tests. Link source evidence → task → requirement → design/use case → acceptance → evidence using existing project records; do not require a separate matrix for small projects.
 5. Fit the user touchpoint: GUI-specific keyboard/touch/screen-reader behavior only where applicable; CLI command, output, exit/error contract for CLI; stable API and diagnostics for library/service.
 6. Review conflicts with performance, robustness, security and replaceability. Record consequential tradeoffs in the project's ADR process.
+7. For GUI work, when a mockup would resolve meaningful ambiguity or risk, create or update a proportionate, editable representation. Markdown may capture task, information hierarchy, states and acceptance criteria; HTML/CSS/SVG can make a framework-independent visual mockup, and JavaScript is optional for interactions. Reuse existing design tools when appropriate. Keep previews self-contained where practical; avoid external resources and unsafe insertion of untrusted content. Do not require a separate design document or a web implementation for native UI.
+8. Review source structure and rendered appearance separately. Exercise important mock interactions when useful, but do not treat mock behavior as application evidence. After implementation, compare task intent, information priority, operations, states and acceptance criteria; pixel equality is not a universal acceptance condition. Verify native platform behavior in the actual target environment where applicable.
 
 ## Quality check
 
-The output must explain why a user need implies a function or behavior, how success/failure is observable, and how the acceptance condition can be verified. Naming usability theories without a resulting design decision is insufficient.
+The output must explain why a user need implies a function or behavior, how success/failure is observable, and how the acceptance condition can be verified. For GUI work, choose design artifacts and mockup fidelity in proportion to ambiguity, risk and project scale, and distinguish source review, rendered visual review, interaction checks and implementation evidence. Naming usability theories without a resulting design decision is insufficient.
 
 ## DevConcord References
 
