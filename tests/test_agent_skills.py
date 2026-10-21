@@ -22,6 +22,101 @@ class AgentSkillValidationTests(unittest.TestCase):
         self.assertIn("[`REVIEW.md`](REVIEW.md)", agents_text)
         self.assertNotIn("REVIEWS.md", agents_text)
 
+    def test_ui_design_drift_contract_is_consistent_across_guidance(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        guide = (
+            repository_root / "docs" / "application-design" / "ui-ux-guide.md"
+        ).read_text(encoding="utf-8")
+        quick_reference = (
+            repository_root
+            / "docs"
+            / "application-design"
+            / "ui-ux-quick-reference.md"
+        ).read_text(encoding="utf-8")
+        ux_skill_dir = (
+            repository_root / ".agents" / "skills" / "devconcord-ux-functional-design"
+        )
+        review_skill_dir = (
+            repository_root / ".agents" / "skills" / "devconcord-repository-review"
+        )
+        ux_skill = (ux_skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        review_skill = (review_skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        review_guide = (repository_root / "REVIEW.md").read_text(encoding="utf-8")
+        bootstrap = (
+            repository_root
+            / ".agents"
+            / "skills"
+            / "devconcord-bootstrap-from-design"
+            / "references"
+            / "workflow.md"
+        ).read_text(encoding="utf-8")
+        adoption = (
+            repository_root
+            / ".agents"
+            / "skills"
+            / "devconcord-adopt-guidance"
+            / "references"
+            / "workflow.md"
+        ).read_text(encoding="utf-8")
+        integration = (
+            repository_root / "tests" / "integration" / "README.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertEqual(validate_skill_directory(ux_skill_dir), [])
+        self.assertEqual(validate_skill_directory(review_skill_dir), [])
+        for expected in (
+            "ViewModel",
+            "更新不要",
+            "影響不明",
+            "設計資産が既に陳腐化",
+            "資産なし・対象外",
+            "独立したDesign Drift台帳",
+            "現行仕様の根拠として無条件に使わない",
+            "画素単位の一致を一律の合格条件にせず",
+        ):
+            with self.subTest(guide_contract=expected):
+                self.assertIn(expected, guide)
+        for expected in (
+            "file paths/extensions alone do not determine impact",
+            "same change unit",
+            "Do not create a mockup just because none exists",
+            "Do not use a confirmed stale mockup",
+        ):
+            with self.subTest(ux_skill_contract=expected):
+                self.assertIn(expected, ux_skill)
+        for expected in (
+            "Do not infer impact from paths alone",
+            "stale mockups as current specification",
+            "pixel equality",
+            "evidence-backed discrepancies",
+        ):
+            with self.subTest(review_skill_contract=expected):
+                self.assertIn(expected, review_skill)
+        for expected in ("ViewModel", "意図的なプラットフォーム差", "資産なし", "画素一致"):
+            with self.subTest(review_guide_contract=expected):
+                self.assertIn(expected, review_guide)
+        for expected in ("ViewModel", "同期した", "古い資産の誤用", "画素単位の一致"):
+            with self.subTest(quick_reference_contract=expected):
+                self.assertIn(expected, quick_reference)
+        self.assertIn("devconcord-ux-functional-design", bootstrap)
+        self.assertIn("未導入・未確認", bootstrap)
+        self.assertIn("devconcord-ux-functional-design", adoption)
+        self.assertIn("一律に求めず", adoption)
+        self.assertIn("UI Design Driftを含む変更レビュー", integration)
+        self.assertIn("AIが差分の意味", integration)
+        for expected_case in (
+            "| 1. UI仕様変更 |",
+            "| 2. 内部実装変更 |",
+            "| 3. 古いモックアップ |",
+            "| 4. 実装改善の承認 |",
+            "| 5. Webとネイティブ |",
+            "| 6. 設計資産なし |",
+            "| 7. 同期保留 |",
+            "| 8. 資産の廃止 |",
+        ):
+            with self.subTest(manual_case=expected_case):
+                self.assertIn(expected_case, integration)
+
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp_dir.cleanup)
