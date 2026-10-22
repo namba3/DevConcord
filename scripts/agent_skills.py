@@ -53,6 +53,10 @@ def validate_skill_directory(skill_dir: Path) -> list[str]:
     skill_file = skill_dir / "SKILL.md"
     if not skill_dir.is_dir() or skill_dir.is_symlink():
         return [f"{skill_dir}: skill directory must be a real directory"]
+    if skill_file.is_symlink():
+        return [f"{skill_file}: SKILL.md must not be a symlink"]
+    if not skill_file.is_file():
+        return [f"{skill_file}: SKILL.md must be a regular file"]
     if not SKILL_NAME.fullmatch(name) or len(name) > 64:
         errors.append(f"{skill_dir}: invalid skill directory name")
     metadata, problem = _frontmatter(skill_file)

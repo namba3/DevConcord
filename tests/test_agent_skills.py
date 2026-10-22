@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts import agent_skills
 from scripts.agent_skills import (
@@ -153,6 +154,25 @@ description: Use this Skill for a focused task.
 
         self.assertEqual(validate_skill_directory(skill_dir), [])
 
+    def test_rejects_symlinked_skill_entry_before_reading_its_target(self) -> None:
+        skill_dir = self.make_skill("linked-skill")
+        skill_file = skill_dir / "SKILL.md"
+        skill_file.unlink()
+        outside_file = self.root / "outside.md"
+        outside_file.write_text(
+            "---\nname: linked-skill\ndescription: outside package\n---\n",
+            encoding="utf-8",
+        )
+        try:
+            skill_file.symlink_to(outside_file)
+        except OSError as error:
+            self.skipTest(f"symlinks are unavailable: {type(error).__name__}")
+
+        with patch.object(Path, "read_text", side_effect=AssertionError("must not follow symlink")):
+            errors = validate_skill_directory(skill_dir)
+
+        self.assertEqual(errors, [f"{skill_file}: SKILL.md must not be a symlink"])
+
     def test_official_skill_set_uses_devconcord_namespace(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skills_root = repository_root / ".agents" / "skills"
@@ -292,7 +312,6 @@ description: Use this Skill for a focused task.
         integration = (repository_root / "tests" / "integration" / "README.md").read_text(
             encoding="utf-8"
         )
-
         self.assertEqual(validate_skill_directory(skill_dir), [])
         for expected in (
             "name: devconcord-gap-analysis",
@@ -536,6 +555,8 @@ description: Use this Skill for a focused task.
         repository_root = Path(__file__).resolve().parents[1]
         guide_path = repository_root / "docs" / "application-design" / "secrets-by-design.md"
         guide = guide_path.read_text(encoding="utf-8")
+        readme = (repository_root / "README.md").read_text(encoding="utf-8")
+        docs_index = (repository_root / "docs" / "README.md").read_text(encoding="utf-8")
         security_skill = (
             repository_root / ".agents" / "skills" / "devconcord-design-security" / "SKILL.md"
         ).read_text(encoding="utf-8")
@@ -593,6 +614,8 @@ description: Use this Skill for a focused task.
         self.assertIn("Secrets by Design", common)
         self.assertIn("Secrets by Design", requirements)
         self.assertIn("Secrets by Design", adr)
+        self.assertIn("[Secrets by Design](docs/application-design/secrets-by-design.md)", readme)
+        self.assertIn("[Secrets by Design](application-design/secrets-by-design.md)", docs_index)
         self.assertIn("Secrets by Designの手動評価", integration)
         self.assertIn("実エージェント実行を意味しません", integration)
         self.assertIn("長期秘密", security_skill)
