@@ -20,7 +20,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](.agents/skills/devconcord-gap-analysis/SKILL.md) |
 | 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
-| 資産・脅威・信頼境界からセキュリティ設計する | [`devconcord-design-security` Skill](.agents/skills/devconcord-design-security/SKILL.md)と[Security by Design](docs/common/ai-assisted-development.md#97-security-by-design) |
+| 資産・脅威・信頼境界からセキュリティ設計する | [`devconcord-design-security` Skill](.agents/skills/devconcord-design-security/SKILL.md)、[Security by Design](docs/common/ai-assisted-development.md#97-security-by-design)、[Secrets by Design](docs/application-design/secrets-by-design.md) |
 | Agent Skillsを選ぶ | [Skills一覧](docs/agent-skills.md#skills) |
 | ローカルDevConcord資料を版固定で参照する | [`devconcord-reference` Skill](.agents/skills/devconcord-reference/SKILL.md)と[参照運用](docs/agent-skills.md#ローカルdevconcord資料の参照) |
 | Skill非対応環境で手動利用する | [Skill本体と参照資料を渡す方法](docs/agent-skills.md#skills非対応環境で手動利用) |

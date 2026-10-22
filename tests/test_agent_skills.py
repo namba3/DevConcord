@@ -532,6 +532,74 @@ description: Use this Skill for a focused task.
         self.assertIn("外部ファイル取込サービス", integration)
         self.assertIn("AIエージェントを実行しません", integration)
 
+    def test_secrets_by_design_is_integrated_as_a_security_subprinciple(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        guide_path = repository_root / "docs" / "application-design" / "secrets-by-design.md"
+        guide = guide_path.read_text(encoding="utf-8")
+        security_skill = (
+            repository_root / ".agents" / "skills" / "devconcord-design-security" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        workflow_skills = [
+            (repository_root / ".agents" / "skills" / skill / "SKILL.md").read_text(
+                encoding="utf-8"
+            )
+            for skill in (
+                "devconcord-bootstrap-from-design",
+                "devconcord-adopt-guidance",
+                "devconcord-sync-guidance",
+            )
+        ]
+        common = (repository_root / "docs" / "common" / "ai-assisted-development.md").read_text(
+            encoding="utf-8"
+        )
+        requirements = (
+            repository_root / "docs" / "application-design" / "templates" / "requirements.md"
+        ).read_text(encoding="utf-8")
+        adr = (repository_root / "docs" / "application-design" / "templates" / "adr.md").read_text(
+            encoding="utf-8"
+        )
+        integration = (repository_root / "tests" / "integration" / "README.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertTrue(guide_path.is_file())
+        self.assertFalse(
+            (repository_root / ".agents" / "skills" / "devconcord-design-secrets").exists()
+        )
+        for expected in (
+            "長期秘密",
+            "ブートストラップ信頼",
+            "認証 (authentication)",
+            "認可 (authorization)",
+            "Secret Manager",
+            "短期Bearer tokenも秘密",
+            "Expiration",
+            "Refresh",
+            "Rotation",
+            "Revocation",
+            "Windows/Linuxデスクトップ",
+            "X.509-SVID",
+            "JWT-SVID",
+            "Trust Domain",
+            "attestation",
+            "Temporal Minimization / Lifecycle Automation",
+            "Exposure Containment / Observability",
+            "Confused Deputy",
+            "スキャナーは検出対象・設定・除外に限った補助証拠",
+            "新しい品質評価軸や資格情報専用台帳を作りません",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, guide)
+        self.assertIn("Secrets by Design", common)
+        self.assertIn("Secrets by Design", requirements)
+        self.assertIn("Secrets by Design", adr)
+        self.assertIn("Secrets by Designの手動評価", integration)
+        self.assertIn("実エージェント実行を意味しません", integration)
+        self.assertIn("長期秘密", security_skill)
+        for skill_text in workflow_skills:
+            with self.subTest(skill="bootstrap/adopt/sync reference"):
+                self.assertIn("docs/application-design/secrets-by-design.md", skill_text)
+
     def test_bootstrap_workflow_reference_preserves_safety_and_scope_contracts(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skill = repository_root / ".agents" / "skills" / "devconcord-bootstrap-from-design"

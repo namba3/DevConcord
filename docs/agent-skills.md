@@ -14,7 +14,7 @@
 | [`devconcord-design-performance`](../.agents/skills/devconcord-design-performance/SKILL.md) | ワークロードに基づく性能設計と測定条件を定義 |
 | [`devconcord-design-robustness`](../.agents/skills/devconcord-design-robustness/SKILL.md) | 不変条件・失敗時契約・回復・検証を設計 |
 | [`devconcord-design-replaceability`](../.agents/skills/devconcord-design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |
-| [`devconcord-design-security`](../.agents/skills/devconcord-design-security/SKILL.md) | 資産・信頼境界・脅威・不変条件に応じてセキュリティ要求と検証を設計 |
+| [`devconcord-design-security`](../.agents/skills/devconcord-design-security/SKILL.md) | 資産・信頼境界・脅威・不変条件に応じてセキュリティ要求と検証を設計。資格情報が関係する場合は長期秘密、主体ID、権限、ライフサイクルも扱う |
 | [`devconcord-repository-review`](../.agents/skills/devconcord-repository-review/SKILL.md) | 実装前の変更影響評価、または実装・設計・テスト・CI・運用記録の根拠付きレビュー |
 | [`devconcord-gap-analysis`](../.agents/skills/devconcord-gap-analysis/SKILL.md) | DevConcord原則への適合・ギャップ・未検証領域・改善優先度を横断評価 |
 | [`devconcord-test-design`](../.agents/skills/devconcord-test-design/SKILL.md) | 要求・契約から独立した期待値と検証方法を設計 |

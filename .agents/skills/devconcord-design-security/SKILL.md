@@ -3,8 +3,9 @@ name: devconcord-design-security
 description: >
   DevConcord security design workflow for identifying relevant assets, trust
   boundaries, threats, security invariants, proportionate controls, and
-  verification. Use when a change introduces or alters security-sensitive data,
-  privileges, external inputs, dependencies, deployment, or attack surfaces.
+  verification, including credential lifecycle and secretless options. Use when
+  a change introduces or alters security-sensitive data, privileges, external
+  inputs, dependencies, deployment, or attack surfaces.
 ---
 
 # Security by Design
@@ -18,6 +19,7 @@ Use this workflow for design and change planning. Scale the analysis to the affe
 3. **Select plausible threats.** Consider attacker capabilities and access, misuse/abuse cases, attack paths, and impact to confidentiality, integrity, availability, privacy, and safety. Prioritize scenarios that change design decisions; do not enumerate threats without a decision purpose.
 4. **Define security requirements and invariants.** Express required authentication/authorization, least privilege, safe defaults, validation/encoding, isolation, rate/resource limits, auditability, and data lifecycle controls only where justified. State forbidden outcomes, failure behavior, and acceptance criteria in observable terms.
 5. **Choose proportionate controls.** Reduce unnecessary attack surface and retained data; use defense in depth at relevant boundaries. Consider dependency provenance/update paths, secrets and key lifecycle, logging/telemetry, and recovery. Do not mandate encryption, authentication, abstractions, or a particular scanner without a threat, requirement, or deployment basis.
+   When credentials are involved, first consider whether the application can avoid managing a long-lived secret (長期秘密). Identify the principal and bootstrap trust, distinguish authentication from authorization, and compare identity/federation, short-lived or dynamic credentials, brokered access, and protected storage against the actual provider and runtime. For detail, request `docs/application-design/secrets-by-design.md` through `devconcord-reference`; scale this analysis to the change and do not require specific infrastructure.
 6. **Plan independent verification.** Connect each important invariant to suitable review, unit/integration/negative tests, static or dynamic analysis, dependency/secrets/configuration scanning, deployment checks, or manual assessment. Record scope, tool/version/configuration, exceptions, and untested areas. A scanner or test covers only its stated scope.
 7. **Record decisions and residual risk.** Use existing requirements (`REQ`/`NFR`), ADRs, risk records, and issue register. Track implementation, investigation, and verification work in the existing issue register. Do not create a second security ledger or quality score. Revisit analysis when assets, boundaries, dependencies, deployment, or threat assumptions change.
 
@@ -56,6 +58,7 @@ Use `devconcord-reference` when available. Identify this Skill as the requester 
 - `docs/common/ai-assisted-development.md`
 - `docs/application-design/templates/requirements.md`
 - `docs/application-design/templates/adr.md`
+- `docs/application-design/secrets-by-design.md` (when credentials, identity, or secret lifecycle are in scope)
 - `docs/work-management/risk-management.md`
 - `docs/work-management/issue-tracking.md`
 

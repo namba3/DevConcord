@@ -33,6 +33,7 @@ When one of these canonical references is needed, use `devconcord-reference` if 
 - `docs/common/documentation-design.md`
 - `docs/work-management/issue-tracking.md`
 - `docs/application-design/templates/requirements.md`
+- `docs/application-design/secrets-by-design.md` (when selectively adopting credential or identity guidance)
 
 If the common Skill cannot be selected, run the configured source checkout's `scripts/manage_skills.py reference --skill devconcord-adopt-guidance --path <path> --revision installed` directly. For a Project Scope installation, also pass `--scope project --target <target-repository>`. Do not silently switch revisions or claim unread material was applied. If a required reference cannot be read, stop; if it is optional, report the failure and continue the self-contained workflow.
 
