@@ -178,7 +178,7 @@ description: Use this Skill for a focused task.
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 16)
+        self.assertEqual(len(skill_dirs), 17)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
@@ -614,6 +614,82 @@ description: Use this Skill for a focused task.
         self.assertIn("外部ファイル取込サービス", integration)
         self.assertIn("AIエージェントを実行しません", integration)
 
+    def test_observability_design_skill_contract_and_integration(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill_dir = (
+            repository_root
+            / ".agents"
+            / "skills"
+            / "devconcord-observability-design"
+        )
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        workflow = (skill_dir / "references" / "workflow.md").read_text(
+            encoding="utf-8"
+        )
+        docs = {
+            "README": (repository_root / "README.md").read_text(encoding="utf-8"),
+            "common guide": (
+                repository_root / "docs" / "common" / "ai-assisted-development.md"
+            ).read_text(encoding="utf-8"),
+            "quick reference": (
+                repository_root / "docs" / "common" / "ai-development-quick-reference.md"
+            ).read_text(encoding="utf-8"),
+            "docs index": (repository_root / "docs" / "README.md").read_text(encoding="utf-8"),
+            "skills guide": (repository_root / "docs" / "agent-skills.md").read_text(encoding="utf-8"),
+            "getting started": (repository_root / "docs" / "getting-started.md").read_text(encoding="utf-8"),
+            "AGENTS": (repository_root / "AGENTS.md").read_text(encoding="utf-8"),
+            "REVIEW": (repository_root / "REVIEW.md").read_text(encoding="utf-8"),
+            "guidance generator": (
+                repository_root
+                / ".agents"
+                / "skills"
+                / "devconcord-generate-agent-guidance"
+                / "references"
+                / "agents-md.md"
+            ).read_text(encoding="utf-8"),
+            "integration scenarios": (repository_root / "tests" / "integration" / "README.md").read_text(encoding="utf-8"),
+        }
+
+        self.assertEqual(validate_skill_directory(skill_dir), [])
+        for expected in (
+            "diagnostic questions",
+            "smallest useful and safe",
+            "A diagnostic signal can narrow investigation",
+            "devconcord-design-robustness",
+            "devconcord-design-performance",
+            "devconcord-design-security",
+            "Do not invent",
+            "do not create a parallel",
+            "--skill devconcord-observability-design",
+        ):
+            with self.subTest(skill_contract=expected):
+                self.assertIn(expected.lower(), skill_text.lower())
+        for expected in (
+            "monotonic",
+            "cardinality",
+            "personal data",
+            "retention",
+            "sink",
+            "remote telemetry",
+            "overhead",
+            "root cause",
+        ):
+            with self.subTest(workflow_contract=expected):
+                self.assertIn(expected.lower(), " ".join(workflow.split()).lower())
+        for name, text in docs.items():
+            with self.subTest(entry_point=name):
+                self.assertIn("devconcord-observability-design", text)
+        for scenario in (
+            "シナリオA：デスクトップ画像処理",
+            "シナリオB：メディアサーバー",
+            "シナリオC：暗号化ストレージ",
+            "シナリオD：小規模CLI",
+        ):
+            with self.subTest(scenario=scenario):
+                self.assertIn(scenario, docs["integration scenarios"])
+        self.assertIn("実際のエージェント出力", docs["integration scenarios"])
+        self.assertIn("Self-documenting Score（SDS）", docs["common guide"])
+
     def test_secrets_by_design_is_integrated_as_a_security_subprinciple(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         guide_path = repository_root / "docs" / "application-design" / "secrets-by-design.md"
@@ -922,6 +998,7 @@ description: Use this Skill for a focused task.
                 "devconcord-implementation-planning",
                 "devconcord-repository-review",
                 "devconcord-gap-analysis",
+                "devconcord-observability-design",
             ):
                 with self.subTest(skill=skill_name):
                     self.assertIn(skill_name, text)

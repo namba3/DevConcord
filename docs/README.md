@@ -10,7 +10,7 @@
 
 | 資料 | 用途 |
 |---|---|
-| [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness / Replaceability / Security by Design、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
+| [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness / Replaceability / Security / Observability by Design、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
 | [ドキュメント設計ガイド](common/documentation-design.md) | 読者中心の情報設計、README・文書の役割、ナビゲーション、Single Source of Truth、変更影響、Docs as Code |
 | [Agent Skills運用ガイド](agent-skills.md) | 導入先へのSkillsの選択導入、共用、更新、manifest、復旧、検証 |
 | [`devconcord-reference` Skill](../.agents/skills/devconcord-reference/SKILL.md) | ローカル共通資料を要求元Skillの版に合わせて参照する |
@@ -43,6 +43,7 @@
 | 要求仕様や設計判断を記録する | [要求仕様テンプレート](application-design/templates/requirements.md)、[ADRテンプレート](application-design/templates/adr.md) |
 | 利用者タスクから機能・状態・UIモックアップを設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md)、[`devconcord-ux-functional-design` Skill](../.agents/skills/devconcord-ux-functional-design/SKILL.md) |
 | 性能・堅牢性・依存境界・セキュリティを検討する | [設計原則](common/ai-assisted-development.md)、[Secrets by Design](application-design/secrets-by-design.md)と個別の `devconcord-design-performance`、`devconcord-design-robustness`、`devconcord-design-replaceability`、`devconcord-design-security` [Skills](agent-skills.md#skills) |
+| 可観測性・診断可能性を設計する | [AI支援開発ガイド §9.5](common/ai-assisted-development.md#95-robustness-by-design)、[`devconcord-observability-design` Skill](../.agents/skills/devconcord-observability-design/SKILL.md) |
 | READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`devconcord-documentation-architecture` Skill](../.agents/skills/devconcord-documentation-architecture/SKILL.md) |
 | DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](../.agents/skills/devconcord-gap-analysis/SKILL.md) |
 | 提案された変更の実装前影響を評価する | [`devconcord-repository-review` Skill](../.agents/skills/devconcord-repository-review/SKILL.md)のChange Impact Assessment |

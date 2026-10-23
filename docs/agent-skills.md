@@ -15,6 +15,7 @@
 | [`devconcord-design-robustness`](../.agents/skills/devconcord-design-robustness/SKILL.md) | 不変条件・失敗時契約・回復・検証を設計 |
 | [`devconcord-design-replaceability`](../.agents/skills/devconcord-design-replaceability/SKILL.md) | 交換価値と抽象化コストに基づき依存境界を設計 |
 | [`devconcord-design-security`](../.agents/skills/devconcord-design-security/SKILL.md) | 資産・信頼境界・脅威・不変条件に応じてセキュリティ要求と検証を設計。資格情報が関係する場合は長期秘密、主体ID、権限、ライフサイクルも扱う |
+| [`devconcord-observability-design`](../.agents/skills/devconcord-observability-design/SKILL.md) | 重要状態・処理・障害について、診断の問いに応じた安全で比例的なログ・メトリクス・トレース等と検証を設計 |
 | [`devconcord-repository-review`](../.agents/skills/devconcord-repository-review/SKILL.md) | 実装前の変更影響評価、または実装・設計・テスト・CI・運用記録の根拠付きレビュー |
 | [`devconcord-gap-analysis`](../.agents/skills/devconcord-gap-analysis/SKILL.md) | DevConcord原則への適合・ギャップ・未検証領域・改善優先度を横断評価 |
 | [`devconcord-test-design`](../.agents/skills/devconcord-test-design/SKILL.md) | 要求・契約から独立した期待値と検証方法を設計 |
@@ -25,7 +26,7 @@
 
 `devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を整理します。具体的なコード上の欠陥を詳しく調べる `devconcord-repository-review` や、文書体系を設計する `devconcord-documentation-architecture` の手順を複製しません。詳細な設計作業や共通規約の導入・更新が必要な場合は該当Skillを次の作業として選べます。エージェント間の自動Skill呼び出しは前提にしません。
 
-リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用と、必要時のDevConcord系専門Skillsの活用判断を担い、`REVIEW.md` は具体的な品質基準と根拠付き指摘を担います。`devconcord-repository-review`と`devconcord-gap-analysis`は横断評価用、`devconcord-test-design`と`devconcord-implementation-planning`は任意の検証/計画ワークフロー用、`devconcord-issue-driven-development`は課題表を起点に範囲を制御して実装・検証・状態更新するワークフロー用Skillsです。これらはBootstrap / Adoption / Sync / Generate / Referenceの作業Skillsとも区別します。いずれも他の有用なSkillsを排除しません。Skill実行は自動的に必要にならず、利用可能性と依頼の目的・範囲を確かめて候補にします。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
+リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用と、必要時のDevConcord系専門Skillsの活用判断を担い、`REVIEW.md` は具体的な品質基準と根拠付き指摘を担います。`devconcord-repository-review`と`devconcord-gap-analysis`は横断評価用、`devconcord-test-design`と`devconcord-implementation-planning`は任意の検証/計画ワークフロー用、`devconcord-issue-driven-development`は課題表を起点に範囲を制御して実装・検証・状態更新するワークフロー用、`devconcord-observability-design`は診断の問いから必要十分な信号と安全な収集・検証を設計する専門Skillです。これらはBootstrap / Adoption / Sync / Generate / Referenceの作業Skillsとも区別します。いずれも他の有用なSkillsを排除しません。Skill実行は自動的に必要にならず、利用可能性と依頼の目的・範囲を確かめて候補にします。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
 
 導入先の `AGENTS.md` / `REVIEW.md` は `devconcord-generate-agent-guidance` の `agents` / `reviews` / `both` モードで対象リポジトリ上から生成・更新できます。DevConcord本体や生成Skillを更新しても、既存導入先の指示ファイルは自動更新されません。更新された生成手順を使う場合は、必要なScopeへSkillをインストールまたは同期した後、対象リポジトリで明示的に生成Skillを実行してください。Skillの配置だけで対象文書を書き換えることはありません。
 
@@ -37,7 +38,7 @@ Bootstrap後は初期設計で解決できなかった重要事項に限り、Ad
 
 - **全体診断:** 「このリポジトリをDevConcordの設計・開発・ドキュメント原則から全体評価し、根拠付きのギャップ分析と優先順位付き改善計画を作成してください。」
 - **差分診断:** 「前回のギャップ分析以降の変更を確認し、解消した課題、新しいギャップ、残存リスクを整理してください。」
-- **特定領域:** 「Performance / Robustness / Security by Designの観点から現行アーキテクチャのギャップを分析してください。」
+- **特定領域:** 「Performance / Robustness / Security / Observability by Designの観点から現行アーキテクチャのギャップを分析してください。」
 - **課題との照合:** 「分析結果を既存の課題表と照合し、重複を避けて追加候補を提示してください。課題表は変更しないでください。」
 
 ## 公式Skill名と既存インストール
