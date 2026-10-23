@@ -14,6 +14,7 @@
 | [ドキュメント設計ガイド](common/documentation-design.md) | 読者中心の情報設計、README・文書の役割、ナビゲーション、Single Source of Truth、変更影響、Docs as Code |
 | [Agent Skills運用ガイド](agent-skills.md) | 導入先へのSkillsの選択導入、共用、更新、manifest、復旧、検証 |
 | [`devconcord-reference` Skill](../.agents/skills/devconcord-reference/SKILL.md) | ローカル共通資料を要求元Skillの版に合わせて参照する |
+| [`devconcord-design-orchestration` Skill](../.agents/skills/devconcord-design-orchestration/SKILL.md) | 委任された範囲で、要求・設計・判断・検証を段階的に具体化・改善し、整合させる |
 
 ## アプリ設計
 
@@ -41,6 +42,7 @@
 |---|---|
 | 設計原則とAI支援開発の共通ルールを理解する | [AI支援開発ガイド](common/ai-assisted-development.md)、[AI開発クイックリファレンス](common/ai-development-quick-reference.md) |
 | 要求仕様や設計判断を記録する | [要求仕様テンプレート](application-design/templates/requirements.md)、[ADRテンプレート](application-design/templates/adr.md) |
+| 複数の設計領域をまたいで設計を進める・改善する | [`devconcord-design-orchestration` Skill](../.agents/skills/devconcord-design-orchestration/SKILL.md) |
 | 利用者タスクから機能・状態・UIモックアップを設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md)、[`devconcord-ux-functional-design` Skill](../.agents/skills/devconcord-ux-functional-design/SKILL.md) |
 | 性能・堅牢性・依存境界・セキュリティを検討する | [設計原則](common/ai-assisted-development.md)、[Secrets by Design](application-design/secrets-by-design.md)と個別の `devconcord-design-performance`、`devconcord-design-robustness`、`devconcord-design-replaceability`、`devconcord-design-security` [Skills](agent-skills.md#skills) |
 | 可観測性・診断可能性を設計する | [AI支援開発ガイド §9.5](common/ai-assisted-development.md#95-robustness-by-design)、[`devconcord-observability-design` Skill](../.agents/skills/devconcord-observability-design/SKILL.md) |

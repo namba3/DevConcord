@@ -12,6 +12,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 既存リポジトリへAdoptionする | [Adoptionの実行例](docs/getting-started.md#4-既存リポジトリへadoptionするcodex-cli) |
 | はじめてDevConcordを使う | [導入と運用ガイド](docs/getting-started.md) |
 | 設計書から新しいプロジェクトを始める | [`devconcord-bootstrap-from-design` Skill](.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |
+| 要求・設計・アーキテクチャを委任範囲で段階的に具体化・改善する | [`devconcord-design-orchestration` Skill](.agents/skills/devconcord-design-orchestration/SKILL.md) |
 | 既存プロジェクトへ規約を選んで導入する | [`devconcord-adopt-guidance` Skill](.agents/skills/devconcord-adopt-guidance/SKILL.md) |
 | 実装前に変更の影響範囲を評価する | [`devconcord-repository-review` Skill](.agents/skills/devconcord-repository-review/SKILL.md)のChange Impact Assessment |
 | 要求・契約から独立したテスト戦略を設計する | [`devconcord-test-design` Skill](.agents/skills/devconcord-test-design/SKILL.md) |
@@ -35,7 +36,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 - DDD、Self-documenting Code、SDD、DbC、TDD、Performance / Robustness / Replaceability / Security / Observability by Design等の開発・設計ガイド
 - 要求仕様、ADR、課題管理、リスク管理、完成度評価の規約とテンプレート
 - READMEを含む文書設計、導入、更新、検証のための共通指針
-- `AGENTS.md`・`REVIEW.md`生成、Bootstrap、Adoption、影響評価、テスト設計、実装計画、課題駆動開発、Observability設計、Synchronization、品質ギャップ分析用Agent Skills
+- `AGENTS.md`・`REVIEW.md`生成、Bootstrap、Adoption、設計オーケストレーション、影響評価、テスト設計、実装計画、課題駆動開発、Observability設計、Synchronization、品質ギャップ分析用Agent Skills
 - 複数エージェントで再利用するAgent Skillsと、安全な配布・同期スクリプト
 
 ## 適用方針

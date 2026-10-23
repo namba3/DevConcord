@@ -6,6 +6,8 @@ DevConcord公式Skill名には `devconcord-` が付きます。旧名Skillを導
 
 変更を実装する前に影響範囲を整理したい場合は`devconcord-repository-review`のChange Impact Assessment、要求から独立した検証方法を設計したい場合は`devconcord-test-design`、複雑な作業を段階化したい場合は`devconcord-implementation-planning`を使えます。いずれも必要な場合だけ選ぶSkillで、自動実行・自動引継ぎは前提にしません。
 
+新規・未完成の設計を具体化したり、既存設計を複数領域にまたがって改善する作業を委任するときは、[`devconcord-design-orchestration`](../.agents/skills/devconcord-design-orchestration/SKILL.md)を検討できます。読み取り専用のExplore、設計成果物を扱うDesign、既存設計を扱うEvolveを依頼の範囲から選びます。Design/Evolveは実装コード変更を許可せず、重大な仕様・互換性判断は承認へ委ねます。単一領域の判断には対応する専門Skill、全体ギャップの評価にはGap Analysis、実装計画・課題実装にはそれぞれのSkillを使います。
+
 導入先に既存の課題表があり、その課題から次の作業を選ぶ・指定課題を実装する・範囲を区切って複数課題を進める依頼では、[`devconcord-issue-driven-development`](../.agents/skills/devconcord-issue-driven-development/SKILL.md)を検討できます。調査だけなら読み取り専用のPlan、実装依頼ならSingleまたはユーザーが指定した範囲のBatchを選びます。Skillの選択だけで実装・課題表更新が許可されるわけではなく、課題表と導入先の完了条件が正本です。
 
 重要な処理や障害の原因を利用者・開発者・運用者が安全に調査する必要がある場合は、[`devconcord-observability-design`](../.agents/skills/devconcord-observability-design/SKILL.md)で診断の問いと必要な信号を設計できます。小規模なCLIのエラー出力で十分なこともあり、監視基盤・分散トレース・リモートテレメトリを一律に導入しません。

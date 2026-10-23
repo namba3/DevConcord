@@ -65,6 +65,7 @@
 | 契約設計 | [AI支援開発ガイド §5](ai-assisted-development.md#5-dbc契約による設計) |
 | BDD、ATDD、TDD、テスト独立性 | [AI支援開発ガイド §6–7](ai-assisted-development.md#6-bddatdd振る舞いと受け入れの設計) |
 | 変更影響評価、テスト設計、実装計画 | [`devconcord-repository-review`](../../.agents/skills/devconcord-repository-review/SKILL.md)、[`devconcord-test-design`](../../.agents/skills/devconcord-test-design/SKILL.md)、[`devconcord-implementation-planning`](../../.agents/skills/devconcord-implementation-planning/SKILL.md) |
+| 委任範囲内で複数領域の設計を具体化・改善 | [`devconcord-design-orchestration`](../../.agents/skills/devconcord-design-orchestration/SKILL.md) |
 | ADR | [AI支援開発ガイド §8](ai-assisted-development.md#8-adr設計判断の記録) |
 | 課題管理・完成度評価 | [課題管理規約](../work-management/issue-tracking.md) |
 | Self-documenting Code、SDS | [開発ガイド §2.1](ai-assisted-development.md#21-self-documenting-codeへの貢献)、[課題管理規約 §3.5](../work-management/issue-tracking.md#35-self-documenting-scoresds) |

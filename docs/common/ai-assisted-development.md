@@ -1139,6 +1139,8 @@ BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、
 
 > 確認済みの特徴または未解決事項 → 設計上の影響 → 必要な専門的検討 → Skill → 期待成果物と検証
 
+`devconcord-design-orchestration` は、ユーザーが設計の段階的な具体化・横断的な改善を委任したときに、要求・ADR・関連設計資産・検証条件の整合を範囲を区切った単位で進める統合Skillです。読み取り専用のGap Analysis、具体的欠陥を調べるRepository Review、専門設計判断、Implementation Planning、Issue-Driven Developmentを置き換えません。単一の明確な設計判断や小さな修正には、必要な専門Skillだけで十分な場合があります。
+
 #### 推奨状態
 
 | 状態 | 意味 |
@@ -1156,6 +1158,7 @@ BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、
 
 | Skill | 検討する根拠の例 |
 |---|---|
+| `devconcord-design-orchestration` | 新規・未完成の設計を段階的に具体化する、または複数の要求・ADR・設計資産にまたがる改善を委任された。単一領域や読み取り専用評価が目的なら該当する専門Skill/評価Skillを選ぶ |
 | `devconcord-ux-functional-design` | ユーザータスクと機能の対応、利用者とのCLI/API契約、操作や状態遷移、エラー・取消・進捗、アクセシビリティに重要な未決事項がある。GUI固有の要求はGUI製品だけに適用する |
 | `devconcord-design-performance` | 大量データ、高頻度処理、重要な応答・資源制約、I/O・並列・ストリーミング等の構造判断、ワークロードや計測方法の未定義がある。根拠のない数値目標は作らない |
 | `devconcord-design-robustness` | 永続データやファイルの変更、部分成功、取消・再試行・復旧、並行・非同期・外部依存、重要な整合性不変条件について未解決事項がある |

@@ -204,7 +204,7 @@ description: Use this Skill for a focused task.
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 17)
+        self.assertEqual(len(skill_dirs), 18)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
@@ -551,6 +551,96 @@ description: Use this Skill for a focused task.
         self.assertIn("`REVIEWS.md` when the new name is absent", gap_analysis)
         self.assertIn("If both exist, compare substantive\nrules", gap_analysis)
         self.assertIn("never migrates, merges, or deletes either file", gap_analysis)
+
+    def test_design_orchestration_skill_is_integrated_and_bounded(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill_dir = (
+            repository_root
+            / ".agents"
+            / "skills"
+            / "devconcord-design-orchestration"
+        )
+        skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        workflow = (skill_dir / "references" / "workflow.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual(validate_skill_directory(skill_dir), [])
+        self.assertEqual(validate_repository_skills(repository_root), [])
+
+        for expected in (
+            "name: devconcord-design-orchestration",
+            "Autonomous &",
+            "**Explore:** read-only",
+            "**Design:**",
+            "**Evolve:**",
+            "do not authorize\nimplementation code changes",
+            "explicit approval",
+            "do not optimize document volume",
+            "automatic",
+            "--skill devconcord-design-orchestration",
+            "--revision installed",
+        ):
+            with self.subTest(skill_contract=expected):
+                self.assertIn(expected.lower(), skill.lower())
+        for expected in (
+            "approved requirements and accepted decisions",
+            "Keep formal issue priority\nseparate from design-work order",
+            "status quo, a minimal improvement, and a structural change",
+            "Requires explicit approval",
+            "Do not create duplicate specifications",
+            "keep dependent decisions provisional or unassessed",
+            "functional correctness, UX, performance, robustness",
+            "Do not loop until all repository\nissues are closed",
+            "Do not imply automatic handoff",
+        ):
+            with self.subTest(workflow_contract=expected):
+                self.assertIn(expected.lower(), workflow.lower())
+
+        docs = {
+            "README": (repository_root / "README.md").read_text(encoding="utf-8"),
+            "docs index": (repository_root / "docs" / "README.md").read_text(
+                encoding="utf-8"
+            ),
+            "Skills guide": (repository_root / "docs" / "agent-skills.md").read_text(
+                encoding="utf-8"
+            ),
+            "getting started": (repository_root / "docs" / "getting-started.md").read_text(
+                encoding="utf-8"
+            ),
+            "quick reference": (
+                repository_root / "docs" / "common" / "ai-development-quick-reference.md"
+            ).read_text(encoding="utf-8"),
+            "common guide": (
+                repository_root / "docs" / "common" / "ai-assisted-development.md"
+            ).read_text(encoding="utf-8"),
+            "AGENTS generation": (
+                skill_dir.parents[0]
+                / "devconcord-generate-agent-guidance"
+                / "references"
+                / "agents-md.md"
+            ).read_text(encoding="utf-8"),
+        }
+        for name, document in docs.items():
+            with self.subTest(discoverability=name):
+                self.assertIn("devconcord-design-orchestration", document)
+
+        scenarios = (repository_root / "tests" / "integration" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        for expected_case in (
+            "未完成な新規設計",
+            "既存設計の改善",
+            "設計と実装の不一致",
+            "品質属性の競合",
+            "承認が必要な変更",
+            "改善が不要",
+            "委任範囲の制限",
+            "Explore候補",
+            "Design/Evolve候補",
+            "実エージェントを使っていない場合",
+        ):
+            with self.subTest(manual_case=expected_case):
+                self.assertIn(expected_case, scenarios)
 
     def test_gap_analysis_is_documented_and_manual_scenarios_cover_contract(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]

@@ -23,8 +23,9 @@
 | [`devconcord-issue-driven-development`](../.agents/skills/devconcord-issue-driven-development/SKILL.md) | 既存課題表を起点に対象を選び、範囲内で実装・検証・状態更新 |
 | [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEW.md` の作成・更新 |
 | [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
+| [`devconcord-design-orchestration`](../.agents/skills/devconcord-design-orchestration/SKILL.md) | 委任範囲内で設計を段階的に具体化・改善し、関連要求・ADR・設計資産・検証条件の整合を進める |
 
-`devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を整理します。具体的なコード上の欠陥を詳しく調べる `devconcord-repository-review` や、文書体系を設計する `devconcord-documentation-architecture` の手順を複製しません。詳細な設計作業や共通規約の導入・更新が必要な場合は該当Skillを次の作業として選べます。エージェント間の自動Skill呼び出しは前提にしません。
+`devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を読み取り専用で整理します。`devconcord-design-orchestration` はユーザーが委任した設計作業を段階的に具体化・改善し、設計資産の整合を進めますが、gap assessmentを再実行したり専門設計手順を複製したりしません。具体的なコード上の欠陥は `devconcord-repository-review`、文書体系の設計は `devconcord-documentation-architecture`、実装単位の計画は `devconcord-implementation-planning`、課題実装は `devconcord-issue-driven-development` がそれぞれ担います。必要に応じて別作業として選び、エージェント間の自動Skill呼び出しは前提にしません。
 
 リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用と、必要時のDevConcord系専門Skillsの活用判断を担い、`REVIEW.md` は具体的な品質基準と根拠付き指摘を担います。`devconcord-repository-review`と`devconcord-gap-analysis`は横断評価用、`devconcord-test-design`と`devconcord-implementation-planning`は任意の検証/計画ワークフロー用、`devconcord-issue-driven-development`は課題表を起点に範囲を制御して実装・検証・状態更新するワークフロー用、`devconcord-observability-design`は診断の問いから必要十分な信号と安全な収集・検証を設計する専門Skillです。これらはBootstrap / Adoption / Sync / Generate / Referenceの作業Skillsとも区別します。いずれも他の有用なSkillsを排除しません。Skill実行は自動的に必要にならず、利用可能性と依頼の目的・範囲を確かめて候補にします。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
 
@@ -37,6 +38,7 @@ Bootstrap後は初期設計で解決できなかった重要事項に限り、Ad
 依頼例:
 
 - **全体診断:** 「このリポジトリをDevConcordの設計・開発・ドキュメント原則から全体評価し、根拠付きのギャップ分析と優先順位付き改善計画を作成してください。」
+- **設計の具体化・改善:** 「要求・ADR・実装の現状を確認し、承認済み契約とこの委任範囲を守って、次の設計単位を具体化または改善してください。実装コードと課題表は変更せず、判断が必要な事項と検証条件を示してください。」
 - **差分診断:** 「前回のギャップ分析以降の変更を確認し、解消した課題、新しいギャップ、残存リスクを整理してください。」
 - **特定領域:** 「Performance / Robustness / Security / Observability by Designの観点から現行アーキテクチャのギャップを分析してください。」
 - **課題との照合:** 「分析結果を既存の課題表と照合し、重複を避けて追加候補を提示してください。課題表は変更しないでください。」
