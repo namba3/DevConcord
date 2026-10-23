@@ -48,6 +48,7 @@
 | 提案された変更の実装前影響を評価する | [`devconcord-repository-review` Skill](../.agents/skills/devconcord-repository-review/SKILL.md)のChange Impact Assessment |
 | 要求・契約から独立したテストを設計する | [`devconcord-test-design` Skill](../.agents/skills/devconcord-test-design/SKILL.md) |
 | 複雑な変更を検証可能な実装単位へ計画する | [`devconcord-implementation-planning` Skill](../.agents/skills/devconcord-implementation-planning/SKILL.md) |
+| 既存課題表から実装対象を選び、検証・状態更新する | [`devconcord-issue-driven-development` Skill](../.agents/skills/devconcord-issue-driven-development/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
 | レビュー基準を作る・調べる | [`devconcord-generate-agent-guidance` Skill](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEW.md) |
 | 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`devconcord-bootstrap-from-design` Skill](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |

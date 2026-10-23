@@ -19,12 +19,13 @@
 | [`devconcord-gap-analysis`](../.agents/skills/devconcord-gap-analysis/SKILL.md) | DevConcord原則への適合・ギャップ・未検証領域・改善優先度を横断評価 |
 | [`devconcord-test-design`](../.agents/skills/devconcord-test-design/SKILL.md) | 要求・契約から独立した期待値と検証方法を設計 |
 | [`devconcord-implementation-planning`](../.agents/skills/devconcord-implementation-planning/SKILL.md) | 複雑な変更を依存関係のある検証可能な実装単位へ分割 |
+| [`devconcord-issue-driven-development`](../.agents/skills/devconcord-issue-driven-development/SKILL.md) | 既存課題表を起点に対象を選び、範囲内で実装・検証・状態更新 |
 | [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEW.md` の作成・更新 |
 | [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
 
 `devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を整理します。具体的なコード上の欠陥を詳しく調べる `devconcord-repository-review` や、文書体系を設計する `devconcord-documentation-architecture` の手順を複製しません。詳細な設計作業や共通規約の導入・更新が必要な場合は該当Skillを次の作業として選べます。エージェント間の自動Skill呼び出しは前提にしません。
 
-リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用と、必要時のDevConcord系専門Skillsの活用判断を担い、`REVIEW.md` は具体的な品質基準と根拠付き指摘を担います。`devconcord-repository-review`と`devconcord-gap-analysis`は横断評価用、`devconcord-test-design`と`devconcord-implementation-planning`は任意の検証/計画ワークフロー用Skillsであり、Bootstrap / Adoption / Sync / Generate / Referenceの作業Skillsとも区別します。これらの区分は他の有用なSkillsを排除しません。Skill実行は自動的に必要にならず、利用可能性とリスクを確かめて候補にします。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
+リポジトリの `AGENTS.md` は変更リスクに応じた日常の原則適用と、必要時のDevConcord系専門Skillsの活用判断を担い、`REVIEW.md` は具体的な品質基準と根拠付き指摘を担います。`devconcord-repository-review`と`devconcord-gap-analysis`は横断評価用、`devconcord-test-design`と`devconcord-implementation-planning`は任意の検証/計画ワークフロー用、`devconcord-issue-driven-development`は課題表を起点に範囲を制御して実装・検証・状態更新するワークフロー用Skillsです。これらはBootstrap / Adoption / Sync / Generate / Referenceの作業Skillsとも区別します。いずれも他の有用なSkillsを排除しません。Skill実行は自動的に必要にならず、利用可能性と依頼の目的・範囲を確かめて候補にします。統一した選択条件と自動実行しない境界は[AI支援開発ガイド](common/ai-assisted-development.md) §17.3を参照してください。
 
 導入先の `AGENTS.md` / `REVIEW.md` は `devconcord-generate-agent-guidance` の `agents` / `reviews` / `both` モードで対象リポジトリ上から生成・更新できます。DevConcord本体や生成Skillを更新しても、既存導入先の指示ファイルは自動更新されません。更新された生成手順を使う場合は、必要なScopeへSkillをインストールまたは同期した後、対象リポジトリで明示的に生成Skillを実行してください。Skillの配置だけで対象文書を書き換えることはありません。
 

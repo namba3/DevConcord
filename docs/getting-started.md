@@ -6,6 +6,8 @@ DevConcord公式Skill名には `devconcord-` が付きます。旧名Skillを導
 
 変更を実装する前に影響範囲を整理したい場合は`devconcord-repository-review`のChange Impact Assessment、要求から独立した検証方法を設計したい場合は`devconcord-test-design`、複雑な作業を段階化したい場合は`devconcord-implementation-planning`を使えます。いずれも必要な場合だけ選ぶSkillで、自動実行・自動引継ぎは前提にしません。
 
+導入先に既存の課題表があり、その課題から次の作業を選ぶ・指定課題を実装する・範囲を区切って複数課題を進める依頼では、[`devconcord-issue-driven-development`](../.agents/skills/devconcord-issue-driven-development/SKILL.md)を検討できます。調査だけなら読み取り専用のPlan、実装依頼ならSingleまたはユーザーが指定した範囲のBatchを選びます。Skillの選択だけで実装・課題表更新が許可されるわけではなく、課題表と導入先の完了条件が正本です。
+
 Bootstrap / Adoption / 資料Synchronizationは、導入先リポジトリを作業コンテキストとして実行します。DevConcordは読み取り専用の参照元です。Agent Skills管理CLIは別操作で、User Scopeではユーザー環境、Project Scopeでは `--target` に指定したリポジトリを変更します。
 
 ## 1. DevConcordをcloneしてローカル参照を登録する

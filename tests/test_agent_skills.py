@@ -178,11 +178,74 @@ description: Use this Skill for a focused task.
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 15)
+        self.assertEqual(len(skill_dirs), 16)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
         self.assertEqual(validate_repository_skills(repository_root), [])
+
+    def test_issue_driven_development_skill_contract_and_entry_points(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skills_root = repository_root / ".agents" / "skills"
+        skill_dir = skills_root / "devconcord-issue-driven-development"
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        workflow = (skill_dir / "references" / "workflow.md").read_text(
+            encoding="utf-8"
+        )
+        docs = {
+            "README": (repository_root / "README.md").read_text(encoding="utf-8"),
+            "Skills guide": (repository_root / "docs" / "agent-skills.md").read_text(
+                encoding="utf-8"
+            ),
+            "Getting started": (repository_root / "docs" / "getting-started.md").read_text(
+                encoding="utf-8"
+            ),
+            "Agents": (repository_root / "AGENTS.md").read_text(encoding="utf-8"),
+            "Reviews": (repository_root / "REVIEW.md").read_text(encoding="utf-8"),
+            "Issue tracking": (
+                repository_root / "docs" / "work-management" / "issue-tracking.md"
+            ).read_text(encoding="utf-8"),
+            "AGENTS generation": (
+                skills_root / "devconcord-generate-agent-guidance" / "references"
+                / "agents-md.md"
+            ).read_text(encoding="utf-8"),
+        }
+
+        self.assertEqual(validate_skill_directory(skill_dir), [])
+        for expected in (
+            "Plan",
+            "Single",
+            "Batch",
+            "Optimize for validated user value",
+            "Never infer permission to implement",
+            "issue-tracking.md",
+            "devconcord-reference",
+        ):
+            with self.subTest(skill_contract=expected):
+                self.assertIn(expected, skill_text)
+        for expected in (
+            "read-only",
+            "unmet dependency",
+            "user's explicit issue range",
+            "Do not mark an issue complete because code or a test exists",
+            "existing ten completion axes",
+            "Do not commit, push, reset, rebase",
+            "checks run and their results",
+        ):
+            with self.subTest(workflow_contract=expected):
+                self.assertIn(expected, workflow)
+        for name, text in docs.items():
+            with self.subTest(entry_point=name):
+                self.assertIn("devconcord-issue-driven-development", text)
+
+        integration = (
+            repository_root / "tests" / "integration" / "README.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Issue-Driven Development Skillの手動E2E評価", integration)
+        self.assertIn("Plan Mode", integration)
+        self.assertIn("Single Mode", integration)
+        self.assertIn("Batch Mode", integration)
+        self.assertIn("実エージェント", integration)
 
     def test_test_design_and_implementation_planning_skills_are_standalone(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
@@ -875,6 +938,7 @@ description: Use this Skill for a focused task.
             "Do not add or revise unrelated `AGENTS.md` guidance in this mode",
             "Project Scope or User Scope",
             "exclude useful non-DevConcord Skills",
+            "devconcord-issue-driven-development",
         ):
             self.assertIn(expected, skill)
         self.assertIn("同Skillの必須生成契約", bootstrap)
