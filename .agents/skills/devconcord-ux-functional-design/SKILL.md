@@ -9,12 +9,19 @@ description: >
 
 # UX-Driven Functional Design
 
+For asynchronous cancellation, this Skill defines the user's action, feedback,
+and visible state; `devconcord-design-robustness` defines stop/commit/recovery
+and consistency guarantees; when available, `devconcord-observability-design`
+defines useful diagnostic evidence. `devconcord-issue-driven-development` can
+execute an authorized issue and track its evidence. These are separate
+workflows, not automatic handoffs.
+
 ## Workflow
 
 1. Establish the target users, context, important tasks, success outcomes, frequency, input modes, error impact and known evidence. Mark hypotheses and unknowns.
 2. Use relevant HCD, JTBD, mental/conceptual models, Norman action cycle, Nielsen heuristics, Hick–Hyman/Fitts, cognitive load, recognition, progressive disclosure, information architecture, error prevention/recovery, accessibility, feedback and consistency principles as reasoning tools—not a mandatory checklist.
 3. Derive task flows, operations, state transitions, discoverability, primary/secondary actions, reversibility/confirmation, feedback and recovery. For async or bulk work, define progress, cancellation point, partial success, retry/idempotency and consistency in the application/domain contract, not only in UI controls.
-4. Convert the rationale into verifiable TASK/REQ acceptance criteria and suitable user, accessibility, state-machine, boundary or integration tests. Link source evidence → task → requirement → design/use case → acceptance → evidence using existing project records; do not require a separate matrix for small projects.
+4. Convert the rationale into verifiable TASK/REQ acceptance criteria and suitable user, accessibility, state-machine, boundary or integration tests. For stateful work, derive expected transitions from the application/domain contract rather than a list of generic UI states. Link source evidence → task → requirement → design/use case → acceptance → evidence using existing project records; do not require a separate matrix for small projects.
 5. Fit the user touchpoint: GUI-specific keyboard/touch/screen-reader behavior only where applicable; CLI command, output, exit/error contract for CLI; stable API and diagnostics for library/service.
 6. Review conflicts with performance, robustness, security and replaceability. Record consequential tradeoffs in the project's ADR process.
 7. For GUI work, when a mockup would resolve meaningful ambiguity or risk, create or update a proportionate, editable representation. Markdown may capture task, information hierarchy, states and acceptance criteria; HTML/CSS/SVG can make a framework-independent visual mockup, and JavaScript is optional for interactions. Reuse existing design tools when appropriate. Keep previews self-contained where practical; avoid external resources and unsafe insertion of untrusted content. Do not require a separate design document or a web implementation for native UI.
@@ -22,9 +29,16 @@ description: >
 9. When design and implementation disagree, compare approved requirements/decisions, change intent and verification evidence; do not silently treat the implementation as approval to change requirements. Distinguish implementation defects, stale design assets, intentional platform differences, unresolved conflicts and minor presentation differences. Do not use a confirmed stale mockup as unqualified current-spec evidence; retire assets and references when their maintenance value ends.
 10. Review source structure and rendered appearance separately. Exercise important mock interactions when useful, but do not treat mock behavior as application evidence. After implementation, compare task intent, information priority, operations, states and acceptance criteria; pixel equality is not a universal acceptance condition. Verify native platform behavior in the actual target environment where applicable.
 
+## Accessibility and state verification
+
+- For GUI tasks, select accessibility requirements for the actual platform and input modes. For Web, state the applicable WCAG version, conformance level and scope when the requirement calls for conformance. For native UI, verify the target OS accessibility APIs and assistive technologies; do not translate CSS-pixel thresholds directly to logical or physical pixels. For CLI, API and service touchpoints, define only their relevant accessible interaction and output contracts.
+- Turn applicable needs into observable acceptance conditions: keyboard completion, visible focus and non-conflicting shortcuts; accessible name/role/state/value/description, reading order, error association and dynamic status announcements; contrast, scaling, high contrast, reduced motion, non-color cues, target size, long/localized text, cognitive load, or alternatives to drag gestures. Select only conditions relevant to the user's task, platform and risk, using the UI/UX guide for detailed criteria. Automated scans are partial evidence; do not claim full conformance or assistive-technology usability from them alone.
+- For each important transition, record the trigger, precondition, application/domain result, available next actions, user feedback (including assistive technology where applicable), and persistent side effects. Verify success, failure, cancellation, partial success and retry only where those outcomes exist. A hidden progress indicator does not prove work stopped or data is consistent; connect UI tests to integration/state verification when the contract crosses into processing or persistence.
+- Keep evidence categories distinct: requirements/source review, rendered mockup, mock interaction, automated UI/accessibility checks, keyboard or assistive-technology operation, native OS execution, application state/data verification, and user task evaluation. Report which were actually performed and what remained unverified.
+
 ## Quality check
 
-The output must explain why a user need implies a function or behavior, how success/failure is observable, and how the acceptance condition can be verified. For GUI work, choose design artifacts and mockup fidelity in proportion to ambiguity, risk and project scale; consider design-asset impact when implementation changes; and distinguish source review, rendered visual review, interaction checks and implementation evidence. Naming usability theories without a resulting design decision is insufficient.
+The output must explain why a user need implies a function or behavior, how success/failure is observable, and how the acceptance condition can be verified. For GUI work, choose design artifacts and mockup fidelity in proportion to ambiguity, risk and project scale; consider design-asset impact when implementation changes; and distinguish source review, rendered visual review, interaction checks, accessibility/assistive-technology evidence and implementation evidence. Naming usability theories without a resulting design decision is insufficient.
 
 ## DevConcord References
 

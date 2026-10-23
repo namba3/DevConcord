@@ -48,6 +48,17 @@ allows a safe independent slice. Recheck whether a reported issue is already
 fixed, duplicated, obsolete, or underspecified before acting; preserve its ID
 and record the evidence rather than silently deleting or rewriting its history.
 
+Use the existing issue register as the only issue/dependency source. Follow
+declared prerequisite links and verify their current state against the
+repository; identify missing references, cycles, and blockers before ordering
+work. Do not infer a dependency from a shared file alone. When a formal
+high-priority issue depends on a lower-priority prerequisite, implement the
+prerequisite first if needed and actionable without changing either issue's
+priority. Prefer work that clears a real blocker or creates a reviewable,
+verifiable slice, but explain tradeoffs among urgency, user value, risk,
+verification cost, locality, and uncertainty. Do not manufacture a numeric
+ranking or estimate unsupported by the register or evidence.
+
 ## 3. Plan Mode — read-only
 
 Use Plan when the request asks what to do next, asks for an assessment, or does
@@ -90,13 +101,26 @@ plan in chat is not a register update and is not completed work.
 2. Select only actionable issues whose prerequisites are met. Order by actual
    dependencies and coherent shared causes, considering value, risk, and
    verification. Do not start blocked issues unconditionally.
-3. Keep each issue's implementation and evidence separable where possible.
+3. Batch issues only when they share a demonstrated cause/dependency or a
+   coordinated change avoids an intermediate contract violation. Same-file
+   location alone is not a reason. Before combining, verify that the user
+   authorized the combined scope, each issue still has an independently
+   checkable completion condition, and failure can be isolated and reviewed.
+   Keep unrelated items separate even when they appear next to one another in
+   the register.
+4. Keep each issue's implementation and evidence separable where possible.
    Verify and review each change before expanding the scope. Stop when the
    user's boundary is reached, a blocker occurs, unrelated concurrent changes
    appear, or remaining work would exceed the authorized scope.
-4. Evaluate each issue independently. One successful change does not complete
+5. Evaluate each issue independently. One successful change does not complete
    dependent or neighboring issues. Update the existing register with the
    result and evidence for each addressed issue; preserve other rows and IDs.
+
+If a batch step fails, stop before moving to dependent work. Preserve completed
+and partial changes within the authorized scope, identify which issue
+acceptance conditions are met or unmet, rerun checks that may have become
+stale after later edits, and report the safe recovery point. Do not mark
+neighboring issues complete because a shared component changed.
 
 Batch is not open-ended autonomous execution. Report partial completion and
 the reason for stopping.
@@ -119,6 +143,12 @@ the reason for stopping.
 - Do not mark an issue complete because code or a test exists. Record whether
   tests were added, run, passed, and whether acceptance and review obligations
   were met. Unrun tests and residual risks remain explicit.
+- For material implementation evidence, record the target commit or worktree
+  state and relevant environment/command/result in the existing register or
+  point to an existing CI/test/review record. Do not paste long logs into the
+  issue. If the code, configuration, fixture, or environment changed after a
+  check, decide whether that evidence still covers the final state and rerun
+  affected checks when needed.
 
 ## 7. Scope and safety boundaries
 

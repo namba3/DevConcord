@@ -82,6 +82,16 @@ class AgentSkillValidationTests(unittest.TestCase):
             "same change unit",
             "Do not create a mockup just because none exists",
             "Do not use a confirmed stale mockup",
+            "application/domain result",
+            "WCAG version, conformance level and scope",
+            "target OS accessibility APIs",
+            "non-conflicting shortcuts",
+            "high contrast",
+            "long/localized text",
+            "UI/UX guide for detailed criteria",
+            "Automated scans are partial evidence",
+            "state transitions",
+            "assistive-technology evidence",
         ):
             with self.subTest(ux_skill_contract=expected):
                 self.assertIn(expected, ux_skill)
@@ -117,6 +127,22 @@ class AgentSkillValidationTests(unittest.TestCase):
         ):
             with self.subTest(manual_case=expected_case):
                 self.assertIn(expected_case, integration)
+        for expected_case in (
+            "キーボード専用の主要タスク",
+            "ショートカット競合",
+            "モーダルのfocus喪失",
+            "非通知のエラー/進捗",
+            "非同期処理の取消・部分成功",
+            "表示・言語条件",
+            "再試行と状態回復",
+            "ViewModelによる表示状態変更",
+            "対象基盤差",
+            "UI影響のない内部修正",
+        ):
+            with self.subTest(accessibility_state_case=expected_case):
+                self.assertIn(expected_case, integration)
+        self.assertIn("スクリーンショットやmockup interaction", integration)
+        self.assertIn("実エージェント", integration)
 
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -231,6 +257,14 @@ description: Use this Skill for a focused task.
             "existing ten completion axes",
             "Do not commit, push, reset, rebase",
             "checks run and their results",
+            "stated impact and urgency",
+            "formal priority",
+            "cycles",
+            "shared causes",
+            "Same-file",
+            "recovery point",
+            "environment/command/result",
+            "evidence still covers the final state",
         ):
             with self.subTest(workflow_contract=expected):
                 self.assertIn(expected, workflow)
@@ -246,6 +280,17 @@ description: Use this Skill for a focused task.
         self.assertIn("Single Mode", integration)
         self.assertIn("Batch Mode", integration)
         self.assertIn("実エージェント", integration)
+        for expected_case in (
+            "高優先度が低優先度の前提に依存",
+            "共通原因を持つ複数課題",
+            "同一ファイルの無関係な課題",
+            "依存循環",
+            "実装済み・テスト未実施",
+            "Batch途中の失敗",
+            "作業ツリー競合",
+        ):
+            with self.subTest(issue_case=expected_case):
+                self.assertIn(expected_case, integration)
 
     def test_test_design_and_implementation_planning_skills_are_standalone(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
@@ -325,6 +370,36 @@ description: Use this Skill for a focused task.
             self.assertIn(expected, performance)
         for expected in ("invariant", "executed", "result", "fault"):
             self.assertIn(expected, robustness)
+        normalized_robustness = " ".join(robustness.split()).lower()
+        for expected in (
+            "concurrency and shared state",
+            "if sequential execution is sufficient, retain it",
+            "logical races",
+            "lost updates",
+            "toctou",
+            "deadlock, livelock, starvation, priority inversion",
+            "locks held across `await`",
+            "request accepted",
+            "child tasks joined",
+            "forbidden transitions",
+            "deterministic scheduler",
+            "repeated runs alone do not prove",
+        ):
+            with self.subTest(robustness_contract=expected):
+                self.assertIn(expected.lower(), normalized_robustness)
+        integration = (repository_root / "tests" / "integration" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        for expected_case in (
+            "並行化不要",
+            "Rustの論理競合",
+            "相互待機・shutdown",
+            "取消と部分確定",
+            "取消とcommitの競合",
+            "決定的な競合検証",
+        ):
+            with self.subTest(robustness_case=expected_case):
+                self.assertIn(expected_case, integration)
         for expected in ("implemented/configured", "executed and", "adequately verified"):
             self.assertIn(expected, security)
 
