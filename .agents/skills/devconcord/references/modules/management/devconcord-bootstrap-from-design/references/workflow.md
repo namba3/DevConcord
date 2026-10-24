@@ -1,6 +1,6 @@
 # Bootstrap Workflow Reference
 
-This distributable reference contains the detailed execution contract for `devconcord-bootstrap-from-design`. The `module.md` remains the entry point and preserves mandatory safety checks. DevConcord guides and templates are separate optional references: use the direct CLI fallback described in this workflow's `module.md` DevConcord References section to read a specific file at this workflow's installed source commit. Do not assume the source checkout is available.
+This distributable reference contains the detailed execution contract for the internal `manage bootstrap` workflow. The `module.md` remains the entry point and preserves mandatory safety checks. DevConcord guides and templates are separate optional references: use the direct CLI fallback described in this workflow's `module.md` DevConcord References section to read a specific file at the installed public package's source commit. Do not assume the source checkout is available.
 
 あなたは設計書に基づいて新規ソフトウェアプロジェクトのリポジトリを初期化します。コードを大量生成することではなく、根拠ある要求・責務・契約・品質特性を反映し、開発可能かつ検証可能な初期状態を作ることが目的です。
 
@@ -42,7 +42,7 @@ This distributable reference contains the detailed execution contract for `devco
 
 Markdownと通常のテキストは直接読みます。PDF/DOCX等は、現在の環境で利用可能な抽出・プレビュー手段により実際に読める範囲だけを解析します。読めないファイル、画像内テキスト、抽出欠落、曖昧な表は未確認として明示し、読んだことにしません。解析器や依存ツールを無断で追加せず、設計書の機密性・ライセンス・共有範囲を確認してください。
 
-各入力のパス、タイトル、確認できる版/日付/コミット、該当する節やページを記録し、必要な場合だけSHA-256等で内容を識別します。対象リポジトリに残す出典は可能ならリポジトリ相対パスを使い、対象外の入力は安定した文書名と版/節を記録します。個人環境の絶対パスを記録しません。設計書を対象リポジトリへコピーするのは、利用者の指示と著作権・機密性・ライセンス上の許可を確認できる場合に限ります。入力設計書の出典記録は共通資料の適用記録 `docs/guidance-provenance.md` と別概念です。DevConcordの共通資料を初期リポジトリへコピーする場合は `devconcord-adopt-guidance` Skill の選択・出典記録方針を使い、共通資料provenanceは入力設計書の出典情報で代用しません。共通資料を適用しない場合に記録だけを作らず、既存のprovenanceがある対象では保持します。
+各入力のパス、タイトル、確認できる版/日付/コミット、該当する節やページを記録し、必要な場合だけSHA-256等で内容を識別します。対象リポジトリに残す出典は可能ならリポジトリ相対パスを使い、対象外の入力は安定した文書名と版/節を記録します。個人環境の絶対パスを記録しません。設計書を対象リポジトリへコピーするのは、利用者の指示と著作権・機密性・ライセンス上の許可を確認できる場合に限ります。入力設計書の出典記録は共通資料の適用記録 `docs/guidance-provenance.md` と別概念です。DevConcordの共通資料を初期リポジトリへコピーする場合は `manage adopt` workflowの選択・出典記録方針を使い、共通資料provenanceは入力設計書の出典情報で代用しません。共通資料を適用しない場合に記録だけを作らず、既存のprovenanceがある対象では保持します。
 
 ## 3. 設計内容を整理・レビューする
 
@@ -75,7 +75,7 @@ Markdownと通常のテキストは直接読みます。PDF/DOCX等は、現在�
 ## 4. 設計原則を初期構造へ反映する
 
 - **UI/UX-driven Functional Design:** 利用者の目的・タスクから、主要ユースケース、操作、状態、結果、エラー・復旧を必要な範囲で導出します。進捗・キャンセル・再試行・一括処理は表示だけでなくアプリケーション処理とデータ整合性の契約にします。CLI、サービス、ライブラリには実際の利用者接点に合う要求を適用し、GUI要件を強制しません。
-  設計入力にGUIの画面・操作資産がある、またはGUIのタスク・状態に重要な曖昧さがある場合は、利用可能性を確認した上で `devconcord-ux-functional-design` Skillを推奨し、その資産を要求・受け入れ条件・検証へつなぎます。Skillが未導入・未確認なら利用可能と断定せず、GUI資産の追加や更新も設計上の必要性がある場合に限ります。
+  設計入力にGUIの画面・操作資産がある、またはGUIのタスク・状態に重要な曖昧さがある場合は、利用可能性を確認した上で `quality ux` workflowを候補にし、その資産を要求・受け入れ条件・検証へつなぎます。Skillが未導入・未確認なら利用可能と断定せず、GUI資産の追加や更新も設計上の必要性がある場合に限ります。
 - **Performance by Design:** 対象ワークロード、データ量、環境、重要経路を確認し、アルゴリズム、ストリーミング/遅延読込、I/O、メモリ、非同期・並列、キャッシュと整合性を必要に応じて設計します。測定条件が未確定なら値を捏造せず、後で計測する条件と回帰確認方法を記録します。
 - **Robustness by Design:** 重要な失敗条件、状態不変条件、部分成功、原子性、キャンセル、再実行、リソース所有、隔離、復旧、診断を要求・構造・テスト方針へ結び付けます。初期化時に全障害処理を実装する必要はありませんが、後から契約を成立させられなくする構造を作らないでください。
 - **Replaceability by Design:** コアのユースケースをUIイベントや技術固有型から分離し、将来の変更価値がある依存だけを境界化します。API形状だけでなくエラー、永続形式、トランザクション、並行性、性能、セキュリティ等の意味的契約を考慮します。全依存へのinterface、使用予定のない複数実装、一対一ラッパー、ビュー無変更交換を要求しません。
@@ -97,7 +97,7 @@ Markdownと通常のテキストは直接読みます。PDF/DOCX等は、現在�
 
 要求仕様は `module.md`のDevConcord References手順で取得した版固定の`docs/application-design/templates/requirements.md` を基準にし、入力設計書の出典・節からTASK/REQ/NFR、ADR、初期構造、課題、受け入れ条件・検証へ必要な範囲で追跡できるようにします。出典パスと版等は要求仕様の関連資料欄や要求行、ADRの関連欄へ記録し、専用台帳は複数文書の管理上必要な場合だけ設けます。既存の課題管理方式があれば優先し、完成度10軸とSDSの重み・独立性を維持します。初期化だけを理由に完成度を高く評価しません。
 
-`AGENTS.md` と `REVIEW.md` は `devconcord-generate-agent-guidance` Skill の調査・記述方針を再利用してください。AGENTS.mdを生成する場合は、低リスクやSkill可用性未確認でも省略しないDevConcord原則の簡潔な説明と、必要に応じたDevConcord系Skill推奨を含む同Skillの必須生成契約に従います。詳細分析や実行はリスクに応じて選びます。旧名 `REVIEWS.md` の移行と競合判断も同Skillへ委ね、Bootstrapに別の移行処理を作りません。実装済みの事実と設計上の将来制約を分け、実在しない機能・テスト・保証を記載しません。既存内容がある場合は置換せず統合します。`AGENTS.md` からレビュー前に `REVIEW.md` を読む指示を保ちます。
+`AGENTS.md` と `REVIEW.md` は `manage guidance` workflowの調査・記述方針を再利用してください。AGENTS.mdを生成する場合は、低リスクやSkill可用性未確認でも省略しないDevConcord原則の簡潔な説明と、必要に応じたDevConcord系Skill推奨を含むそのworkflowの生成契約に従います。詳細分析や実行はリスクに応じて選びます。旧名 `REVIEWS.md` の移行と競合判断も同Skillへ委ね、Bootstrapに別の移行処理を作りません。実装済みの事実と設計上の将来制約を分け、実在しない機能・テスト・保証を記載しません。既存内容がある場合は置換せず統合します。`AGENTS.md` からレビュー前に `REVIEW.md` を読む指示を保ちます。
 
 初期化範囲の扱い:
 
@@ -121,4 +121,4 @@ Foundation / Scaffold / Initial Implementationの範囲に合わせ、根拠が�
 
 推奨を含める場合は完了報告でBootstrap範囲外だと示し、Skill名、状態、対象機能、根拠と影響、未解決事項、実施時期・依存、期待成果物・検証、関連REQ/ADR/既存課題IDを記載します。該当候補がなければ無理に一覧を作りません。推奨はSkillの自動実行・自動インストールやユーザー範囲の拡張を許可せず、実施しなかった設計・検証を済んだことにしません。
 
-Bootstrap中に実装前の変更影響を広く調べる必要があれば`devconcord-repository-review`のChange Impact Assessment、仕様から独立した検証方法を具体化する必要があれば`devconcord-test-design`、複雑な後続作業を段階化する必要があれば`devconcord-implementation-planning`を選択肢にできます。これらは任意の後続作業であり、Bootstrapの初期設計判断や受け入れ条件の作成を先送りする理由にはしません。
+Bootstrap中に実装前の変更影響を広く調べる必要があれば`review repository`のChange Impact Assessment、仕様から独立した検証方法を具体化する必要があれば`verify test-design`、複雑な後続作業を段階化する必要があれば`develop implementation-plan`を選択肢にできます。これらは任意の後続作業であり、Bootstrapの初期設計判断や受け入れ条件の作成を先送りする理由にはしません。

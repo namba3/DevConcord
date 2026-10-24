@@ -43,13 +43,14 @@
 | 要求仕様や設計判断を記録する | [要求仕様テンプレート](application-design/templates/requirements.md)、[ADRテンプレート](application-design/templates/adr.md) |
 | 複数の設計領域をまたいで設計を進める・改善する | [`devconcord design evolve` workflow module](../.agents/skills/devconcord/references/modules/design/devconcord-design-orchestration/module.md) |
 | 利用者タスクから機能・状態・UIモックアップを設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md)、[`devconcord quality ux` workflow module](../.agents/skills/devconcord/references/modules/design/devconcord-ux-functional-design/module.md) |
-| 性能・堅牢性・依存境界・セキュリティを検討する | [設計原則](common/ai-assisted-development.md)、[Secrets by Design](application-design/secrets-by-design.md)と個別の `devconcord-design-performance`、`devconcord-design-robustness`、`devconcord-design-replaceability`、`devconcord quality security` [workflow modules](agent-skills.md#skills) |
+| 性能・堅牢性・依存境界・セキュリティを検討する | [設計原則](common/ai-assisted-development.md)、[Secrets by Design](application-design/secrets-by-design.md)、必要に応じた `devconcord quality performance/robustness/replaceability/security` |
 | 可観測性・診断可能性を設計する | [AI支援開発ガイド §9.5](common/ai-assisted-development.md#95-robustness-by-design)、[`devconcord quality observability` workflow module](../.agents/skills/devconcord/references/modules/quality/devconcord-observability-design/module.md) |
 | READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`devconcord quality documentation` workflow module](../.agents/skills/devconcord/references/modules/quality/devconcord-documentation-architecture/module.md) |
 | DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord review gap` workflow module](../.agents/skills/devconcord/references/modules/verification/devconcord-gap-analysis/module.md) |
 | 提案された変更の実装前影響を評価する | [`devconcord review repository` workflow module](../.agents/skills/devconcord/references/modules/verification/devconcord-repository-review/module.md)のChange Impact Assessment |
 | 要求・契約から独立したテストを設計する | [`devconcord verify test-design` workflow module](../.agents/skills/devconcord/references/modules/verification/devconcord-test-design/module.md) |
-| 複雑な変更を検証可能な実装単位へ計画する | [`devconcord develop plan` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-implementation-planning/module.md) |
+| 今後の開発反復・予算・続行/停止を計画する | [`devconcord develop plan` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-development-orchestration/module.md) |
+| 指定変更を検証可能な実装単位へ分割する | [`devconcord develop implementation-plan` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-implementation-planning/module.md) |
 | 既存課題表から実装対象を選び、検証・状態更新する | [`devconcord develop issue` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-issue-driven-development/module.md) |
 | 複数の実装単位を反復し、品質を再評価して続行・停止する | [`devconcord develop iterate` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-development-orchestration/module.md) |
 | エージェントのSkill発見・選択・実行を評価する | [`devconcord evaluate agent` workflow module](../.agents/skills/devconcord/references/modules/evaluation/devconcord-agent-behavior-evaluation/module.md) |

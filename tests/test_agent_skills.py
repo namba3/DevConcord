@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from scripts.agent_skills import (
+    _portable_skill_fingerprint,
     validate_official_skill_names,
     validate_skill_directory,
     validate_skill_roots,
@@ -142,6 +143,73 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
                 continue
             self.assertTrue(path.is_file())
 
+    def test_specialized_workflow_authority_and_evidence_contracts(self) -> None:
+        contracts = {
+            ("design", "devconcord-design-orchestration"): (
+                "explore", "do not edit", "explicit approval", "stop when",
+            ),
+            ("development", "devconcord-development-orchestration"): (
+                "plan", "iterate", "stabilize", "budget", "quality gates", "stop",
+            ),
+            ("development", "devconcord-issue-driven-development"): (
+                "issue register", "priority", "dependencies", "completion", "evidence",
+            ),
+            ("verification", "devconcord-test-design"): (
+                "independent", "oracle", "acceptance", "executed test", "risk",
+            ),
+            ("verification", "devconcord-repository-review"): (
+                "read-only", "evidence", "severity", "regression", "unverified",
+            ),
+            ("verification", "devconcord-root-cause-analysis"): (
+                "symptom", "falsifiable", "hypothesis", "diagnostic", "repair",
+            ),
+            ("quality", "devconcord-design-security"): (
+                "trust boundary", "asset", "threat", "invariant", "verification",
+            ),
+            ("quality", "devconcord-design-robustness"): (
+                "failure", "concurrency", "cancellation", "recovery", "invariant",
+            ),
+            ("management", "devconcord-bootstrap-from-design"): (
+                "source", "provenance", "existing", "do not invent",
+            ),
+            ("management", "devconcord-adopt-guidance"): (
+                "source", "preserve", "provenance", "do not imply",
+            ),
+            ("management", "devconcord-sync-guidance"): (
+                "baseline", "local edits", "do not overwrite", "same commit",
+            ),
+            ("management", "devconcord-generate-agent-guidance"): (
+                "review.md", "agents.md", "availability", "never install",
+            ),
+            ("lifecycle", "devconcord-compatibility-migration"): (
+                "compatibility risk", "migration", "rollback", "irreversible",
+            ),
+            ("lifecycle", "devconcord-release-engineering"): (
+                "explicitly authorized", "rollback", "candidate", "never publish",
+            ),
+            ("lifecycle", "devconcord-dependency-governance"): (
+                "update", "license", "supply-chain", "optional",
+            ),
+        }
+        for (category, name), phrases in contracts.items():
+            entry = module(category, name)
+            text = "\n".join(
+                path.read_text(encoding="utf-8")
+                for path in sorted(entry.parent.rglob("*.md"))
+            ).lower()
+            for phrase in phrases:
+                with self.subTest(module=name, phrase=phrase):
+                    self.assertIn(phrase.lower(), text)
+
+        orchestration = module("development", "devconcord-development-orchestration").read_text(
+            encoding="utf-8"
+        ).lower()
+        for phrase in (
+            "not standard-loop steps", "not a gate", "do not stop unrelated work",
+            "non-use as a defect", "does not authorize an automatic handoff",
+        ):
+            self.assertIn(phrase, orchestration)
+
     def test_official_name_rule_does_not_apply_to_external_skill_validation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -156,6 +224,48 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
             self.assertEqual(validate_skill_directory(skill), [])
             self.assertEqual(validate_skill_roots([root]), [])
             self.assertTrue(validate_official_skill_names(root))
+
+    def test_duplicate_fingerprints_match_management_hash_and_ignore_empty_directories(self) -> None:
+        from scripts.manage_skills import _portable_tree_digest
+
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            first_root = project / ".agents" / "skills"
+            second_root = project / ".claude" / "skills"
+            first = first_root / "vendor-example"
+            second = second_root / "vendor-example"
+            first.mkdir(parents=True)
+            second.mkdir(parents=True)
+            content = (
+                "---\nname: vendor-example\ndescription: Example external workflow.\n---\n\nBody.\n"
+            )
+            for skill in (first, second):
+                (skill / "SKILL.md").write_text(content, encoding="utf-8")
+                (skill / "references").mkdir()
+                (skill / "references" / "details.md").write_text("Details.\n", encoding="utf-8")
+                localized = skill / "references" / "詳細"
+                localized.mkdir()
+                (localized / "guide.md").write_text("Localized path.\n", encoding="utf-8")
+                executable = skill / "bin" / "tool"
+                executable.parent.mkdir()
+                executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            (second / "empty" / "nested").mkdir(parents=True)
+
+            executable_files = ("bin/tool",)
+            first_digest = _portable_skill_fingerprint(first, executable_files)
+            second_digest = _portable_skill_fingerprint(second, executable_files)
+            self.assertEqual(first_digest, second_digest)
+            self.assertEqual(first_digest, _portable_tree_digest(first, executable_files))
+            self.assertEqual(second_digest, _portable_tree_digest(second, executable_files))
+            self.assertEqual(
+                validate_skill_roots(
+                    [first_root, second_root],
+                    duplicate_allowances={
+                        ("vendor-example", (".agents/skills", ".claude/skills"))
+                    },
+                ),
+                [],
+            )
 
     def test_docs_and_cli_refer_to_the_unified_package(self) -> None:
         guide = (ROOT / "docs" / "agent-skills.md").read_text(encoding="utf-8")

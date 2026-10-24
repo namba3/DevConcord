@@ -1,6 +1,6 @@
 # Design Orchestration Workflow
 
-This reference is distributed with `devconcord-design-orchestration`. Apply
+This internal workflow reference is distributed inside the public `devconcord` package. Apply
 the target project's actual requirements, decision records, document
 ownership, approval rules, and work tracking. Preserve their identifiers and
 history; do not impose DevConcord's file layout on the target.
@@ -84,15 +84,16 @@ their work optional and separate:
 
 | Question or output | Related workflow |
 |---|---|
-| Cross-cutting alignment, gaps, and evidence coverage | `devconcord-gap-analysis` (read-only assessment) |
-| Concrete code defects or impact of a proposed change | `devconcord-repository-review` |
-| A focused UX, performance, robustness, security, replaceability, observability, or documentation decision | The matching specialist design Skill |
-| Independent expected outcomes and verification strategy | `devconcord-test-design` |
-| Ordered, verifiable implementation increments | `devconcord-implementation-planning` |
-| Authorized implementation and issue-state/evidence updates | `devconcord-issue-driven-development` |
+| Cross-cutting alignment, gaps, and evidence coverage | `review gap` (read-only assessment) |
+| Concrete code defects or impact of a proposed change | `review repository` |
+| A focused UX, performance, robustness, security, replaceability, observability, or documentation decision | The matching `quality` or `design` command |
+| Independent expected outcomes and verification strategy | `verify test-design` |
+| Ordered, verifiable implementation increments | `develop implementation-plan` |
+| Authorized implementation and issue-state/evidence updates | `develop issue` |
 
 Do not imply automatic handoff or substitute a recommendation for evidence of
-the related Skill's execution. If a relevant specialist Skill is unavailable,
+the related workflow's execution. If the relevant internal module cannot be
+selected or read,
 use the canonical, version-pinned reference material when it is available and
 continue only within the contract it supports. If necessary design criteria
 remain unavailable, keep dependent decisions provisional or unassessed and

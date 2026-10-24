@@ -20,7 +20,7 @@ reduced material risk—not the number of iterations, edits, or closed issues.
 
 Infer the mode from the request. If implementation authority or scope is
 unclear, use Plan. A request for one issue or a small bounded batch normally
-belongs to `devconcord-issue-driven-development` instead.
+belongs to `develop issue` instead.
 
 ## Iteration contract
 
@@ -49,8 +49,8 @@ User authorization bounds code, tests, documentation, issue updates, and
 external effects separately. Do not infer permission for out-of-scope work,
 major requirement or architecture changes, destructive actions, commit, push,
 or history rewriting. If implementation reveals a consequential design
-conflict, pause dependent work and route it to `devconcord-design-orchestration`
-when available; continue only safe independent work.
+conflict, pause dependent work and select `design evolve` for authorized design
+work; continue only safe independent work.
 
 Before advancing, check scope integrity, contract integrity, relevant
 verification evidence, regression risk, and whether another iteration has a
@@ -60,49 +60,52 @@ issue register as the work source of truth, existing completion axes and
 weights, issue IDs and history, and separate risk records. Add no parallel
 progress ledger or quality score.
 
-## Related Skills and completion
+## Related internal workflows and completion
 
 Do not duplicate specialist workflows or assume automatic Skill handoffs:
 
-- `devconcord-issue-driven-development` selects and completes a specified
-  issue or bounded batch, including evidence and issue-state updates.
-- `devconcord-implementation-planning` orders complex implementation units.
-- `devconcord-test-design` defines independent expected outcomes and strategy.
-- `devconcord-repository-review` finds concrete defects and regressions;
-  `devconcord-gap-analysis` assesses cross-cutting quality gaps.
-- `devconcord-design-orchestration` handles authorized design evolution;
-  focused design Skills address individual quality attributes.
-- `devconcord-root-cause-analysis` can be considered when a material failure
-  has an unclear or disputed cause; diagnosis does not authorize repair.
-- `devconcord-compatibility-migration` is considered when a changed public
-  contract or persisted/exchanged format creates a real compatibility risk.
-- `devconcord-release-engineering` can be proposed from Stabilize when the
-  user asks to assess a release candidate, distribution, upgrade, or recovery.
-- `devconcord-dependency-governance` is considered when dependency adoption,
-  change, removal, or a material dependency risk is in scope.
-- `devconcord-agent-behavior-evaluation` evaluates whether agents discover,
-  select, and execute Skills; it is not a gate for ordinary product work.
+- `develop issue` selects and completes a specified issue or bounded batch,
+  including evidence and issue-state updates.
+- `develop implementation-plan` orders complex implementation units.
+- `verify test-design` defines independent expected outcomes and strategy.
+- `review repository` finds concrete defects and regressions; `review gap`
+  assesses cross-cutting quality gaps.
+- `design evolve` handles authorized design evolution; focused `quality`
+  commands address individual quality attributes.
+- `diagnose root-cause` can be considered when a material failure has an
+  unclear or disputed cause; diagnosis does not authorize repair.
+- `lifecycle compatibility` is considered when a changed public contract or
+  persisted/exchanged format creates a real compatibility risk.
+- `lifecycle release` can be proposed from Stabilize when the user asks to
+  assess a release candidate, distribution, upgrade, or recovery.
+- `lifecycle dependencies` is considered when dependency adoption, change,
+  removal, or a material dependency risk is in scope.
+- `evaluate agent` evaluates whether an agent discovers, selects, and executes
+  the public `devconcord` package; it is not a gate for ordinary product work.
 
-These optional Skills are not standard-loop steps, mandatory dependencies, or
+These optional workflows are not standard-loop steps, mandatory dependencies, or
 quality gates. Do not create a per-run checklist for them. Do not stop unrelated work
-because an optional Skill is unavailable, or treat non-use as a defect. Consider one
+because an optional workflow is not selected, or treat non-use as a defect. Consider one
 only when the user explicitly requests it or the work reveals a material
 related risk. Core compatibility, security, and data-loss checks remain part
-of the relevant work even when a specialist Skill is not used. A suggestion
+of the relevant work even when a specialist workflow is not selected. A suggestion
 does not authorize an automatic handoff, broader permissions, release action,
 or approval. Continue to use the existing requirements, issue register,
-verification, and review contracts without these optional Skills.
+verification, and review contracts without these optional workflows.
 
-Check Skill availability in the actual User or Project Scope before relying on
-it. Report the selected scope, completed and partial work units, changed
+Check whether the single public `devconcord` package is available in the actual
+User or Project Scope before relying on its internal workflows; package files
+alone do not prove that the host discovers or selects them. Report the selected scope, completed and partial work units, changed
 artifacts, checks and results, issue/evidence updates, remaining blockers,
 unverified conditions, and the continue/stop rationale. Do not claim real
 agent or target-environment evidence from static tests.
 
 ## DevConcord References
 
-Use `devconcord manage reference` when available, identify this workflow as the
-requester, and retrieve only needed canonical paths at the installed revision.
+Use `devconcord manage reference` when the public package is available, state
+the requesting internal workflow as context, and retrieve only needed canonical
+paths at the installed package revision. The CLI package identity remains
+`--skill devconcord`.
 For Project Scope, also pass `--scope project --target <target-repository>`.
 If the Reference workflow cannot be selected, run the configured source checkout's
 CLI directly, one path per invocation:

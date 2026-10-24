@@ -258,15 +258,15 @@ ADR, issue, and risk IDs when present. Suggest an existing issue update or a
 new issue candidate; do not edit the target's tracker by default.
 
 When a material gap needs a focused design activity, recommend a matching
-specialist Skill only when its purpose and expected output follow from the gap's
+internal workflow only when its purpose and expected output follow from the gap's
 evidence. Use the common selection conditions and recommendation states in
-`docs/common/ai-assisted-development.md` §17.3. Do not assign a Skill to every
-finding; a small direct fix may need no separate Skill. Use
-`devconcord-repository-review` when a concrete code defect or change risk needs
+`docs/common/ai-assisted-development.md` §17.3. Do not assign a workflow to every
+finding; a small direct fix may need no separate workflow. Use
+`review repository` when a concrete code defect or change risk needs
 deeper review. Do not recommend an unconditional Full Assessment when an
 existing useful report supports an Incremental Assessment or a focused follow-up.
-Recommendations do not run or install Skills. Do not mark a gap resolved based
-only on a recommendation or an unreviewed Skill output; reassess against the
+Recommendations do not select, run, or install modules. Do not mark a gap resolved based
+only on a recommendation or an unreviewed workflow output; reassess against the
 contract and verification evidence.
 
 ### 7. Report and close
@@ -287,13 +287,13 @@ target's rules.
 
 ## Related workflows
 
-Use these as optional next steps; do not assume automatic Skill invocation:
+Use these as optional next steps; do not assume automatic module selection:
 
-- Concrete code/design findings: `devconcord-repository-review`.
-- Documentation structure and reader journeys: `devconcord-documentation-architecture`.
-- Detailed principle design: the relevant `devconcord-design-*` Skill.
-- First-time common-guidance adoption: `devconcord-adopt-guidance`.
-- Updating previously adopted common guidance: `devconcord-sync-guidance`.
+- Concrete code/design findings: `review repository`.
+- Documentation structure and reader journeys: `quality documentation`.
+- Detailed principle design: the relevant `quality` or `design` command.
+- First-time common-guidance adoption: `manage adopt`.
+- Updating previously adopted common guidance: `manage sync`.
 
 ## Completion
 

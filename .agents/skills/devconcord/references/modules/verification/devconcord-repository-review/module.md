@@ -48,7 +48,7 @@ For the selected proposal, inspect relevant requirements, acceptance conditions,
 
 Distinguish confirmed current facts from assumptions about the proposal. Do not attach normal defect severity labels to unverified forecasts; state confidence, impact, and the evidence needed to resolve uncertainty. Prefer analysis of concrete downstream effects over a checklist of unaffected areas.
 
-When useful, report the change purpose and scope, inspected specifications and implementation, likely change locations, affected contracts and dependencies, plausible regressions or migration risks, decisions still needed, suggested verification, unknowns, and related REQ / ADR / ISSUE IDs. Keep implementation sequencing in `devconcord-implementation-planning` and test-case design in `devconcord-test-design`; these Skills are optional and are not invoked automatically.
+When useful, report the change purpose and scope, inspected specifications and implementation, likely change locations, affected contracts and dependencies, plausible regressions or migration risks, decisions still needed, suggested verification, unknowns, and related REQ / ADR / ISSUE IDs. Keep implementation sequencing in `develop implementation-plan` and test-case design in `verify test-design`; these internal workflows are optional and are not invoked automatically.
 
 Do not edit source, configuration, requirements, issue or risk records as part of this assessment. A separately requested implementation or record update is a separate scope and follows the target repository's rules.
 

@@ -54,7 +54,7 @@ unverified work, material new findings, and a reasonable next issue when
 applicable. Never describe static checks as real-agent evaluation. Follow the
 user's requested work boundary and the repository's own commit instructions.
 
-## Related Skills
+## Related internal workflows
 
 - `devconcord-implementation-planning` plans complex changes; it does not
   execute them by default.

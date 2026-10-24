@@ -9,7 +9,8 @@ These are logical instructions interpreted by the agent using this Skill. They a
 | `design explore` | `design/devconcord-design-orchestration` | Read-only exploration and bounded options |
 | `design create` | `design/devconcord-design-orchestration` plus relevant design specialist | User-authorized design artifacts |
 | `design evolve` | `design/devconcord-design-orchestration` | Improve delegated design assets and preserve approved contracts |
-| `develop plan` | `development/devconcord-implementation-planning` | Read-only ordered increments |
+| `develop plan` | `development/devconcord-development-orchestration` | Read-only next-work/iteration plan, quality gates, budget, and continue/stop criteria |
+| `develop implementation-plan` | `development/devconcord-implementation-planning` | Read-only decomposition of a specified change into ordered, verifiable increments |
 | `develop issue` | `development/devconcord-issue-driven-development` | Select and implement bounded existing issue work when authorized |
 | `develop batch` | `development/devconcord-issue-driven-development` | Bounded issue batch with dependency and evidence controls |
 | `develop iterate` | `development/devconcord-development-orchestration` | Finite implementation, verification, review, and continue/stop cycle |
@@ -41,7 +42,9 @@ These are logical instructions interpreted by the agent using this Skill. They a
 Route by desired outcome, target, expected artifact, and authority, not by a keyword alone:
 
 - “Review this repository” → `review repository`.
-- “Implement the next important issues and verify them iteratively” → `develop iterate` (consult the issue workflow for issue selection).
+- “How should we proceed with development from here?” → `develop plan` (read-only iteration plan and stop conditions).
+- “How should this feature be divided into implementation steps?” → `develop implementation-plan`.
+- “Implement the next important issues and verify them iteratively” → `develop issue` for issue selection, or `develop iterate` when the user delegates the broader loop.
 - “Improve the existing design” → `design evolve`.
 - “Find why this test/regression fails” → `diagnose root-cause`; diagnosis alone does not authorize the fix.
 - “Stabilize quality without adding features” → `develop stabilize`.
@@ -53,3 +56,5 @@ Route by desired outcome, target, expected artifact, and authority, not by a key
 ## Normalize and resolve ambiguity
 
 Accept case differences, whitespace variations, and a short form only when it maps to exactly one command. Reject unknown command areas/intents with the nearest valid commands. If required context is missing, first inspect repository evidence and available guidance. Ask only if competing interpretations change scope, permissions, or deliverables. For read-only requests, keep work read-only. For multiple outcomes, name the primary workflow and the small set of relevant supporting modules; never imply automatic cross-Skill invocation.
+
+Resolve `develop plan` versus `develop implementation-plan` by the requested outcome: planning the development loop and its continue/stop decision selects Development Orchestration; splitting a specified change into implementation increments selects Implementation Planning. Do not infer implementation permission from either plan.

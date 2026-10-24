@@ -23,12 +23,19 @@
 
 ### 旧Skillインストールの移行
 
-旧Skill群が導入されている環境は、対象Scopeごとにまずdry-runします。Project Scopeでは `--target` を指定します。
+統合前の公式24名だけを旧Skill候補として認識します。名前の接頭辞だけでは削除対象とせず、管理記録、現在の導入先ハッシュ、DevConcord source identity、完全なsource commit、記録されたsource tree hashを照合します。確認できない管理済み記録は削除せず、診断として残します。未管理の似た名前、別source、ローカル変更は削除しません。旧Skill群が導入されている環境は、対象Scopeごとにまずdry-runします。Project Scopeでは `--target` を指定します。
 
 ```sh
 python3 scripts/manage_skills.py migrate --scope user
 python3 scripts/manage_skills.py migrate --scope user --apply
 python3 scripts/manage_skills.py migrate --scope project --target ~/projects/my-app
+```
+
+複数agentの探索先に統合Skillが置かれ、Copilotから重複発見され得る構成は既定で拒否します。dry-runで対象先と警告を確認し、重複を理解した場合だけ `--allow-duplicate-discovery` を明示します。この許可はmanifestに記録され、Copilotの優先順位や実機での選択を保証するものではありません。移行先のagent組み合わせはCodex、Claude Code、Copilot CLIとその全組み合わせで検証されていますが、ホスト上の実際の発見・選択は別途手動評価が必要です。
+
+```sh
+python3 scripts/manage_skills.py migrate --scope user --allow-duplicate-discovery
+python3 scripts/manage_skills.py migrate --scope user --allow-duplicate-discovery --apply
 ```
 
 導入先ハッシュが旧manifestと一致する管理済みSkillだけが削除対象です。ローカル編集、manifestのみの記録、未管理ディレクトリ、既存トランザクションは保護され、競合時は停止します。異なる旧コミットはplanに表示します。適用後の失敗は `recover` でjournalを検査し、rollbackまたは完了状態を確認してください。`install`/`sync` は統合パッケージ全体を扱い、旧 `--skills` 引数は `migrate` の案内付きで拒否されます。

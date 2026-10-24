@@ -241,16 +241,30 @@ def _portable_skill_fingerprint(
     executable_files: tuple[str, ...],
 ) -> str:
     """Compare portable package contents with explicit executable metadata."""
+    if skill_dir.is_symlink() or _is_junction(skill_dir):
+        raise ValueError(f"cannot fingerprint linked Skill root: {skill_dir}")
     executable_set = set(executable_files)
     digest = hashlib.sha256()
     regular_files: set[str] = set()
-    for path in sorted(skill_dir.rglob("*")):
-        if path.is_symlink():
-            raise ValueError(f"cannot fingerprint symlinked Skill content: {path}")
-        relative_path = path.relative_to(skill_dir).as_posix()
-        relative = relative_path.encode("utf-8")
+    paths = sorted(skill_dir.rglob("*"))
+    populated_directories: set[str] = set()
+    for path in paths:
+        if path.is_symlink() or _is_junction(path):
+            raise ValueError(f"cannot fingerprint linked Skill content: {path}")
         if not path.is_dir() and not path.is_file():
             raise ValueError(f"unsupported non-regular Skill content: {path}")
+        if path.is_file():
+            parent = path.parent
+            while parent != skill_dir:
+                populated_directories.add(parent.relative_to(skill_dir).as_posix())
+                parent = parent.parent
+
+    for path in paths:
+        relative_path = path.relative_to(skill_dir).as_posix()
+        if path.is_dir() and relative_path not in populated_directories:
+            # Git and portable package hashes do not include empty directories.
+            continue
+        relative = relative_path.encode("utf-8")
         digest.update(len(relative).to_bytes(4, "big"))
         digest.update(relative)
         digest.update(b"D" if path.is_dir() else b"F")

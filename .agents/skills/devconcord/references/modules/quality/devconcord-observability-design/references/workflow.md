@@ -1,6 +1,6 @@
 # Observability & Diagnostics Workflow
 
-This workflow is distributed with `devconcord-observability-design`. Apply the
+This internal workflow is distributed inside the public `devconcord` package. Apply the
 target's actual requirements, platform contracts, privacy rules, security
 controls, and operational practices. Select only the depth needed by the
 system's purpose, scale, data sensitivity, failure impact, and support model.

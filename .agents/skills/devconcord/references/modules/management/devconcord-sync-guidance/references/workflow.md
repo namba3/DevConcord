@@ -1,6 +1,6 @@
 # Synchronization Workflow Reference
 
-This distributable reference contains the detailed execution contract for `devconcord-sync-guidance`. It applies shared documents adopted by a target repository. It does not update installed Skill packages. Use the direct CLI fallback in this workflow's `module.md` DevConcord References section to read DevConcord source files at a verified revision when a local checkout is available; do not assume source access.
+This distributable reference contains the detailed execution contract for the internal `manage sync` workflow. It applies shared documents adopted by a target repository. It does not update the installed public Skill package. Use the direct CLI fallback in this workflow's `module.md` DevConcord References section to read DevConcord source files at a verified revision when a local checkout is available; do not assume source access.
 
 あなたは既存のソフトウェア開発プロジェクトで、共通開発資料の更新差分を管理します。資料集と導入先の両方を調査し、プロジェクト固有のルールや利用者の変更を保持しながら、必要な差分だけを適用してください。
 

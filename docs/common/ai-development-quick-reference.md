@@ -66,7 +66,7 @@
 | SDD、要求仕様 | [AI支援開発ガイド §4](ai-assisted-development.md#4-sdd仕様駆動開発) |
 | 契約設計 | [AI支援開発ガイド §5](ai-assisted-development.md#5-dbc契約による設計) |
 | BDD、ATDD、TDD、テスト独立性 | [AI支援開発ガイド §6–7](ai-assisted-development.md#6-bddatdd振る舞いと受け入れの設計) |
-| 変更影響評価、テスト設計、実装計画 | [`devconcord review repository`](../../.agents/skills/devconcord/references/modules/verification/devconcord-repository-review/module.md)、[`devconcord verify test-design`](../../.agents/skills/devconcord/references/modules/verification/devconcord-test-design/module.md)、[`devconcord develop plan`](../../.agents/skills/devconcord/references/modules/development/devconcord-implementation-planning/module.md) |
+| 変更影響評価、テスト設計、実装計画 | [`devconcord review repository`](../../.agents/skills/devconcord/references/modules/verification/devconcord-repository-review/module.md)、[`devconcord verify test-design`](../../.agents/skills/devconcord/references/modules/verification/devconcord-test-design/module.md)、[`devconcord develop implementation-plan`](../../.agents/skills/devconcord/references/modules/development/devconcord-implementation-planning/module.md) |
 | 委任範囲内で複数領域の設計を具体化・改善 | [`devconcord design evolve`](../../.agents/skills/devconcord/references/modules/design/devconcord-design-orchestration/module.md) |
 | 複数の開発単位で実装・検証・レビューを反復し、続行・停止判断 | [`devconcord develop iterate`](../../.agents/skills/devconcord/references/modules/development/devconcord-development-orchestration/module.md) |
 | ADR | [AI支援開発ガイド §8](ai-assisted-development.md#8-adr設計判断の記録) |

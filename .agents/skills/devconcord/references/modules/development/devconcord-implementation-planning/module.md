@@ -25,7 +25,7 @@ or issue records unless the user explicitly includes those changes.
    alternatives.
 5. Identify acceptance conditions and the verification evidence each change
    needs. Where verification itself is unclear or substantial, recommend
-   `devconcord-test-design` as an optional focused follow-up; do not duplicate
+   `verify test-design` as an optional focused follow-up; do not duplicate
    its test-case design.
 6. Split work into small increments organized around responsibilities,
    contracts, or user-visible behavior. For each increment, state its outcome,

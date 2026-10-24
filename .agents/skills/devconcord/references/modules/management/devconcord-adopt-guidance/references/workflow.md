@@ -1,6 +1,6 @@
 # Adoption Workflow Reference
 
-This distributable reference contains the detailed execution contract for `devconcord-adopt-guidance`. The `module.md` is the entry point and keeps mandatory protection and provenance rules visible. When this workflow needs a DevConcord guide, template, shared document, or test procedure, use the direct CLI fallback described in this workflow's `module.md` DevConcord References section to read the needed path at this workflow's installed source commit. Do not assume the source checkout is available.
+This distributable reference contains the detailed execution contract for the internal `manage adopt` workflow. The `module.md` is the entry point and keeps mandatory protection and provenance rules visible. When this workflow needs a DevConcord guide, template, shared document, or test procedure, use the direct CLI fallback described in this workflow's `module.md` DevConcord References section to read the needed path at the installed public package's source commit. Do not assume the source checkout is available.
 
 あなたは既存ソフトウェアプロジェクトへ共通開発資料を導入します。
 
@@ -15,7 +15,7 @@ This distributable reference contains the detailed execution contract for `devco
 
 資料集のREADME、`docs/README.md`、`docs/agent-skills.md`を読み、利用可能な資料と相対リンクの前提を確認してください。
 
-`AGENTS.md` と `REVIEW.md` の有無も確認し、両方がない場合や片方だけの場合は、`devconcord-generate-agent-guidance` Skillを使って不足分を整備します。AGENTS.mdの生成・更新では、低リスクやSkill可用性未確認でも省略しないDevConcord原則の簡潔な説明と、必要に応じたDevConcord系Skill推奨を含む同Skillの必須生成契約に従います。詳細分析・実行はリスクに応じて選びます。旧名 `REVIEWS.md` がある対象の移行と競合判断も同Skillへ委ね、Adoptionに別の移行処理を作りません。両方がない場合は `REVIEW.md` を先に作成し、その後 `AGENTS.md` を作成してレビュー前に読む指示を含めます。既存ファイルがある場合は生成時にもその内容を調査し、有効なルールを維持して統合します。利用者が指示ファイルの生成を今回の対象外とした場合は、未作成ファイルと使用するSkillを報告し、`AGENTS.md` から `REVIEW.md` への参照を確認済みと扱いません。
+`AGENTS.md` と `REVIEW.md` の有無も確認し、両方がない場合や片方だけの場合は、`manage guidance` workflowを使って不足分を整備します。AGENTS.mdの生成・更新では、DevConcord原則の簡潔な説明と、単一公開パッケージ `devconcord` の必要に応じた案内を含めます。詳細分析・内部moduleの選択はリスクに応じて行います。旧名 `REVIEWS.md` がある対象の移行と競合判断も同workflowへ委ね、Adoptionに別の移行処理を作りません。両方がない場合は `REVIEW.md` を先に作成し、その後 `AGENTS.md` を作成してレビュー前に読む指示を含めます。既存ファイルがある場合は生成時にもその内容を調査し、有効なルールを維持して統合します。利用者が指示ファイルの生成を今回の対象外とした場合は、未作成ファイルと使用するSkillを報告し、`AGENTS.md` から `REVIEW.md` への参照を確認済みと扱いません。
 
 ## 2. 適用内容の選択
 
@@ -41,7 +41,7 @@ This distributable reference contains the detailed execution contract for `devco
 - DDD、Self-documenting Code、Performance by Design、Robustness by Design、Replaceability by Design、Security by Designを同格の横断的な基本設計原則として扱い、DbC・テスト・計測と接続します。UI/UXは利用者の目的・タスクから機能・操作・状態を方向付ける人間中心の入力とし、性能要求には必要に応じてワークロードや測定条件を、堅牢性要求には重要な異常条件・整合性・回復保証を定めます。根拠のない数値目標、無条件の再試行・多重化、過剰最適化は導入しません。Security by Designは資産・信頼境界・脅威・影響に応じた要求・制御・検証を扱い、資格情報が関係する場合は長期秘密の必要性とID・権限・ライフサイクルを必要な範囲で確認します。全変更に一律の脅威分析を課しません。詳しい共通原則は必要に応じて共通AI支援開発ガイドを参照し、詳細が必要なら `docs/application-design/secrets-by-design.md` を要求します。
 - Replaceability by Designは、主要な技術選択のうち交換価値があり波及影響が大きいものに限り、変更可能性・影響・抽象化コストから必要な境界を選びます。ドメイン概念に沿う契約と技術Adapterを優先し、全依存の抽象化、ライブラリAPIの一対一ラップ、未使用の複数実装を導入しません。UIビューの無変更移行を約束せず、バックエンドはエラー、整合性、永続形式、性能、セキュリティ等の意味的契約も考慮します。
 - UI/UXの理論やチェック項目を機械的に適用せず、対象者・タスク・製品形態に応じて機能要求、受け入れ条件、検証へつなげます。Web/デスクトップ以外のCLI・ライブラリ等にはGUI固有規約を課しません。キャンセルや再試行は処理状態・部分成功・データ整合性・重複副作用まで必要な範囲で設計します。
-- 既存GUIと画面・操作の設計資産があり、その変更影響や陳腐化の確認に価値がある場合は、利用可能性を確認して `devconcord-ux-functional-design` Skillを推奨します。Skillの実行やモックアップ更新は一律に求めず、既存資産・ユーザータスク・変更差分に必要な範囲へ絞ります。
+- 既存GUIと画面・操作の設計資産があり、その変更影響や陳腐化の確認に価値がある場合は、利用可能性を確認して `quality ux` workflowを候補にできます。workflowの選択やモックアップ更新は一律に求めず、既存資産・ユーザータスク・変更差分に必要な範囲へ絞ります。
 - Boundary Value / Property-Based / 状態機械 / Fault Injection / Recovery / Concurrency / Resource等の検証を影響と費用に応じて選び、すべてを必須化せず、実施していない検証を保証と扱いません。UX・性能・堅牢性等のトレードオフは重大な場合にADRへ記録します。
 - プライバシー・環境衛生の規約を選ぶ場合、実環境の個人情報・秘密・設定値を資料やサンプルへ複製せず、パスは相対表記、環境変数、標準API、プレースホルダーを優先します。OS契約やテストで必要な絶対パスは理由を確認します。
 - 既存の `AGENTS.md` や `REVIEW.md` を置換せず、矛盾のない差分を統合します。
@@ -52,13 +52,13 @@ This distributable reference contains the detailed execution contract for `devco
 
 共通原則・規約を採用したことと、対象の実際の要求・設計・実装・テストがその原則を満たすことは別です。Adoptionは共通資料の導入作業であり、採用だけを根拠に適合を報告しません。
 
-完了報告へ後続作業を推奨する場合は、このAdoption作業で既に確認した対象情報・既存成果物・具体的な矛盾や未解決事項だけを根拠とし、共通判断基準の `docs/common/ai-assisted-development.md` §17.3 を版固定参照します。推奨のために未調査のコードやテストを広く読み直してはいけません。適用状況や設計・実装の関係を横断的に評価する必要があるが十分な証拠がない場合は、個別の専門Skillで調査したと推測せず、必要に応じて `devconcord-gap-analysis` のFull Assessmentを候補にします。
+完了報告へ後続作業を推奨する場合は、このAdoption作業で既に確認した対象情報・既存成果物・具体的な矛盾や未解決事項だけを根拠とし、共通判断基準の `docs/common/ai-assisted-development.md` §17.3 を版固定参照します。推奨のために未調査のコードやテストを広く読み直してはいけません。適用状況や設計・実装の関係を横断的に評価する必要があるが十分な証拠がない場合は、個別の専門Skillで調査したと推測せず、必要に応じて `review gap` のFull Assessment workflowを候補にします。
 
 Full Assessmentの提案前に、対象リポジトリが既に有効な最新ギャップ分析レポートを持つか、今回の範囲で確認できる情報から調べます。既存レポートがあればFullの繰り返しを無条件に勧めず、明確な変更範囲がある場合はIncremental Assessment、または根拠がある一領域の専門Skillを検討します。レポートの有効性や対象commitが確認できない場合はその制約を示し、最新と決めつけません。
 
 既存文書・規約・要求・ADR・課題・リスク・実装の確認で特定できた重要な専門的検討だけを選び、共通の状態分類、候補条件、出力項目に従います。小さな導線修正など適切な専門Skillがない作業は既存の採用案に含め、Skill名を無理に割り当てません。不明な実装品質は判断保留/未評価とし、Gap Analysisを用いた追加評価が必要かを示します。
 
-実装前に具体的な影響範囲を確認する必要が見えた場合はRepository ReviewのChange Impact Assessment、要求から独立したテスト期待値や方法が未整理なら`devconcord-test-design`、複雑な改善を検証可能な実装単位へ分ける必要があれば`devconcord-implementation-planning`を候補にできます。Adoptionで確認していない実装品質やテスト不足を推測して推奨理由にしません。
+実装前に具体的な影響範囲を確認する必要が見えた場合はRepository ReviewのChange Impact Assessment、要求から独立したテスト期待値や方法が未整理なら`verify test-design`、複雑な改善を検証可能な実装単位へ分ける必要があれば`develop implementation-plan`を候補にできます。Adoptionで確認していない実装品質やテスト不足を推測して推奨理由にしません。
 
 推奨はAdoptionの完了報告に限り、課題表、リスク台帳、要求仕様、ADR、`AGENTS.md`、`REVIEW.md`、`docs/guidance-provenance.md` を推奨登録のために変更しません。後続Skillを自動実行・インストールせず、ユーザーの明示した範囲を広げません。実際に確認した根拠と、推奨対象に対して未実施の評価・検証を分けて報告します。
 
@@ -88,4 +88,4 @@ Full Assessmentの提案前に、対象リポジトリが既に有効な最新�
 - 実行した確認と未実施の確認を分けて報告します。
 - 採用しなかった資料、残る矛盾、利用者が判断する必要のある事項を示します。
 - 導入対象のソースや設定に変更を加えた場合、その理由を資料導入の変更と分けて説明します。
-- 導入結果を記録するため、対象リポジトリの `docs/guidance-provenance.md` に資料集URL、実際に確認した完全なコミットSHA、適用日、採用資料、保留事項を記録します。資料別の列名は「比較基準コミット」とし、状態・反映範囲・保留差分は適用メモに記録します。既存ファイルがある場合は上書きせず、`devconcord-sync-guidance` Skillによる更新へ切り替えます。
+- 導入結果を記録するため、対象リポジトリの `docs/guidance-provenance.md` に資料集URL、実際に確認した完全なコミットSHA、適用日、採用資料、保留事項を記録します。資料別の列名は「比較基準コミット」とし、状態・反映範囲・保留差分は適用メモに記録します。既存ファイルがある場合は上書きせず、`manage sync` workflowによる更新へ切り替えます。

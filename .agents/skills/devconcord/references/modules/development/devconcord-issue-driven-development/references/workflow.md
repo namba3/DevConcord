@@ -1,6 +1,6 @@
 # Issue-Driven Development Workflow
 
-This reference is distributed with `devconcord-issue-driven-development`.
+This internal workflow reference is distributed inside the public `devconcord` package.
 Apply the target repository's actual issue lifecycle, Definition of Done,
 verification commands, and scope rules. DevConcord's issue-tracking guide is
 the canonical shared reference, but target-specific rules and user direction

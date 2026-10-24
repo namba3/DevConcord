@@ -26,6 +26,7 @@ if __package__:
         validate_repository_skills,
         validate_skill_directory,
         validate_skill_roots,
+        _is_junction,
     )
 else:
     from agent_skills import (
@@ -35,6 +36,7 @@ else:
         validate_repository_skills,
         validate_skill_directory,
         validate_skill_roots,
+        _is_junction,
     )
 
 
@@ -44,6 +46,34 @@ MANIFEST_PATH = Path(".devconcord") / "skills-manifest.json"
 USER_CONFIG_PATH = Path(".devconcord") / "config.json"
 CURRENT_SCHEMA_VERSION = 2
 SKILL_HASH_VERSION = 2
+LEGACY_DEVCONCORD_SKILLS = frozenset(
+    {
+        "devconcord-adopt-guidance",
+        "devconcord-agent-behavior-evaluation",
+        "devconcord-bootstrap-from-design",
+        "devconcord-compatibility-migration",
+        "devconcord-dependency-governance",
+        "devconcord-design-orchestration",
+        "devconcord-design-performance",
+        "devconcord-design-replaceability",
+        "devconcord-design-robustness",
+        "devconcord-design-security",
+        "devconcord-development-orchestration",
+        "devconcord-documentation-architecture",
+        "devconcord-gap-analysis",
+        "devconcord-generate-agent-guidance",
+        "devconcord-implementation-planning",
+        "devconcord-issue-driven-development",
+        "devconcord-observability-design",
+        "devconcord-reference",
+        "devconcord-release-engineering",
+        "devconcord-repository-review",
+        "devconcord-root-cause-analysis",
+        "devconcord-sync-guidance",
+        "devconcord-test-design",
+        "devconcord-ux-functional-design",
+    }
+)
 # Copilot also loads personal Skills from ~/.copilot/skills. This directory is
 # never a DevConcord destination, but it must participate in collision checks.
 GLOBAL_DISCOVERY_PATHS = (".agents/skills", ".claude/skills", ".copilot/skills")
@@ -237,13 +267,15 @@ def _filesystem_executable_files(root: Path) -> tuple[str, ...]:
 
 def _portable_tree_digest(root: Path, executable_files: tuple[str, ...]) -> str:
     """Hash Git-portable package content, excluding empty dirs and host modes."""
+    if root.is_symlink() or _is_junction(root):
+        raise SkillManagementError(f"links are not supported in skill packages: {root}")
     executable_set = set(executable_files)
     regular_files: set[str] = set()
     paths = sorted(root.rglob("*"))
     populated_directories: set[str] = set()
     for path in paths:
-        if path.is_symlink():
-            raise SkillManagementError(f"symlinks are not supported in skill packages: {path}")
+        if path.is_symlink() or _is_junction(path):
+            raise SkillManagementError(f"links are not supported in skill packages: {path}")
         if path.is_dir():
             continue
         if not path.is_file():
@@ -1321,6 +1353,7 @@ def _migration_plan(
     *,
     scope: str,
     discovery_paths: tuple[str, ...],
+    allow_duplicate_discovery: bool = False,
 ) -> tuple[list[tuple[tuple[SkillAction, str], str]], dict[str, Any], Path, bool, bool, bool, str, str]:
     """Plan unified package installation and exact-hash removal of managed legacy Skills."""
     official_errors = validate_official_skill_names(source_root)
@@ -1330,21 +1363,25 @@ def _migration_plan(
             + "\n".join(official_errors)
         )
     actions, manifest, manifest_path, migrated, duplicate_exposure, dirty, revision, repository = _plan(
-        "install", target_root, source_root, requested_agents, None, False, False,
+        "install", target_root, source_root, requested_agents, None,
+        allow_duplicate_discovery, False,
         discovery_paths, scope,
     )
     target_root = target_root.resolve()
     removable: list[tuple[tuple[SkillAction, str], str]] = []
     unmanaged: list[str] = []
+    preserved: list[str] = []
     eligible_roots = set(_package_paths(requested_agents))
     for relative, package in manifest["packages"].items():
         if relative not in eligible_roots:
             continue
         installed = package["skills"]
         destination_root = target_root / relative
-        # Include only legacy public package names; module files under devconcord are not Skills.
+        # Internal modules use one package and are never migration deletion candidates.
         for name in sorted(tuple(installed)):
-            if not name.startswith("devconcord-"):
+            if name not in LEGACY_DEVCONCORD_SKILLS:
+                if name.startswith("devconcord-"):
+                    preserved.append(f"{relative}/{name} (not a known legacy official Skill)")
                 continue
             target = destination_root / name
             if target.is_symlink() or not target.is_dir():
@@ -1359,11 +1396,36 @@ def _migration_plan(
                     f"legacy Skill local modifications detected or invalid manifest hash: "
                     f"{relative}/{name}; resolve it manually before migration"
                 )
-            source_commit = record.get("source_commit", "unknown")
-            dirty_note = " (source was dirty)" if record.get("source_dirty") else ""
+            source_commit = record.get("source_commit")
+            hash_version = record.get("hash_version", 1)
+            source_digest_matches = False
+            if (
+                not record.get("source_dirty")
+                and _source_identities_match(record.get("source_repository"), repository)
+                and isinstance(source_commit, str)
+                and _full_commit_id(source_commit)
+                and hash_version in {1, SKILL_HASH_VERSION}
+            ):
+                try:
+                    source_digest_matches = (
+                        _git_skill_digest(
+                            source_root,
+                            source_commit,
+                            name,
+                            legacy=hash_version == 1,
+                        )
+                        == record.get("source_tree_sha256")
+                    )
+                except (SkillManagementError, OSError, ValueError):
+                    source_digest_matches = False
+            if not source_digest_matches:
+                preserved.append(
+                    f"{relative}/{name} (source identity, commit, or source hash could not be verified)"
+                )
+                continue
             print(
                 f"managed legacy Skill: {relative}/{name} "
-                f"(source commit {source_commit}{dirty_note})"
+                f"(source commit {source_commit})"
             )
             removable.append((("remove", target, name, digest, tree_digest(target), ()), relative))
         if destination_root.is_dir():
@@ -1373,6 +1435,8 @@ def _migration_plan(
                     unmanaged.append(f"{relative}/{candidate.name}")
     if unmanaged:
         print("preserving unmanaged legacy-looking directories: " + ", ".join(unmanaged))
+    if preserved:
+        print("preserving unverified or non-official Skill records: " + ", ".join(preserved))
     for (action_tuple, relative) in removable:
         name = action_tuple[2]
         manifest["packages"][relative]["skills"].pop(name, None)
@@ -2135,12 +2199,18 @@ def _run(args: argparse.Namespace) -> int:
             result = _migration_plan(
                 target_root, source_root, requested_agents, scope=scope,
                 discovery_paths=discovery_paths,
+                allow_duplicate_discovery=getattr(args, "allow_duplicate_discovery", False),
             )
             actions, manifest, manifest_path, _migrated, _duplicate, dirty, revision, repository = result
             for (action, _src, name, _hash, _old, _exec), relative in actions:
                 print(f"{action}: {relative}/{name}")
             print(f"Source: {repository} @ {revision}")
             print(f"Scope: {scope} ({target_root})")
+            if _duplicate:
+                print(
+                    "WARNING: duplicate discovery paths are exposed to Copilot; duplicate "
+                    "resolution is host-dependent and has not been verified."
+                )
             if not args.apply:
                 print("Dry run only; pass --apply to migrate files and manifest.")
                 return 0
@@ -2867,6 +2937,11 @@ def build_parser() -> argparse.ArgumentParser:
                          help="agent destinations; defaults to agents recorded in the old manifest")
     migrate.add_argument("--source", type=Path, help="unified DevConcord source repository")
     migrate.add_argument("--apply", action="store_true", help="apply the reviewed migration plan")
+    migrate.add_argument(
+        "--allow-duplicate-discovery",
+        action="store_true",
+        help="record explicit opt-in for identical packages in overlapping agent discovery paths",
+    )
 
     recover = commands.add_parser("recover", help="inspect or recover interrupted Skill updates")
     recover.add_argument("--scope", choices=("user", "project"))

@@ -202,6 +202,7 @@ Version: {version}
         skills: list[str] | None = None,
         apply: bool = False,
         source: Path | None = None,
+        allow_duplicate_discovery: bool = False,
     ) -> tuple[int, str, str]:
         args = SimpleNamespace(
             command=command,
@@ -212,7 +213,7 @@ Version: {version}
             agents=agents,
             skills=skills,
             apply=apply,
-            allow_duplicate_discovery=False,
+            allow_duplicate_discovery=allow_duplicate_discovery,
             allow_dirty_source=False,
             force=False,
         )
@@ -551,6 +552,14 @@ Version: {version}
         scope, target = manage_skills._resolve_scope_target(project_args)
         self.assertEqual(scope, "project")
         self.assertEqual(target, self.target.resolve())
+
+    def test_migrate_cli_exposes_explicit_duplicate_discovery_opt_in(self) -> None:
+        parser = manage_skills.build_parser()
+        args = parser.parse_args(
+            ["migrate", "--scope", "user", "--allow-duplicate-discovery"]
+        )
+        self.assertTrue(args.allow_duplicate_discovery)
+        self.assertFalse(args.apply)
 
     def test_user_config_requires_explicit_replace_and_does_not_rewrite_manifest(self) -> None:
         repository = self.source.parents[1]
@@ -1500,8 +1509,13 @@ Version: {version}
         installed = self.target / ".agents" / "skills" / "sample-skill"
         (installed / "unexpected-empty-directory").mkdir()
         result, _, error = self.run_validation()
+        self.assertEqual((result, error), (0, ""))
+        unexpected_file = installed / "unexpected-empty-directory" / "unexpected.txt"
+        unexpected_file.write_text("local modification\n", encoding="utf-8")
+        result, _, error = self.run_validation()
         self.assertEqual(result, 1)
         self.assertIn("differs from manifest hash", error)
+        unexpected_file.unlink()
         (installed / "unexpected-empty-directory").rmdir()
         self.assertEqual(self.run_validation()[0], 0)
 
@@ -2468,32 +2482,49 @@ Version: {version}
         self.assertNotIn("secret", repository)
 
 
-    def prepare_migration_source(self) -> Path:
+    def prepare_migration_source(self, *, agents: list[str] | None = None) -> Path:
         shutil.rmtree(self.source / "sample-skill")
-        self.commit_skill("devconcord-legacy-review", "legacy")
+        self.commit_skill("devconcord-repository-review", "legacy")
+        selected_agents = agents or ["codex"]
         self.assertEqual(
-            self.run_operation("install", skills=["devconcord-legacy-review"], apply=True)[0], 0
+            self.run_operation(
+                "install", agents=selected_agents,
+                skills=["devconcord-repository-review"], apply=True,
+                allow_duplicate_discovery=(
+                    "copilot" in selected_agents
+                    and "codex" in selected_agents
+                    and "claude" in selected_agents
+                ),
+            )[0],
+            0,
         )
-        shutil.rmtree(self.source / "devconcord-legacy-review")
+        shutil.rmtree(self.source / "devconcord-repository-review")
         self.commit_skill("devconcord", "unified")
-        return self.target / ".agents" / "skills" / "devconcord-legacy-review"
+        return self.target / ".agents" / "skills" / "devconcord-repository-review"
 
-    def prepare_user_migration_source(self) -> Path:
+    def prepare_user_migration_source(
+        self, *, agents: list[str] | None = None, allow_duplicate_discovery: bool = False
+    ) -> Path:
         shutil.rmtree(self.source / "sample-skill")
-        self.commit_skill("devconcord-legacy-review", "legacy")
+        self.commit_skill("devconcord-repository-review", "legacy")
         result, _, error = self.run_user_operation(
-            "install", agents=["codex"], skills=["devconcord-legacy-review"],
-            apply=True, source=self.source,
+            "install", agents=agents or ["codex"],
+            skills=["devconcord-repository-review"], apply=True, source=self.source,
+            allow_duplicate_discovery=allow_duplicate_discovery,
         )
         self.assertEqual((result, error), (0, ""))
-        shutil.rmtree(self.source / "devconcord-legacy-review")
+        shutil.rmtree(self.source / "devconcord-repository-review")
         self.commit_skill("devconcord", "unified")
-        return self.user_home / ".agents" / "skills" / "devconcord-legacy-review"
+        return self.user_home / ".agents" / "skills" / "devconcord-repository-review"
 
-    def run_user_migration(self, *, apply: bool = False) -> tuple[int, str, str]:
+    def run_user_migration(
+        self, *, apply: bool = False, allow_duplicate_discovery: bool = False,
+        agents: list[str] | None = None,
+    ) -> tuple[int, str, str]:
         args = SimpleNamespace(
             command="migrate", scope="user", target=None, source=self.source,
-            agents=None, apply=apply,
+            agents=agents, apply=apply,
+            allow_duplicate_discovery=allow_duplicate_discovery,
         )
         stdout = io.StringIO()
         stderr = io.StringIO()
@@ -2531,12 +2562,12 @@ Version: {version}
 
     def test_migration_scopes_removals_to_requested_agent_destinations(self) -> None:
         shutil.rmtree(self.source / "sample-skill")
-        self.commit_skill("devconcord-legacy-review", "legacy")
+        self.commit_skill("devconcord-repository-review", "legacy")
         self.assertEqual(
             self.run_operation("install", agents=["codex", "claude"],
-                               skills=["devconcord-legacy-review"], apply=True)[0], 0
+                               skills=["devconcord-repository-review"], apply=True)[0], 0
         )
-        shutil.rmtree(self.source / "devconcord-legacy-review")
+        shutil.rmtree(self.source / "devconcord-repository-review")
         self.commit_skill("devconcord", "unified")
         args = SimpleNamespace(
             command="migrate", scope="project", target=self.target, source=self.source,
@@ -2546,14 +2577,18 @@ Version: {version}
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
             result = manage_skills._run(args)
         self.assertEqual((result, stderr.getvalue()), (0, ""))
-        self.assertFalse((self.target / ".agents/skills/devconcord-legacy-review").exists())
-        self.assertTrue((self.target / ".claude/skills/devconcord-legacy-review").is_dir())
+        self.assertFalse((self.target / ".agents/skills/devconcord-repository-review").exists())
+        self.assertTrue((self.target / ".claude/skills/devconcord-repository-review").is_dir())
         self.assertFalse((self.target / ".claude/skills/devconcord").exists())
 
-    def run_migration(self, *, apply: bool = False) -> tuple[int, str, str]:
+    def run_migration(
+        self, *, apply: bool = False, allow_duplicate_discovery: bool = False,
+        agents: list[str] | None = None,
+    ) -> tuple[int, str, str]:
         args = SimpleNamespace(
             command="migrate", scope="project", target=self.target, source=self.source,
-            agents=None, apply=apply,
+            agents=agents, apply=apply,
+            allow_duplicate_discovery=allow_duplicate_discovery,
         )
         stdout = io.StringIO()
         stderr = io.StringIO()
@@ -2569,7 +2604,7 @@ Version: {version}
         result, output, error = self.run_migration()
 
         self.assertEqual((result, error), (0, ""))
-        self.assertIn("remove: .agents/skills/devconcord-legacy-review", output)
+        self.assertIn("remove: .agents/skills/devconcord-repository-review", output)
         self.assertIn("install: .agents/skills/devconcord", output)
         self.assertIn("Dry run only", output)
         self.assertTrue(legacy.is_dir())
@@ -2628,6 +2663,172 @@ Version: {version}
         self.assertTrue(unmanaged.is_dir())
         self.assertFalse(legacy.exists())
 
+    def test_migration_preserves_managed_unknown_devconcord_prefixed_skill(self) -> None:
+        legacy = self.prepare_migration_source()
+        local_extension = self.target / ".agents/skills/devconcord-local-workflow"
+        local_extension.mkdir()
+        (local_extension / "SKILL.md").write_text(
+            "---\nname: devconcord-local-workflow\ndescription: Local workflow.\n---\n\nBody.\n",
+            encoding="utf-8",
+        )
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        extension_hash = manage_skills._portable_tree_digest(local_extension, ())
+        legacy_record = manifest["packages"][".agents/skills"]["skills"][
+            "devconcord-repository-review"
+        ]
+        manifest["packages"][".agents/skills"]["skills"]["devconcord-local-workflow"] = {
+            **legacy_record,
+            "source_tree_sha256": extension_hash,
+            "installed_tree_sha256": extension_hash,
+            "hash_version": 2,
+            "source_executable_files": [],
+        }
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+        result, output, error = self.run_migration(apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("not a known legacy official Skill", output)
+        self.assertFalse(legacy.exists())
+        self.assertTrue(local_extension.is_dir())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertIn(
+            "devconcord-local-workflow",
+            manifest["packages"][".agents/skills"]["skills"],
+        )
+
+    def test_migration_preserves_unverified_source_identity(self) -> None:
+        legacy = self.prepare_migration_source()
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["packages"][".agents/skills"]["skills"]["devconcord-repository-review"][
+            "source_repository"
+        ] = "github.com/untrusted/other"
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+        result, output, error = self.run_migration()
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("source identity, commit, or source hash could not be verified", output)
+        self.assertTrue(legacy.is_dir())
+        self.assertIn(
+            "devconcord-repository-review",
+            json.loads(manifest_path.read_text(encoding="utf-8"))["packages"][".agents/skills"]["skills"],
+        )
+
+    def test_migration_requires_explicit_duplicate_discovery_opt_in(self) -> None:
+        self.prepare_migration_source(agents=["codex", "claude", "copilot"])
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+
+        result, _, error = self.run_migration()
+        self.assertEqual(result, 2)
+        self.assertIn("explicitly pass --allow-duplicate-discovery", error)
+
+        result, output, error = self.run_migration(allow_duplicate_discovery=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("duplicate discovery paths are exposed to Copilot", output)
+        self.assertIn("Dry run only", output)
+
+        result, _, error = self.run_migration(
+            apply=True, allow_duplicate_discovery=True
+        )
+        self.assertEqual((result, error), (0, ""))
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertIn(
+            {"skill": "devconcord", "paths": [".agents/skills", ".claude/skills"]},
+            manifest["duplicate_discovery_allowances"],
+        )
+        self.assertEqual(
+            set(manifest["packages"][".agents/skills"]["skills"]), {"devconcord"}
+        )
+        self.assertEqual(
+            set(manifest["packages"][".claude/skills"]["skills"]), {"devconcord"}
+        )
+
+    def test_project_migration_supports_all_agent_combinations(self) -> None:
+        combinations = (
+            ["codex"], ["claude"], ["copilot"], ["codex", "copilot"],
+            ["claude", "copilot"], ["codex", "claude"],
+            ["codex", "claude", "copilot"],
+        )
+        for agents in combinations:
+            with self.subTest(agents=agents):
+                fixture = SkillManagementTests("runTest")
+                fixture.setUp()
+                try:
+                    fixture.prepare_migration_source(agents=agents)
+                    duplicate_risk = "copilot" in agents and "codex" in agents and "claude" in agents
+
+                    result, _, error = fixture.run_migration()
+                    if duplicate_risk:
+                        self.assertEqual(result, 2)
+                        self.assertIn("explicitly pass --allow-duplicate-discovery", error)
+                        result, output, error = fixture.run_migration(
+                            allow_duplicate_discovery=True
+                        )
+                    else:
+                        output = ""
+                    self.assertEqual((result, error), (0, ""))
+                    if duplicate_risk:
+                        self.assertIn("duplicate discovery paths are exposed to Copilot", output)
+                    result, _, error = fixture.run_migration(
+                        apply=True, allow_duplicate_discovery=duplicate_risk
+                    )
+                    self.assertEqual((result, error), (0, ""))
+
+                    roots = manage_skills._package_paths(set(agents))
+                    manifest = json.loads(
+                        (fixture.target / ".devconcord/skills-manifest.json").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                    for root in roots:
+                        self.assertTrue((fixture.target / root / "devconcord/SKILL.md").is_file())
+                        self.assertFalse(
+                            (fixture.target / root / "devconcord-repository-review").exists()
+                        )
+                        self.assertEqual(
+                            set(manifest["packages"][root]["skills"]), {"devconcord"}
+                        )
+                    self.assertEqual(fixture.run_validation()[0], 0)
+                finally:
+                    fixture.doCleanups()
+
+    def test_user_migration_supports_multi_agent_duplicate_opt_in(self) -> None:
+        agents = ["codex", "claude", "copilot"]
+        self.prepare_user_migration_source(
+            agents=agents, allow_duplicate_discovery=True
+        )
+
+        result, _, error = self.run_user_migration()
+        self.assertEqual(result, 2)
+        self.assertIn("explicitly pass --allow-duplicate-discovery", error)
+
+        result, output, error = self.run_user_migration(
+            allow_duplicate_discovery=True
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("duplicate discovery paths are exposed to Copilot", output)
+        result, _, error = self.run_user_migration(
+            apply=True, allow_duplicate_discovery=True
+        )
+        self.assertEqual((result, error), (0, ""))
+
+        manifest = json.loads(
+            (self.user_home / ".devconcord/skills-manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            set(manifest["packages"]),
+            {".agents/skills", ".claude/skills"},
+        )
+        self.assertIn(
+            {"skill": "devconcord", "paths": [".agents/skills", ".claude/skills"]},
+            manifest["duplicate_discovery_allowances"],
+        )
+
     def test_migration_refuses_manifest_only_legacy_record(self) -> None:
         legacy = self.prepare_migration_source()
         shutil.rmtree(legacy)
@@ -2635,7 +2836,7 @@ Version: {version}
         self.assertEqual(result, 2)
         self.assertIn("legacy manifest record", error)
         manifest = json.loads((self.target / ".devconcord/skills-manifest.json").read_text())
-        self.assertIn("devconcord-legacy-review", manifest["packages"][".agents/skills"]["skills"])
+        self.assertIn("devconcord-repository-review", manifest["packages"][".agents/skills"]["skills"])
         self.assertFalse((self.target / ".agents/skills/devconcord").exists())
 
     def test_unified_reference_uses_package_manifest_identity(self) -> None:

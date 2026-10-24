@@ -1,6 +1,6 @@
 # Development Orchestration Workflow
 
-This reference is distributed with `devconcord-development-orchestration`.
+This internal workflow reference is distributed inside the public `devconcord` package.
 Follow the target repository's contracts, issue lifecycle, verification rules,
 and document ownership. Keep the work bounded and preserve existing user work.
 
@@ -35,8 +35,8 @@ references or dependency cycles rather than guessing an order.
 
 Choose one semantically coherent unit that can be reviewed and verified on its
 own. Do not copy the issue-selection or Batch procedure from
-`devconcord-issue-driven-development`; use that Skill for the bounded unit's
-execution when it is available and authorized. Use
+the `develop issue` internal workflow for issue selection and completion when
+that bounded unit is in scope and authorized. Use
 `devconcord-implementation-planning` when connected changes need sequencing.
 For the selected unit, record the intended outcome, existing contract,
 acceptance condition, proportionate verification, affected boundaries, and

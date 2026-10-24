@@ -1,7 +1,7 @@
 
 # Sync Adopted Guidance
 
-This workflow applies document changes to an existing target repository. It does not update the globally installed DevConcord Skills. Use `devconcord-adopt-guidance` for first-time adoption.
+This internal workflow applies document changes to an existing target repository. It does not update the installed public `devconcord` package. Use `manage adopt` for first-time adoption.
 
 ## Required safety checks
 
