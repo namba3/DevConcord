@@ -68,6 +68,18 @@ Check User Scope or Project Scope availability in the actual target context.
 These are optional aids, not automatic calls or prerequisites. If unavailable,
 continue from verified project guidance within the safe scope.
 
+## Optional development handoff
+
+For material multi-session or incomplete work, consider the target's existing
+handoff document at meaningful checkpoints. The issue register remains the
+only source of issue state, dependencies, acceptance, and issue-level evidence;
+do not duplicate its rows, history, risks, or quality assessment. Plan mode is
+read-only and must not edit a handoff. Single/Batch may update an authorized
+handoff when needed, but do not generate one in every target or create multiple
+handoff files. See the shared AI-assisted development guide's Evidence-Grounded
+Development Handoff section for resume freshness, concurrency, and authority
+contracts.
+
 ## DevConcord References
 
 Use `devconcord manage reference` when available, identify this workflow as the

@@ -192,6 +192,22 @@ register, implementation/tests, acceptance evidence, blockers and residual
 risks. Verify old evidence against current changes; do not resume from a prior
 agent report alone.
 
+If a handoff exists, read it as a lead and then inspect current instructions,
+authorization/budget, branch, HEAD, index/worktree, issue state, related
+requirements, implementation, tests, and environment. Compare the recorded
+baseline, verify evidence freshness against relevant intervening changes, and
+resolve conflicts or unknowns before continuing. Prefer the current issue
+register and implementation evidence over contradictory handoff text. Protect
+concurrent edits; do not overwrite an updated handoff. A missing, stale, or
+unusable handoff is not a blocker when the current state can be reconstructed.
+
+At meaningful checkpoints, consider updating an authorized existing snapshot
+with the active work unit, implementation progress distinct from executed
+verification, pending/stale evidence, material findings, blockers, stop reason,
+and next safe action. Keep the snapshot concise and current; no per-edit or
+per-test update is required. Handoff details never extend the current user's
+authority or the finite iteration/repair budget.
+
 Report mode and boundary; selected work units and rationale; changes;
 commands and results; review findings and repairs; authorized record updates;
 remaining issues, blockers, assumptions and risks; and why the loop continued

@@ -198,3 +198,14 @@ units, acceptance/verification conditions, unknowns, and explicitly confirm
 that no files or issue records were changed. Static tests, fixture checks,
 remote CI, native/device behavior, and actual agent execution are distinct
 evidence categories; report only what was observed.
+
+## Optional handoff checkpoints
+
+An existing handoff may help when a Single or Batch spans sessions or stops
+with material work or verification incomplete. Plan mode may read it and report
+staleness, but never modify it. At an authorized checkpoint, keep only the
+current execution context and point to the issue register; do not copy issue
+states, the Batch list, or a TODO backlog. On completion, update the issue
+register under its own rules and trim an obsolete snapshot only when authorized.
+Before editing, recheck the current handoff and Git state to protect concurrent
+changes. Absence of a handoff does not block this workflow.

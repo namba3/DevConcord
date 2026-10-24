@@ -48,6 +48,7 @@ Route by desired outcome, target, expected artifact, and authority, not by a key
 - “Improve the existing design” → `design evolve`.
 - “Find why this test/regression fails” → `diagnose root-cause`; diagnosis alone does not authorize the fix.
 - “Stabilize quality without adding features” → `develop stabilize`.
+- “Resume this long-running task from its handoff” → the applicable `develop issue` or `develop iterate` workflow; inspect and revalidate the existing handoff before continuing. Do not create a handoff for routine work or treat it as authority.
 - “Synchronize adopted DevConcord guidance” → `manage sync`.
 - “Migrate safely from an old persisted format” → `lifecycle compatibility`.
 - A dependency update or security/licensing/supply-chain assessment → `lifecycle dependencies`.

@@ -1,0 +1,46 @@
+# Development Handoff
+
+> 現在の作業を再開するための簡潔なスナップショットです。課題表・実装・テスト結果の正本ではなく、権限も付与しません。不要になった古い情報は整理してください。
+
+## Baseline
+
+- Branch / HEAD:
+- Worktree and index: clean / changed (relevant paths and summary)
+- Last updated:
+- Last checked:
+- Active workflow and scope:
+
+## Current Focus
+
+- Issue ID and objective:
+- Issue register reference:
+
+## Verified Progress
+
+- Confirmed implementation:
+- Verification: exact command, result, environment, and applicable HEAD + relevant worktree state
+
+## Pending Verification
+
+- Not run / failed / requiring revalidation:
+
+## Important Findings
+
+- Confirmed:
+- Hypothesis:
+- Unknown or superseded:
+
+## Blockers / Approval Boundaries
+
+- Blockers or decisions requiring authorization:
+
+## Next Safe Actions
+
+1. Inspect current repository, branch, index, and worktree.
+2. Recheck the issue register and prerequisites.
+3. Revalidate evidence affected by intervening changes.
+4. Continue only within current user authorization and remaining budget.
+
+## Stop Conditions
+
+- Conflicting edits, stale or contradictory evidence, missing approval/prerequisite, or exhausted scope/budget:

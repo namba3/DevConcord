@@ -143,6 +143,61 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
             self.assertIn(name, unified)
         self.assertIn("workflows are optional", unified.lower())
 
+    def test_development_handoff_is_optional_evidence_context_not_a_parallel_ledger(self) -> None:
+        template = ROOT / "docs" / "work-management" / "templates" / "handoff.md"
+        issue_guide = (ROOT / "docs" / "work-management" / "issue-tracking.md").read_text(
+            encoding="utf-8"
+        )
+        common = (ROOT / "docs" / "common" / "ai-assisted-development.md").read_text(
+            encoding="utf-8"
+        )
+        issue_module = module("development", "devconcord-issue-driven-development").read_text(
+            encoding="utf-8"
+        )
+        issue_workflow = (
+            module("development", "devconcord-issue-driven-development").parent
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+        orchestration = module("development", "devconcord-development-orchestration").read_text(
+            encoding="utf-8"
+        )
+        orchestration_workflow = (
+            module("development", "devconcord-development-orchestration").parent
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+        template_text = template.read_text(encoding="utf-8")
+        agents_guidance = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        checklist_heading = issue_guide.index("## 7. 運用チェックリスト")
+        handoff_heading = issue_guide.index("## 8. 開発引継ぎ（HANDOFF.md）")
+        checklist_item = issue_guide.index("- [ ] 冒頭の完成度評価")
+
+        for section in (
+            "Baseline", "Current Focus", "Verified Progress", "Pending Verification",
+            "Important Findings", "Blockers / Approval Boundaries", "Next Safe Actions",
+            "Stop Conditions",
+        ):
+            with self.subTest(template_section=section):
+                self.assertIn(f"## {section}", template_text)
+        for phrase in (
+            "唯一の正本", "複製しません", "再開時", "競合", "権限", "更新",
+        ):
+            with self.subTest(issue_contract=phrase):
+                self.assertIn(phrase, issue_guide)
+        self.assertLess(checklist_heading, checklist_item)
+        self.assertLess(checklist_item, handoff_heading)
+        for phrase in (
+            "optional", "not a required loop artifact", "quality gate",
+            "finite budget", "evidence freshness", "current user's",
+        ):
+            with self.subTest(orchestration_contract=phrase):
+                self.assertIn(phrase.lower(), (common + orchestration + orchestration_workflow).lower())
+        self.assertIn("Plan mode", (issue_module + issue_workflow))
+        self.assertIn("never modify", issue_workflow)
+        self.assertIn("concurrent edits", orchestration_workflow)
+        self.assertIn("not overwrite", orchestration_workflow)
+        self.assertIn("HANDOFF", agents_guidance)
+        self.assertIn("検証", agents_guidance)
+
     def test_module_contracts_and_supporting_references_are_retained(self) -> None:
         contracts = {
             ("quality", "devconcord-design-security"): ("trust boundary", "長期秘密"),

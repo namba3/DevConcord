@@ -124,3 +124,14 @@ Other useful paths include `docs/work-management/issue-tracking.md`,
 or claim unread references were applied. If a required reference cannot be read, stop; if it is optional,
 report the failure and continue only independent work
 supported by available evidence.
+
+## Optional session handoff
+
+For long-running, complex incomplete, or multi-session work, use an existing
+handoff as a concise checkpoint snapshot when useful. It supplements the issue
+register and current repository evidence; it is not a required loop artifact,
+quality gate, evidence source, or permission grant. Absence does not block
+Plan/Iterate/Stabilize. At meaningful checkpoints, capture the current work
+unit, verified progress and its state, material pending verification, findings,
+blockers, and next safe action without copying quality-gate output or issue
+lists. Keep the existing finite budget and stop conditions.
