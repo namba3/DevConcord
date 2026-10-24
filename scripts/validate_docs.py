@@ -600,7 +600,7 @@ def check_conventions(files: list[Path]) -> list[str]:
     if "正式な総合完成度" not in rules or "評価済みカバレッジ" not in rules:
         errors.append("issue-tracking.md: scoring rules must define formal score and evaluation coverage")
 
-    skill_references = ROOT / ".agents/skills/devconcord-generate-agent-guidance/references"
+    skill_references = ROOT / ".agents/skills/devconcord/references/modules/management/devconcord-generate-agent-guidance/references"
     agents_guidance = read_utf8(
         skill_references / "agents-md.md", "AGENTS.md generation guidance", errors
     ) or ""
@@ -608,9 +608,9 @@ def check_conventions(files: list[Path]) -> list[str]:
         skill_references / "reviews-md.md", "REVIEW.md generation guidance", errors
     ) or ""
     if "## コードレビュー" not in agents_guidance or "REVIEW.md" not in agents_guidance:
-        errors.append("devconcord-generate-agent-guidance/agents-md.md: must require a review-time REVIEW.md instruction")
+        errors.append("devconcord (guidance module)/agents-md.md: must require a review-time REVIEW.md instruction")
     if "AGENTS.md" not in review_guidance or "レビュー開始前" not in review_guidance:
-        errors.append("devconcord-generate-agent-guidance/reviews-md.md: must connect REVIEW.md to AGENTS.md loading")
+        errors.append("devconcord (guidance module)/reviews-md.md: must connect REVIEW.md to AGENTS.md loading")
     if (ROOT / "prompts").exists():
         errors.append("prompts/: remove the retired directory; Skills are the canonical workflow sources")
     return errors

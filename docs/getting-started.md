@@ -2,21 +2,21 @@
 
 DevConcordのAgent Skillsは **User Scope（ユーザー単位）** が標準です。一度ユーザー環境へ導入すると、対応エージェントからローカルプロジェクトで利用できます。各プロジェクトにSkillやSkill manifestをコピーする必要はありません。Skillsの利用と共通文書の導入・更新は別の操作です。
 
-DevConcord公式Skill名には `devconcord-` が付きます。旧名Skillを導入済みの環境は自動変更されないため、新名で導入した後も既存Skillを確認し、必要なら利用者が別途整理してください。
+DevConcordの唯一の公開Skill名は `devconcord` です。従来の `devconcord-*` 名は専門ワークフローの内部モジュールIDとして残り、独立Skillではありません。既存導入は `manage_skills.py migrate` でdry-runを確認し、明示的な `--apply` で安全に移行できます。
 
 専門Skillと検証方法は、実際の影響・不確実性・波及範囲・可逆性・証拠に応じて選び、作業途中の新しいリスクに合わせて見直します。全Skillや重い検証手法の一律実行は求めません。詳細は[Risk-Proportional Skill Application / Verification](common/ai-assisted-development.md#175-リスク比例型skill適用と検証)を参照してください。
 
-変更を実装する前に影響範囲を整理したい場合は`devconcord-repository-review`のChange Impact Assessment、要求から独立した検証方法を設計したい場合は`devconcord-test-design`、複雑な作業を段階化したい場合は`devconcord-implementation-planning`を使えます。いずれも必要な場合だけ選ぶSkillで、自動実行・自動引継ぎは前提にしません。
+変更前の影響評価は `devconcord review impact`、独立した検証設計は `devconcord verify test-design`、複雑な作業の段階化は `devconcord develop plan` から選べます。これは単一公開Skill内の論理ワークフローで、必要な場合だけ使います。
 
-新規・未完成の設計を具体化したり、既存設計を複数領域にまたがって改善する作業を委任するときは、[`devconcord-design-orchestration`](../.agents/skills/devconcord-design-orchestration/SKILL.md)を検討できます。読み取り専用のExplore、設計成果物を扱うDesign、既存設計を扱うEvolveを依頼の範囲から選びます。Design/Evolveは実装コード変更を許可せず、重大な仕様・互換性判断は承認へ委ねます。単一領域の判断には対応する専門Skill、全体ギャップの評価にはGap Analysis、実装計画・課題実装にはそれぞれのSkillを使います。
+新規・未完成の設計を具体化したり、既存設計を複数領域にまたがって改善する作業を委任するときは、[`devconcord design evolve` workflow module](../.agents/skills/devconcord/references/modules/design/devconcord-design-orchestration/module.md)を検討できます。読み取り専用のExplore、設計成果物を扱うDesign、既存設計を扱うEvolveを依頼の範囲から選びます。Design/Evolveは実装コード変更を許可せず、重大な仕様・互換性判断は承認へ委ねます。単一領域の判断には対応する専門Skill、全体ギャップの評価にはGap Analysis、実装計画・課題実装にはそれぞれのSkillを使います。
 
-導入先に既存の課題表があり、その課題から次の作業を選ぶ・指定課題を実装する・範囲を区切って複数課題を進める依頼では、[`devconcord-issue-driven-development`](../.agents/skills/devconcord-issue-driven-development/SKILL.md)を検討できます。調査だけなら読み取り専用のPlan、実装依頼ならSingleまたはユーザーが指定した範囲のBatchを選びます。Skillの選択だけで実装・課題表更新が許可されるわけではなく、課題表と導入先の完了条件が正本です。
+導入先に既存の課題表があり、その課題から次の作業を選ぶ・指定課題を実装する・範囲を区切って複数課題を進める依頼では、[`devconcord develop issue` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-issue-driven-development/module.md)を検討できます。調査だけなら読み取り専用のPlan、実装依頼ならSingleまたはユーザーが指定した範囲のBatchを選びます。Skillの選択だけで実装・課題表更新が許可されるわけではなく、課題表と導入先の完了条件が正本です。
 
-既存設計と課題表に沿って複数の開発単位を実装・検証・レビューし、品質を再評価しながら続行・停止を判断する場合は、[`devconcord-development-orchestration`](../.agents/skills/devconcord-development-orchestration/SKILL.md)を検討できます。読み取り専用のPlan、許可範囲で反復するIterate、新機能を追加しないStabilizeを依頼から選びます。単一課題や限定BatchにはIssue-Driven Developmentを使い、開発反復Skillも無期限の実装・自動コミットを許可しません。
+既存設計と課題表に沿って複数の開発単位を実装・検証・レビューし、品質を再評価しながら続行・停止を判断する場合は、[`devconcord develop iterate` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-development-orchestration/module.md)を検討できます。読み取り専用のPlan、許可範囲で反復するIterate、新機能を追加しないStabilizeを依頼から選びます。単一課題や限定BatchにはIssue-Driven Developmentを使い、開発反復Skillも無期限の実装・自動コミットを許可しません。
 
-必要な場面に限り、原因不明の失敗は[`devconcord-root-cause-analysis`](../.agents/skills/devconcord-root-cause-analysis/SKILL.md)、実際のAPI/データ形式変更は[`devconcord-compatibility-migration`](../.agents/skills/devconcord-compatibility-migration/SKILL.md)、リリース候補や配布・更新は[`devconcord-release-engineering`](../.agents/skills/devconcord-release-engineering/SKILL.md)、依存の採用・変更・重大リスクは[`devconcord-dependency-governance`](../.agents/skills/devconcord-dependency-governance/SKILL.md)を候補にできます。通常の開発ループの必須工程ではなく、Skill未導入だけで無関係な作業を停止しません。エージェント自身のSkill発見・選択・実行品質を評価する場合は[`devconcord-agent-behavior-evaluation`](../.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md)を使えます。利用例とE2E評価境界は[Skills一覧](agent-skills.md)と[統合評価シナリオ](../tests/integration/README.md)を参照してください。
+必要な場面に限り、原因不明の失敗は[`devconcord diagnose root-cause`](../.agents/skills/devconcord/references/modules/verification/devconcord-root-cause-analysis/module.md)、実際のAPI/データ形式変更は[`devconcord lifecycle compatibility`](../.agents/skills/devconcord/references/modules/lifecycle/devconcord-compatibility-migration/module.md)、リリース候補や配布・更新は[`devconcord lifecycle release`](../.agents/skills/devconcord/references/modules/lifecycle/devconcord-release-engineering/module.md)、依存の採用・変更・重大リスクは[`devconcord lifecycle dependencies`](../.agents/skills/devconcord/references/modules/lifecycle/devconcord-dependency-governance/module.md)を候補にできます。通常の開発ループの必須工程ではなく、Skill未導入だけで無関係な作業を停止しません。エージェント自身のSkill発見・選択・実行品質を評価する場合は[`devconcord evaluate agent`](../.agents/skills/devconcord/references/modules/evaluation/devconcord-agent-behavior-evaluation/module.md)を使えます。利用例とE2E評価境界は[Skills一覧](agent-skills.md)と[統合評価シナリオ](../tests/integration/README.md)を参照してください。
 
-重要な処理や障害の原因を利用者・開発者・運用者が安全に調査する必要がある場合は、[`devconcord-observability-design`](../.agents/skills/devconcord-observability-design/SKILL.md)で診断の問いと必要な信号を設計できます。小規模なCLIのエラー出力で十分なこともあり、監視基盤・分散トレース・リモートテレメトリを一律に導入しません。
+重要な処理や障害の原因を利用者・開発者・運用者が安全に調査する必要がある場合は、[`devconcord quality observability`](../.agents/skills/devconcord/references/modules/quality/devconcord-observability-design/module.md)で診断の問いと必要な信号を設計できます。小規模なCLIのエラー出力で十分なこともあり、監視基盤・分散トレース・リモートテレメトリを一律に導入しません。
 
 Bootstrap / Adoption / 資料Synchronizationは、導入先リポジトリを作業コンテキストとして実行します。DevConcordは読み取り専用の参照元です。Agent Skills管理CLIは別操作で、User Scopeではユーザー環境、Project Scopeでは `--target` に指定したリポジトリを変更します。
 
@@ -57,7 +57,7 @@ python3 scripts/manage_skills.py config show
 
 Skillsの標準形式と各エージェントの公式探索先に従い、CodexとCopilotで共用する `.agents/skills/`、Claude Code用の `.claude/skills/` に分けて配置します。最初にdry-runの計画を確認します。`--apply` がないコマンドはファイルを変更しません。
 
-**前提:** 利用するエージェントを決めます。以下はCodexとCopilotでSkillsを共用する例です。インストール時に `--skills` を省略すると、全Skillsが対象です。
+**前提:** 利用するエージェントを決めます。以下はCodexとCopilotで統合Skillパッケージを共用する例です。
 
 **実行場所: `~/projects/devconcord/`。変更先: 現在のユーザー環境。**
 
@@ -78,13 +78,13 @@ python3 scripts/manage_skills.py config show
 
 Claude Codeだけを使う場合は `--agents codex copilot` の代わりに `--agent claude` を指定します。CodexまたはCopilotとClaude Codeを同時に使うと、Copilotが両方の配置から同じSkillを発見する可能性があります。ホストの挙動を実際に確認せず、3エージェント構成を既定として選ばないでください。必要な場合の重複許可は[Skills運用ガイド](agent-skills.md#配置とエージェントの共用)を参照してください。
 
-**期待する成果物:** Codex/Copilot用なら `~/.agents/skills/`、Claude Code用なら `~/.claude/skills/` に選択したSkillsが配置され、状態・manifest・lock・復旧情報はユーザーの `~/.devconcord/` に保存されます。インストールしても対象プロジェクトにはファイルを作成しません。
+**期待する成果物:** Codex/Copilot用なら `~/.agents/skills/`、Claude Code用なら `~/.claude/skills/` に統合 `devconcord` パッケージが配置され、状態・manifest・lock・復旧情報はユーザーの `~/.devconcord/` に保存されます。インストールしても対象プロジェクトにはファイルを作成しません。
 
-全Skillsを導入すると共通参照Skill [`devconcord-reference`](../.agents/skills/devconcord-reference/SKILL.md)も含まれます。業務Skillが必要とする資料パスを選び、利用できる場合に共通Skillへ参照を依頼します。Skill間の自動呼び出しは保証されないため、各業務Skillには同じ決定的CLIを直接実行するフォールバックがあります。要求元Skillのinstalled版を使い、必須資料が取得できないときは安全に停止し、任意資料なら自己完結した作業を続けられるか判断します。例とScope・エラー処理は[Agent Skills運用ガイドのローカル参照節](agent-skills.md#ローカルdevconcord資料の参照)を参照してください。
+統合Skillを導入すると統合SkillのReference moduleが含まれます。選択した内部ワークフローが必要な資料パスを決め、同じ決定的CLIを使います。要求元Skillのinstalled版を使い、必須資料が取得できないときは安全に停止し、任意資料なら自己完結した作業を続けられるか判断します。例とScope・エラー処理は[Agent Skills運用ガイドのローカル参照節](agent-skills.md#ローカルdevconcord資料の参照)を参照してください。
 
 ## 3. 設計書から新規Bootstrapする（Codex CLI）
 
-**前提:** Codex CLIが利用でき、登録済みのローカル参照元とグローバル `devconcord-bootstrap-from-design` SkillをCodexから読めること。`my-new-app/` は空にしておきます。グローバルSkillは対象へコピーしないため、Skill導入によってBootstrap開始状態が変わりません。
+**前提:** Codex CLIが利用でき、登録済みのローカル参照元とグローバル `devconcord manage bootstrap` workflowをCodexから読めること。`my-new-app/` は空にしておきます。グローバルSkillは対象へコピーしないため、Skill導入によってBootstrap開始状態が変わりません。
 
 **作業ディレクトリ・変更先:** `~/projects/my-new-app/`。入力設計書は `~/projects/design/requirements.md`、ローカル参照元は `~/projects/devconcord/` です。
 
@@ -93,13 +93,14 @@ cd ~/projects/my-new-app
 codex
 ```
 
-Codexへ「`devconcord-bootstrap-from-design` Skillを使い、`~/projects/design/requirements.md` からこの空のリポジトリを初期化してください。DevConcordの資料は読み取り専用で参照し、変更先はこのリポジトリだけにしてください。未確認の機能やコマンドを事実として記載しないでください」と依頼します。
+Codexへ「`devconcord manage bootstrap` workflowを使い、`~/projects/design/requirements.md` からこの空のリポジトリを初期化してください。DevConcordの資料は読み取り専用で参照し、変更先はこのリポジトリだけにしてください。未確認の機能やコマンドを事実として記載しないでください」と依頼します。
 
-Skillが利用できない場合は、`devconcord-bootstrap-from-design` の `SKILL.md` と詳細手順を読み、両方の全文を対象リポジトリで実行中のエージェントへ渡します。
+Skillが利用できない場合は、`devconcord/SKILL.md` とBootstrap module・詳細手順を読み、必要な全文を対象リポジトリで実行中のエージェントへ渡します。
 
 ```sh
-cat ~/projects/devconcord/.agents/skills/devconcord-bootstrap-from-design/SKILL.md
-cat ~/projects/devconcord/.agents/skills/devconcord-bootstrap-from-design/references/workflow.md
+cat ~/projects/devconcord/.agents/skills/devconcord/SKILL.md
+cat ~/projects/devconcord/.agents/skills/devconcord/references/modules/management/devconcord-bootstrap-from-design/module.md
+cat ~/projects/devconcord/.agents/skills/devconcord/references/modules/management/devconcord-bootstrap-from-design/references/workflow.md
 ```
 
 **期待する成果物:** 合意した範囲のREADME、設計・要求資料、最小限の実装骨格・検証資産などです。Git初期化や技術スタックは設計と対象の状態に基づき判断します。生成された記述が設計書・実装と一致するか、人が確認してください。
@@ -117,20 +118,21 @@ cd ~/projects/my-app
 codex
 ```
 
-「`devconcord-adopt-guidance` Skillを使い、このリポジトリの既存実装・文書・規約・リンク・履歴を調査してください。DevConcordの共通資料はローカル参照から必要な範囲だけ確認し、独自規約や未コミット変更を保護してください。導入・変更はこのリポジトリだけに行い、必要な資料を選択して理由を説明してください」と依頼します。
+「`devconcord manage adopt` workflowを使い、このリポジトリの既存実装・文書・規約・リンク・履歴を調査してください。DevConcordの共通資料はローカル参照から必要な範囲だけ確認し、独自規約や未コミット変更を保護してください。導入・変更はこのリポジトリだけに行い、必要な資料を選択して理由を説明してください」と依頼します。
 
-Skillが利用できない場合は、`devconcord-adopt-guidance` の `SKILL.md` と詳細手順を読み、両方の全文を対象コンテキストで使います。
+Skillが利用できない場合は、`devconcord/SKILL.md` とAdoption module・詳細手順を読み、必要な全文を対象コンテキストで使います。
 
 ```sh
-cat ~/projects/devconcord/.agents/skills/devconcord-adopt-guidance/SKILL.md
-cat ~/projects/devconcord/.agents/skills/devconcord-adopt-guidance/references/workflow.md
+cat ~/projects/devconcord/.agents/skills/devconcord/SKILL.md
+cat ~/projects/devconcord/.agents/skills/devconcord/references/modules/management/devconcord-adopt-guidance/module.md
+cat ~/projects/devconcord/.agents/skills/devconcord/references/modules/management/devconcord-adopt-guidance/references/workflow.md
 ```
 
 **期待する成果物:** 調査と合意に基づく必要最小限の共通資料、`AGENTS.md` / `REVIEW.md`、採用内容を示すprovenance等です。DevConcordのSkills manifestと対象の `guidance-provenance.md` は別の記録です。適用後に差分、既存規約、リンク、provenance、対象固有の検証を確認します。
 
-既存リポジトリに旧 `REVIEWS.md` がある場合の移行・削除は、指示ファイル生成が採用範囲に含まれるときに `devconcord-generate-agent-guidance` の `reviews` / `both` モードへ委ねます。競合や未コミット内容の保持を確認できない場合は旧ファイルも参照も保護して保留します。
+既存リポジトリに旧 `REVIEWS.md` がある場合の移行・削除は、指示ファイル生成が採用範囲に含まれるときに `devconcord manage guidance` の `reviews` / `both` モードへ委ねます。競合や未コミット内容の保持を確認できない場合は旧ファイルも参照も保護して保留します。
 
-共通規約の採用は、対象の要求・設計・実装がその原則に適合していることを意味しません。Adoption時に実際に確認したギャップから、必要なら横断評価用の`devconcord-gap-analysis`または専門Skillを提案します。既に有効なギャップ分析がある場合、Full Assessmentを無条件に繰り返しません。未調査の実装品質は適合・不適合とせず、追加評価が必要ならその範囲を示します。推奨Skillは自動実行・インストールされません。判断基準は[AI支援開発ガイド](common/ai-assisted-development.md)を参照してください。
+共通規約の採用は、対象の要求・設計・実装がその原則に適合していることを意味しません。Adoption時に実際に確認したギャップから、必要なら横断評価用の`devconcord review gap`または専門Skillを提案します。既に有効なギャップ分析がある場合、Full Assessmentを無条件に繰り返しません。未調査の実装品質は適合・不適合とせず、追加評価が必要ならその範囲を示します。推奨Skillは自動実行・インストールされません。判断基準は[AI支援開発ガイド](common/ai-assisted-development.md)を参照してください。
 
 ## 5. VS Code + Codex拡張でBootstrap / Adoptionする
 
@@ -139,16 +141,16 @@ VS Codeで開くフォルダーが作業対象です。Bootstrapなら空の `my
 1. **File > Open Folder...** から対象リポジトリを開きます。
 2. Codex拡張のチャットを開きます。グローバルSkillsが利用可能か確認し、BootstrapまたはAdoptionの該当Skillを指定します。
 3. 参照元・変更先・設計書パスを明示し、上記シナリオと同じ指示を渡します。
-4. Skillが使えない場合は、DevConcordの該当 `SKILL.md` と `references/` の必要な詳細手順を開いて全文をチャットへ貼り付けます。従来の汎用プロンプト利用者もこの方法へ移行します。DevConcord側のファイルを編集・保存しないでください。
+4. Skillが使えない場合は、`devconcord/SKILL.md` と必要な内部module・referenceを開いて全文をチャットへ貼り付けます。従来の汎用プロンプト利用者もこの方法へ移行します。DevConcord側のファイルを編集・保存しないでください。
 5. 対象リポジトリで差分・リンク・既存のビルド/テストを確認します。
 
 Codex拡張やエージェントがユーザーのホーム・DevConcord cloneへアクセスできるかは、VS Codeの実行環境と権限に依存します。実際のアクセスやSkill実行は実機で確認し、未確認の環境を対応済みとみなしません。
 
 ## 6. Claude Code・GitHub CopilotでSkillsを使う
 
-対応するエージェントで対象プロジェクトを開き、「`devconcord-adopt-guidance` Skillを使って必要な範囲を調査してください」のように依頼します。Claude Codeの個人Skillは `~/.claude/skills/`、CodexとCopilotで共有するSkillは `~/.agents/skills/` に配置します。CLIのインストール成功と、エージェントがSkillを発見・選択・実行できることは別々に確認してください。
+対応するエージェントで対象プロジェクトを開き、「`devconcord manage adopt` workflowを使って必要な範囲を調査してください」のように依頼します。Claude Codeの個人Skillは `~/.claude/skills/`、CodexとCopilotで共有するSkillは `~/.agents/skills/` に配置します。CLIのインストール成功と、エージェントがSkillを発見・選択・実行できることは別々に確認してください。
 
-CopilotがCodex用 `.agents/skills/` とClaude用 `.claude/skills/` の両方を使う構成は、対応版や表示・選択動作を実機で確認してください。Claude Code、Copilot CLI、クラウドエージェントでユーザー単位のSkillsやローカルファイルアクセスが使えるかは、それぞれの実行形態によって異なります。グローバルSkillsを利用できない環境ではProject Scopeを検討します。
+CopilotがCodex用 `.agents/skills/` とClaude用 `.claude/skills/` の両方に `devconcord` を置く構成は、対応版や表示・選択動作を実機で確認してください。Claude Code、Copilot CLI、クラウドエージェントでユーザー単位のSkillsやローカルファイルアクセスが使えるかは、それぞれの実行形態によって異なります。グローバルSkillsを利用できない環境ではProject Scopeを検討します。
 
 ## 7. Project ScopeでSkillsを導入する（任意）
 
@@ -159,8 +161,7 @@ Project Scopeはチーム共有、CI、バージョン固定、クラウドエ�
 ```sh
 cd ~/projects/devconcord
 python3 scripts/manage_skills.py install \
-  --scope project --target ~/projects/my-app --agent codex \
-  --skills devconcord-adopt-guidance
+  --scope project --target ~/projects/my-app --agent codex
 ```
 
 dry-runの対象と差分を確認後、同じコマンドに `--apply` を加えます。後方互換性のため `--scope` を省略して `--target` を指定した場合もProject Scopeです。User Scopeでは `--target` を指定しません。既存の非DevConcord Skills、同名Skill、ローカル編集は保護されます。
@@ -176,7 +177,7 @@ cd ~/projects/my-app
 codex
 ```
 
-`devconcord-sync-guidance` Skillを使い、ローカル変更を保護し、採用済み資料の必要な差分だけを適用するよう指示します。Skillを利用できない場合は `.agents/skills/devconcord-sync-guidance/SKILL.md` と `references/workflow.md` の全文を対象エージェントへ渡します。比較対象のDevConcordコミットやprovenanceを推測で変更しません。適用後は対象の差分、provenance、リンク、既存の文書検証を確認します。
+`devconcord manage sync` workflowを使い、ローカル変更を保護し、採用済み資料の必要な差分だけを適用するよう指示します。Skillを利用できない場合は `devconcord/SKILL.md`、sync module、および同梱の `references/workflow.md` を対象エージェントへ渡します。比較対象のDevConcordコミットやprovenanceを推測で変更しません。適用後は対象の差分、provenance、リンク、既存の文書検証を確認します。
 
 ## 9. Agent Skillsの同期・検証・復旧
 
@@ -223,7 +224,7 @@ python3 scripts/manage_skills.py validate \
 
 ```sh
 python3 ~/projects/devconcord/scripts/manage_skills.py reference \
-  --skill devconcord-documentation-architecture \
+  --skill devconcord \
   --path docs/common/documentation-design.md
 ```
 

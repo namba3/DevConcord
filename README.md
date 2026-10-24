@@ -8,34 +8,14 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 
 | 目的 | 入口 |
 |---|---|
-| 設計書から新規Bootstrapする | [Bootstrapの実行例](docs/getting-started.md#3-設計書から新規bootstrapするcodex-cli) |
-| 既存リポジトリへAdoptionする | [Adoptionの実行例](docs/getting-started.md#4-既存リポジトリへadoptionするcodex-cli) |
 | はじめてDevConcordを使う | [導入と運用ガイド](docs/getting-started.md) |
-| 設計書から新しいプロジェクトを始める | [`devconcord-bootstrap-from-design` Skill](.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |
-| 要求・設計・アーキテクチャを委任範囲で段階的に具体化・改善する | [`devconcord-design-orchestration` Skill](.agents/skills/devconcord-design-orchestration/SKILL.md) |
-| 既存プロジェクトへ規約を選んで導入する | [`devconcord-adopt-guidance` Skill](.agents/skills/devconcord-adopt-guidance/SKILL.md) |
-| 実装前に変更の影響範囲を評価する | [`devconcord-repository-review` Skill](.agents/skills/devconcord-repository-review/SKILL.md)のChange Impact Assessment |
-| 要求・契約から独立したテスト戦略を設計する | [`devconcord-test-design` Skill](.agents/skills/devconcord-test-design/SKILL.md) |
-| 複雑な変更を検証可能な実装単位へ分ける | [`devconcord-implementation-planning` Skill](.agents/skills/devconcord-implementation-planning/SKILL.md) |
-| 既存課題表から対象を選び、範囲内で実装・検証・状態更新する | [`devconcord-issue-driven-development` Skill](.agents/skills/devconcord-issue-driven-development/SKILL.md) |
-| 複数の開発単位で実装・検証・レビューを反復し、続行・停止を判断する | [`devconcord-development-orchestration` Skill](.agents/skills/devconcord-development-orchestration/SKILL.md) |
-| 変更リスクに応じて専門Skillと検証深度を選ぶ | [Risk-Proportional Skill Application / Verification](docs/common/ai-assisted-development.md#175-リスク比例型skill適用と検証) |
-| 状態・処理・障害を安全で必要十分な情報から診断する | [`devconcord-observability-design` Skill](.agents/skills/devconcord-observability-design/SKILL.md) |
-| 利用者タスクからUIを設計し、必要なモックアップを検証する | [UI/UX設計ガイド](docs/application-design/ui-ux-guide.md)、[`devconcord-ux-functional-design` Skill](.agents/skills/devconcord-ux-functional-design/SKILL.md) |
-| DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](.agents/skills/devconcord-gap-analysis/SKILL.md) |
-| Skillを使うAIエージェントの発見・選択・実行品質を評価する | [`devconcord-agent-behavior-evaluation` Skill](.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md) |
-| 原因不明の障害・回帰を証拠から診断する | [`devconcord-root-cause-analysis` Skill](.agents/skills/devconcord-root-cause-analysis/SKILL.md) |
-| 公開API・保存/通信形式の互換性と移行を評価する | [`devconcord-compatibility-migration` Skill](.agents/skills/devconcord-compatibility-migration/SKILL.md) |
-| 明示的なリリース候補・配布・更新の証拠を評価する | [`devconcord-release-engineering` Skill](.agents/skills/devconcord-release-engineering/SKILL.md) |
-| 依存の採用・更新・置換・廃止を判断する | [`devconcord-dependency-governance` Skill](.agents/skills/devconcord-dependency-governance/SKILL.md) |
-| 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
+| 設計書から新規Bootstrapする / 既存プロジェクトへAdoptionする | [Bootstrapの実行例](docs/getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[Adoptionの実行例](docs/getting-started.md#4-既存リポジトリへadoptionするcodex-cli) |
+| 設計・開発・レビュー・診断・品質判断を行う | [`devconcord` Unified Skill](.agents/skills/devconcord/SKILL.md) と[コマンドルーター](.agents/skills/devconcord/references/routing.md) |
+| リスク比例型の専門ワークフローを選ぶ | [Risk-Proportional Skill Application / Verification](docs/common/ai-assisted-development.md#175-リスク比例型skill適用と検証) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
-| 資産・脅威・信頼境界からセキュリティ設計する | [`devconcord-design-security` Skill](.agents/skills/devconcord-design-security/SKILL.md)、[Security by Design](docs/common/ai-assisted-development.md#97-security-by-design)、[Secrets by Design](docs/application-design/secrets-by-design.md) |
-| Agent Skillsを選ぶ | [Skills一覧](docs/agent-skills.md#skills) |
-| ローカルDevConcord資料を版固定で参照する | [`devconcord-reference` Skill](.agents/skills/devconcord-reference/SKILL.md)と[参照運用](docs/agent-skills.md#ローカルdevconcord資料の参照) |
+| ローカルDevConcord資料を版固定で参照する | [`devconcord` Reference workflow](.agents/skills/devconcord/references/modules/management/devconcord-reference/module.md)、[参照運用](docs/agent-skills.md#ローカルdevconcord資料の参照) |
 | Skill非対応環境で手動利用する | [Skill本体と参照資料を渡す方法](docs/agent-skills.md#skills非対応環境で手動利用) |
-| User ScopeのSkillsを導入・同期・検証する | [Getting Started](docs/getting-started.md#2-agent-skillsをユーザー単位でインストールする)または[Skills運用ガイド](docs/agent-skills.md) |
-| Project ScopeのSkillsを導入する | [Project Scopeの実行例](docs/getting-started.md#7-project-scopeでskillsを導入する任意) |
+| User / Project Scopeへ導入・同期・移行する | [Skills運用ガイド](docs/agent-skills.md)、[Getting Started](docs/getting-started.md) |
 | ドキュメント体系を設計・改善する | [ドキュメント設計ガイド](docs/common/documentation-design.md) |
 
 ## 収録内容

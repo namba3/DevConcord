@@ -27,7 +27,7 @@
 - Skillと検証の深さが意味的変更・実際の影響・不確実性・波及範囲・可逆性・証拠信頼度に比例し、ファイル数・優先度・Skill数の代理指標に依存していないか。未知を低リスク扱いせず、重大/不可逆な影響を平均スコアに隠さず、リスク変化時に分析と検証を再評価するか。Skill選択と適用・検証・権限を区別し、既存の基本契約やOptional Skillの境界を守っているか。
 - `devconcord-observability-design` が診断上の問いから必要な信号を選び、ログ・メトリクス・トレース・診断レポートを一律に要求していないか。個人情報・秘密・ログインジェクション・保持/アクセス/送信を扱い、観測機構の障害・資源上限・性能負荷・信号欠落の契約と検証を定めているか。診断信号の存在を根本原因特定や実際の診断成功の保証としていないか。
 - Design-to-Repository Bootstrapが既存導入・同期と区別され、入力設計書の出典と共通資料のprovenanceを分けているか。対象の既存ファイル/Git履歴、指定初期化範囲、ライセンス・技術選択の不確実性を安全に扱い、設計要求から初期構造・課題・検証へ追跡できるか。実AIの判断評価と決定的な成果物アサーションの証拠を混同していないか。
-- Agent Skillsが標準の `SKILL.md` frontmatterとSkill名規則に従い、各Skillの正本が一つで、相対参照が配布単位内で解決するか。ベンダー固有のpermission/invocation構文を共有Skillへ混入させず、Skillの記述を実行権限の境界と誤認していないか。
+- 公式Agent Skillが単一の `devconcord` packageとして標準 `SKILL.md` frontmatterと命名契約に従い、内部moduleにSkill frontmatterがなく、全Markdown参照が配布単位内で解決するか。ベンダー固有のpermission/invocation構文を共有Skillへ混入させず、logical commandとmodule選択を実行権限の境界と誤認していないか。
 - Agentごとの実探索先に照らし、同じSkillの共有・生成コピー・symlink・同一内容複製・別内容の同名衝突を区別しているか。複数探索先の同名Skill解決を未確認のまま保証していないか。Codex/Copilot共有およびCopilotを含む組み合わせのテストが配置・manifest・内容一致を検証しているか。
 - Skill manifestのschema移行が未知/破損状態を保持し、同期が出典識別子・記録元の完全SHA・コミット存在・祖先関係・比較基準時点のSkill内容hash・source dirty・導入先ハッシュを独立して確認しているか。同じ履歴を持つ別remoteへの切替、Git管理外/ignoredなsource内容、URL scheme差・remote名変更を適切に区別し、出典変更や巻き戻しを通常同期に混ぜていないか。
 - Agent Skills管理は単一操作だけでなくinstall/sync/rebind/recoverとagentの段階的追加を組み合わせた状態遷移テストがあり、manifestと実体、同名内容、永続opt-in、冪等性、変更範囲の不変条件を各段階で確認しているか。Copilot重複検査が今回の指定agentだけでなく、操作後の全探索先と実際のpackage内容を比較しているか。

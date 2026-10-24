@@ -50,7 +50,7 @@ GitHub ActionsではUbuntu/Python 3.12・3.14とWindows/Python 3.14でSkills管�
 
 ## ドキュメント設計の受け入れシナリオ
 
-[共通ドキュメント設計ガイド](../../docs/common/documentation-design.md)と[`devconcord-documentation-architecture` Skill](../../.agents/skills/devconcord-documentation-architecture/SKILL.md)の運用評価は、対象プロジェクトの既存規約・読者・公開方式を調べる手動シナリオです。ファイルリンクやSkill frontmatter等の静的検証はCIで行いますが、文書の意味的な正確さや読者タスク達成は自動検証済みとみなしません。
+[共通ドキュメント設計ガイド](../../docs/common/documentation-design.md)と[`devconcord-documentation-architecture` workflow](../../.agents/skills/devconcord/references/modules/quality/devconcord-documentation-architecture/module.md)の運用評価は、対象プロジェクトの既存規約・読者・公開方式を調べる手動シナリオです。ファイルリンクやSkill frontmatter等の静的検証はCIで行いますが、文書の意味的な正確さや読者タスク達成は自動検証済みとみなしません。
 
 各シナリオでは、開始時点のHEAD・作業ツリー・文書・外部リンクを記録し、実装/設計の根拠に沿う変更だけ行います。変更後は対象プロジェクトの既存リンク検査、文書ビルド、テスト等を使い、公開URL・アンカーと無関係な成果物が保たれたことを確認します。構成差を不合格扱いせず、未実施確認は明記します。
 
@@ -68,7 +68,7 @@ GitHub ActionsではUbuntu/Python 3.12・3.14とWindows/Python 3.14でSkills管�
 
 ### Documentation Architecture SkillのE2E評価
 
-意味的な品質を評価する場合は、実際の一時リポジトリで[`devconcord-documentation-architecture` Skill](../../.agents/skills/devconcord-documentation-architecture/SKILL.md)を利用し、次の証拠を残します。現在のCIはエージェントを起動しないため、E2E評価を実施していない変更については未検証と報告します。
+意味的な品質を評価する場合は、実際の一時リポジトリで[`devconcord-documentation-architecture` workflow](../../.agents/skills/devconcord/references/modules/quality/devconcord-documentation-architecture/module.md)を利用し、次の証拠を残します。現在のCIはエージェントを起動しないため、E2E評価を実施していない変更については未検証と報告します。
 
 1. A/Bは既存のCLI・desktop設計fixtureを使い、読者タスク、要求・受け入れ条件、コード/設定にある根拠、未確定事項が提案内容に反映されるかをレビューします。CLIにGUIや不要な文書サイトが追加されないこと、desktopで利用者向け操作と開発者向け設計を必要に応じて分けることを確認します。
 2. C/Dは既存プロジェクトfixtureの複製と、README・docsが乏しい一時プロジェクトを用意します。既存リンク・アンカー・規約・課題IDを操作前に記録し、根拠のない機能・ライセンス・コマンドが事実として書かれていないことを確認します。
@@ -93,7 +93,7 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 ## Robustness by Designの並行性・キャンセル手動評価
 
-[`devconcord-design-robustness`](../../.agents/skills/devconcord-design-robustness/SKILL.md) の適用判断を、共有状態や中断を含むfixtureと実エージェントで評価します。特定の同期方式や図の作成を期待せず、要求された整合性・停止保証と選択した検証の根拠を確認します。
+[`devconcord-design-robustness`](../../.agents/skills/devconcord/references/modules/quality/devconcord-design-robustness/module.md) の適用判断を、共有状態や中断を含むfixtureと実エージェントで評価します。特定の同期方式や図の作成を期待せず、要求された整合性・停止保証と選択した検証の根拠を確認します。
 
 | ケース | 入力・操作 | 期待する判断 |
 |---|---|---|
@@ -108,7 +108,7 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 ## Issue-Driven Development Skillの手動E2E評価
 
-[`devconcord-issue-driven-development`](../../.agents/skills/devconcord-issue-driven-development/SKILL.md)
+[`devconcord-issue-driven-development`](../../.agents/skills/devconcord/references/modules/development/devconcord-issue-driven-development/module.md)
 のモード選択と範囲制御は、決定的なMarkdown/文字列テストだけでは実証できません。実際のエージェントを使う場合は、既存課題表、要求/ADR、関連実装・テストを持つ使い捨てリポジトリで次を確認し、エージェント名・版・入力・初期HEAD・変更差分・実行検証・未確認事項を記録します。
 
 1. 課題表だけでは依存関係や状態を確定できないケースを含むfixtureを用意し、開始時のHEAD、index、worktreeを記録します。既存のローカル変更がある状態ではそれらが保持されることも確認します。
@@ -137,7 +137,7 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 ## Development Orchestration Skillの手動E2E評価
 
-[`devconcord-development-orchestration`](../../.agents/skills/devconcord-development-orchestration/SKILL.md) は、複数の作業単位にまたがる開発反復、品質ゲート、続行・停止判断を担います。課題単位のBatch手順を重複しないこと、有限予算を守ること、証拠が最終状態を支えることを実エージェントで評価します。次のシナリオを使い捨てのfixtureリポジトリで試し、エージェント名/版、Skillの発見・選択、入力、初期HEADと作業ツリー、差分、実行コマンド/結果、課題記録変更、未検証条件を記録します。通常CIは実エージェントを実行しません。
+[`devconcord-development-orchestration`](../../.agents/skills/devconcord/references/modules/development/devconcord-development-orchestration/module.md) は、複数の作業単位にまたがる開発反復、品質ゲート、続行・停止判断を担います。課題単位のBatch手順を重複しないこと、有限予算を守ること、証拠が最終状態を支えることを実エージェントで評価します。次のシナリオを使い捨てのfixtureリポジトリで試し、エージェント名/版、Skillの発見・選択、入力、初期HEADと作業ツリー、差分、実行コマンド/結果、課題記録変更、未検証条件を記録します。通常CIは実エージェントを実行しません。
 
 | ケース | 入力 | 期待する判断 |
 |---|---|---|
@@ -206,7 +206,7 @@ Risk-Proportional判断は、Skill名を答えたかではなく、確認した�
 
 ## Gap Analysis Skillの手動評価シナリオ
 
-以下は [`devconcord-gap-analysis` Skill](../../.agents/skills/devconcord-gap-analysis/SKILL.md) が対象リポジトリの目的・制約・証拠に応じて適用性と優先度を判断できるかを確認する手動シナリオです。固定文言の生成を評価せず、同じDevConcord参照版を使い、根拠の妥当性、未検証事項、Read-only動作を人が記録します。通常CIはエージェントを起動せず、下記の意味判断を検証済みとは扱いません。
+以下は [`devconcord-gap-analysis` workflow](../../.agents/skills/devconcord/references/modules/verification/devconcord-gap-analysis/module.md) が対象リポジトリの目的・制約・証拠に応じて適用性と優先度を判断できるかを確認する手動シナリオです。固定文言の生成を評価せず、同じDevConcord参照版を使い、根拠の妥当性、未検証事項、Read-only動作を人が記録します。通常CIはエージェントを起動せず、下記の意味判断を検証済みとは扱いません。
 
 ### 依頼目的に応じたSkill選択
 
@@ -279,7 +279,7 @@ descriptionによる発見条件と、依頼目的に対する意味的な選択
 
 1. [`fixtures/existing-project/`](fixtures/existing-project/) を一時ディレクトリへコピーし、対象だけをGitリポジトリとして初期化します。
 2. 既存の `AGENTS.md`、`REVIEW.md`、`ISS-0042` の完全な行とGit状態、資料集側のHEAD/状態を記録します。
-3. [`devconcord-adopt-guidance` Skill](../../.agents/skills/devconcord-adopt-guidance/SKILL.md) を対象エージェントに実行します。Skill非対応環境では `SKILL.md` と [`references/workflow.md`](../../.agents/skills/devconcord-adopt-guidance/references/workflow.md) の全文を渡します。
+3. `manage adopt` workflowを対象エージェントに依頼します。Skill非対応環境では[公開Skillの入口](../../.agents/skills/devconcord/SKILL.md)、[adopt module](../../.agents/skills/devconcord/references/modules/management/devconcord-adopt-guidance/module.md)、[workflow reference](../../.agents/skills/devconcord/references/modules/management/devconcord-adopt-guidance/references/workflow.md)を渡します。
 4. 出力に対し、既存指示内容・課題レコードの保持、採用資料だけの配置、相対リンク解決、provenance SHA/状態/適用メモ、資料集側の無変更、説明されない変更がないことを確認します。
 5. 適用した成果物をスナップショットし、同じ入力で同じ導入操作を再実行します。差分が不要なら再実行後の変更ファイルがゼロであることを確認します。
 
@@ -287,7 +287,7 @@ descriptionによる発見条件と、依頼目的に対する意味的な選択
 
 1. シナリオAの対象リポジトリで、導入先の規約へ独自変更を加え、適用メモに未反映差分と理由を記録します。課題ID・状態・履歴も維持します。
 2. 資料集の一時作業コピーで対応資料を変更してコミットし、導入先の独自ルールと競合する差分を作ります。
-3. [`devconcord-sync-guidance` Skill](../../.agents/skills/devconcord-sync-guidance/SKILL.md) を実行します。Skill非対応環境では `SKILL.md` と [`references/workflow.md`](../../.agents/skills/devconcord-sync-guidance/references/workflow.md) の全文を渡します。安全に適用できる箇所だけ反映し、競合は理由付きで保留します。
+3. `manage sync` workflowを実行します。Skill非対応環境では[公開Skillの入口](../../.agents/skills/devconcord/SKILL.md)、[sync module](../../.agents/skills/devconcord/references/modules/management/devconcord-sync-guidance/module.md)、[workflow reference](../../.agents/skills/devconcord/references/modules/management/devconcord-sync-guidance/references/workflow.md)を渡します。安全に適用できる箇所だけ反映し、競合は理由付きで保留します。
 4. 同じ同期を再実行し、既反映差分が複製されず、保留差分・理由と部分適用状態が保持され、独自内容が上書きされないことを確認します。
 5. 検証失敗を意図的に作り、失敗時に資料行を `適用済み` とせず、比較基準SHAを進めないことを確認します。
 
@@ -297,7 +297,7 @@ descriptionによる発見条件と、依頼目的に対する意味的な選択
 
 ### Observability & Diagnostics by Designの手動シナリオ
 
-[`devconcord-observability-design` Skill](../../.agents/skills/devconcord-observability-design/SKILL.md) の意味的な判断を、対象エージェントを使って確認します。各ケースで診断質問と利用者を先に定め、選んだ信号、その意味・データ境界・障害時挙動、受け入れ条件を記録します。ここで確認するのは設計上の妥当性であり、実運用の診断成功や根本原因特定の保証ではありません。通常のユニットテストはエージェントを実行しないため、これらの評価を証明しません。
+[`devconcord-observability-design` workflow](../../.agents/skills/devconcord/references/modules/quality/devconcord-observability-design/module.md) の意味的な判断を、対象エージェントを使って確認します。各ケースで診断質問と利用者を先に定め、選んだ信号、その意味・データ境界・障害時挙動、受け入れ条件を記録します。ここで確認するのは設計上の妥当性であり、実運用の診断成功や根本原因特定の保証ではありません。通常のユニットテストはエージェントを実行しないため、これらの評価を証明しません。
 
 | シナリオ | 入力・状況 | 確認する判断 |
 |---|---|---|
@@ -310,9 +310,9 @@ descriptionによる発見条件と、依頼目的に対する意味的な選択
 
 ### Design-to-Repository Bootstrapの手動シナリオ
 
-[`devconcord-bootstrap-from-design` Skill](../../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) を対象エージェントへ実行し、開始前後のファイルスナップショット、Git HEAD/状態、対象範囲、実行したコマンドと結果を記録します。Skill非対応環境では `SKILL.md` と [`references/workflow.md`](../../.agents/skills/devconcord-bootstrap-from-design/references/workflow.md) の全文を渡します。次の設計書fixtureを入力として利用できます。
+`manage bootstrap` workflowを対象エージェントへ実行し、開始前後のファイルスナップショット、Git HEAD/状態、対象範囲、実行したコマンドと結果を記録します。Skill非対応環境では[公開Skillの入口](../../.agents/skills/devconcord/SKILL.md)、[bootstrap module](../../.agents/skills/devconcord/references/modules/management/devconcord-bootstrap-from-design/module.md)、[workflow reference](../../.agents/skills/devconcord/references/modules/management/devconcord-bootstrap-from-design/references/workflow.md)を渡します。次の設計書fixtureを入力として利用できます。
 
-Bootstrap対象へ先に`devconcord-bootstrap-from-design` Skillを導入する場合は、manifestがschema 2であること、両Skill探索先の全Skillがmanifestのtree hashと一致すること、探索先に余計なSkill/ファイルがないこと、他の成果物やGit履歴が存在しないことを確認します。いずれか不明なら新規対象として扱わず、既存内容を保護して停止します。比較試験では「空の対象でBootstrap後にSkillを導入」と「Skill導入後にBootstrap」の両順序を一時リポジトリで実施し、既存ファイル・履歴が保護されることを確認します。
+Bootstrap対象の事前状態は、manifest schema 2、導入パッケージのtree hash、探索先の余計なファイル、既存成果物とGit履歴を確認します。いずれか不明なら新規対象として扱わず、既存内容を保護して停止します。比較試験では「空の対象でBootstrap後にSkillを導入」と「Skill導入後にBootstrap」の両順序を一時リポジトリで実施し、既存ファイル・履歴が保護されることを確認します。
 
 | ケース | Fixture | 評価内容 |
 |---|---|---|
@@ -368,7 +368,7 @@ Project Scopeは対象リポジトリ内で確認できるSkillの実体・配�
 
 ## Generate Agent Guidanceの手動評価シナリオ
 
-以下は対象リポジトリで`devconcord-generate-agent-guidance`を実行し、既存の要求・実装・規約・Skill探索先を根拠に内容を判断するシナリオです。静的テストで固定文面を強制せず、エージェントの生成内容・変更差分・再実行結果を人が確認します。`agents`、`reviews`、`both`の選択と変更範囲も記録し、生成Skillを導入しただけで対象文書が更新されたと扱いません。
+以下は対象リポジトリで`devconcord manage guidance` workflowを実行し、既存の要求・実装・規約・Skill探索先を根拠に内容を判断するシナリオです。静的テストで固定文面を強制せず、エージェントの生成内容・変更差分・再実行結果を人が確認します。`agents`、`reviews`、`both`の選択と変更範囲も記録し、生成Skillを導入しただけで対象文書が更新されたと扱いません。
 
 | 対象 | 期待する判断 |
 |---|---|
@@ -404,7 +404,7 @@ Project ScopeでSkillのファイルが見つかることと、エージェン�
 
 ## 変更影響・テスト設計・実装計画の手動評価シナリオ
 
-以下は [`devconcord-repository-review`](../../.agents/skills/devconcord-repository-review/SKILL.md) の実装前Change Impact Assessment、[`devconcord-test-design`](../../.agents/skills/devconcord-test-design/SKILL.md)、[`devconcord-implementation-planning`](../../.agents/skills/devconcord-implementation-planning/SKILL.md)を使う場合の判断契約を確認します。これらは別の成果物を作る任意ワークフローです。静的検証やユニットテストはAIの選択・分析品質を証明しません。
+以下は [`devconcord-repository-review`](../../.agents/skills/devconcord/references/modules/verification/devconcord-repository-review/module.md) の実装前Change Impact Assessment、[`devconcord-test-design`](../../.agents/skills/devconcord/references/modules/verification/devconcord-test-design/module.md)、[`devconcord-implementation-planning`](../../.agents/skills/devconcord/references/modules/development/devconcord-implementation-planning/module.md)を使う場合の判断契約を確認します。これらは別の成果物を作る任意ワークフローです。静的検証やユニットテストはAIの選択・分析品質を証明しません。
 
 | シナリオ | 入力・対象 | 受け入れ条件 |
 |---|---|---|
@@ -423,7 +423,7 @@ Project ScopeでSkillのファイルが見つかることと、エージェン�
 
 ## 設計原則の適用シナリオ
 
-これらは対応する `devconcord-ux-functional-design` / `devconcord-design-performance` / `devconcord-design-robustness` / `devconcord-design-replaceability` / `devconcord-design-security` Skillsを使った場合を含む、AIの設計・課題分解に対する手動評価です。原則名の列挙ではなく、根拠から要求、設計、受け入れ条件、検証への具体的な接続を確認します。コード実装を求めない評価では、実装済み・実測済みと誤認しないよう明記します。
+これらは対応する `devconcord-ux-functional-design` / `devconcord-design-performance` / `devconcord-design-robustness` / `devconcord-design-replaceability` / `devconcord-design-security` 内部workflowを使った場合を含む、AIの設計・課題分解に対する手動評価です。原則名の列挙ではなく、根拠から要求、設計、受け入れ条件、検証への具体的な接続を確認します。コード実装を求めない評価では、実装済み・実測済みと誤認しないよう明記します。
 
 | シナリオ | 観測する具体的な判断 |
 |---|---|
@@ -475,7 +475,7 @@ Security by Designの手動評価では、シナリオEを用いて脅威分析�
 
 ### UX-Driven Functional Designのアクセシビリティ・状態遷移手動評価
 
-[`devconcord-ux-functional-design`](../../.agents/skills/devconcord-ux-functional-design/SKILL.md) を実エージェントで評価する場合は、タスク・対象プラットフォーム・受け入れ条件・既存要求を固定した使い捨てfixtureを使います。GUIのないケースにGUI検査を要求せず、評価者は自動検査、実操作、支援技術、実アプリ、利用者評価を別証拠として記録します。
+[`devconcord-ux-functional-design`](../../.agents/skills/devconcord/references/modules/design/devconcord-ux-functional-design/module.md) を実エージェントで評価する場合は、タスク・対象プラットフォーム・受け入れ条件・既存要求を固定した使い捨てfixtureを使います。GUIのないケースにGUI検査を要求せず、評価者は自動検査、実操作、支援技術、実アプリ、利用者評価を別証拠として記録します。
 
 | ケース | 入力・差分 | 期待する判断 |
 |---|---|---|
@@ -494,7 +494,7 @@ Security by Designの手動評価では、シナリオEを用いて脅威分析�
 
 ### Design Orchestrationのモード・権限・判断手動評価
 
-[`devconcord-design-orchestration`](../../.agents/skills/devconcord-design-orchestration/SKILL.md) の選択と成果物は、実際のエージェントで要求、承認履歴、実装証拠、許可範囲を含む使い捨てfixtureへ適用して評価します。エージェント名・版、入力、初期HEAD/worktree、変更差分、検証実施、評価者判断、未確認事項を記録してください。通常CIの静的契約検査は、意味的な設計判断の証拠ではありません。
+[`devconcord-design-orchestration`](../../.agents/skills/devconcord/references/modules/design/devconcord-design-orchestration/module.md) の選択と成果物は、実際のエージェントで要求、承認履歴、実装証拠、許可範囲を含む使い捨てfixtureへ適用して評価します。エージェント名・版、入力、初期HEAD/worktree、変更差分、検証実施、評価者判断、未確認事項を記録してください。通常CIの静的契約検査は、意味的な設計判断の証拠ではありません。
 
 | ケース | 入力 | 期待する判断 |
 |---|---|---|
@@ -509,3 +509,30 @@ Security by Designの手動評価では、シナリオEを用いて脅威分析�
 依頼文からの選択も別に評価します。横断的な設計を「具体化・改善して」はDesign/Evolve候補、現状を「分析・提案して」はExplore候補です。全体のDevConcordギャップ評価は`devconcord-gap-analysis`、具体的な欠陥レビューは`devconcord-repository-review`、実装順序の計画は`devconcord-implementation-planning`、課題の実装は`devconcord-issue-driven-development`を目的に応じて選び、自動ハンドオフは仮定しません。
 
 期待される設計判断と、実行されたSkill・更新された設計成果物・検証結果を別々に判定します。実エージェントを使っていない場合、Skillの発見・選択・実行品質は未評価です。
+
+## Unified Skill architecture evaluation
+
+Static package and CLI tests verify files, hashes, routing text, and transaction behavior. They do not establish that Codex, Claude Code, Copilot, or another real agent discovers and follows the single public `devconcord` Skill. Record each tested agent/version/runtime and keep unexecuted hosts explicitly unverified.
+
+### Real-agent before/after comparison protocol
+
+To compare selection and execution quality, use the prior repository revision with its independent Skills as the baseline and the unified package revision as the candidate. Run the same fixed scenarios, prompt wording, repository fixture, agent version/settings, and permission configuration. Use fresh isolated worktrees for each attempt. Preserve transcripts, selected workflow/module, resulting diff, command/test evidence, clarification/escalation decisions, and human rubric scores. Compare discovery, correct primary workflow, specialist-module fit, authority compliance, artifact correctness, and verification evidence separately. Do not infer equivalence from matching names, static assertions, or one successful run. These agent evaluations have not been performed by repository unit tests.
+
+| Scenario | Request | Expected routing and boundary |
+|---|---|---|
+| Natural language review | “Review this repository and report actionable defects.” | `review repository`; read-only findings with evidence |
+| Explicit development | `devconcord develop issue` for a named existing issue | Select issue-driven module, follow issue source of truth and authorization |
+| Natural language iterative work | “Implement the next bounded issue, verify it, then decide whether to continue.” | `develop iterate`, optionally consult issue module; honor finite budget |
+| Explicit/natural parity | Compare “`devconcord diagnose root-cause`” with “Find the root cause of this test failure.” | Same primary workflow, hypotheses first, no unrequested fix |
+| Unknown or ambiguous command | `devconcord migrate` without stating what is being migrated | Report closest supported choices or clarify target; do not guess a destructive action |
+| Optional compatibility | Ordinary internal refactor with no boundary change, then a separate persisted-format change | No migration workflow for the first; consider compatibility workflow for the second while retaining basic safety checks |
+| Optional release/dependency | Ordinary code iteration with neither dependency nor release request | Do not require release or dependency workflow; do not auto-publish or install a dependency |
+| Permission boundary | Request `devconcord design evolve` but forbid document edits | Read-only analysis; explicit command cannot override the restriction |
+
+### Migration command E2E
+
+Use a temporary Git source and temporary User/Project targets; never point these scenarios at a real user home or external repository. Seed old manifest records and files at multiple agent destinations, then run `migrate` without `--apply` and snapshot all files and manifest bytes. Confirm the plan names the unified package, identifies exact-hash managed legacy content and source commits, and leaves bytes unchanged. Apply in a separate fresh fixture and verify package integrity and manifest records.
+
+Exercise at least these states independently: unmodified managed old Skill; locally edited old Skill; manifest record with missing target; untracked same-name legacy-looking directory; old copies with distinct source commits; pre-existing unified package; User Scope; Project Scope; multiple agent paths with only one requested; and an interrupted transaction followed by `recover`. Confirm unmanaged files and unselected agent destinations remain byte-identical. A recovery test must inspect the journal and all targets before asserting rollback or completion.
+
+The deterministic migration tests in `tests/test_manage_skills.py` cover dry-run, Project and User Scope, hash-mismatch protection, manifest-only protection, unmanaged-directory preservation, selected-agent scoping, unified reference identity, and interrupted deletion recovery. They use temporary Git repositories and do not constitute a real-agent discovery or behavior evaluation.

@@ -2468,5 +2468,203 @@ Version: {version}
         self.assertNotIn("secret", repository)
 
 
+    def prepare_migration_source(self) -> Path:
+        shutil.rmtree(self.source / "sample-skill")
+        self.commit_skill("devconcord-legacy-review", "legacy")
+        self.assertEqual(
+            self.run_operation("install", skills=["devconcord-legacy-review"], apply=True)[0], 0
+        )
+        shutil.rmtree(self.source / "devconcord-legacy-review")
+        self.commit_skill("devconcord", "unified")
+        return self.target / ".agents" / "skills" / "devconcord-legacy-review"
+
+    def prepare_user_migration_source(self) -> Path:
+        shutil.rmtree(self.source / "sample-skill")
+        self.commit_skill("devconcord-legacy-review", "legacy")
+        result, _, error = self.run_user_operation(
+            "install", agents=["codex"], skills=["devconcord-legacy-review"],
+            apply=True, source=self.source,
+        )
+        self.assertEqual((result, error), (0, ""))
+        shutil.rmtree(self.source / "devconcord-legacy-review")
+        self.commit_skill("devconcord", "unified")
+        return self.user_home / ".agents" / "skills" / "devconcord-legacy-review"
+
+    def run_user_migration(self, *, apply: bool = False) -> tuple[int, str, str]:
+        args = SimpleNamespace(
+            command="migrate", scope="user", target=None, source=self.source,
+            agents=None, apply=apply,
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def test_user_scope_legacy_migration_is_explicit_and_transactional(self) -> None:
+        legacy = self.prepare_user_migration_source()
+        before = (self.user_home / ".devconcord/skills-manifest.json").read_bytes()
+        result, output, error = self.run_user_migration()
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Dry run only", output)
+        self.assertTrue(legacy.is_dir())
+        self.assertEqual((self.user_home / ".devconcord/skills-manifest.json").read_bytes(), before)
+
+        result, _, error = self.run_user_migration(apply=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertFalse(legacy.exists())
+        self.assertTrue((self.user_home / ".agents/skills/devconcord/SKILL.md").is_file())
+        manifest = json.loads((self.user_home / ".devconcord/skills-manifest.json").read_text())
+        self.assertEqual(set(manifest["packages"][".agents/skills"]["skills"]), {"devconcord"})
+
+    def test_user_migration_explicit_source_bypasses_stale_user_config(self) -> None:
+        self.prepare_user_migration_source()
+        config = self.user_home / ".devconcord/config.json"
+        config.parent.mkdir(parents=True, exist_ok=True)
+        config.write_text("not valid json\n", encoding="utf-8")
+
+        result, output, error = self.run_user_migration()
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Dry run only", output)
+
+    def test_migration_scopes_removals_to_requested_agent_destinations(self) -> None:
+        shutil.rmtree(self.source / "sample-skill")
+        self.commit_skill("devconcord-legacy-review", "legacy")
+        self.assertEqual(
+            self.run_operation("install", agents=["codex", "claude"],
+                               skills=["devconcord-legacy-review"], apply=True)[0], 0
+        )
+        shutil.rmtree(self.source / "devconcord-legacy-review")
+        self.commit_skill("devconcord", "unified")
+        args = SimpleNamespace(
+            command="migrate", scope="project", target=self.target, source=self.source,
+            agents=["codex"], apply=True,
+        )
+        stdout = io.StringIO(); stderr = io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            result = manage_skills._run(args)
+        self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertFalse((self.target / ".agents/skills/devconcord-legacy-review").exists())
+        self.assertTrue((self.target / ".claude/skills/devconcord-legacy-review").is_dir())
+        self.assertFalse((self.target / ".claude/skills/devconcord").exists())
+
+    def run_migration(self, *, apply: bool = False) -> tuple[int, str, str]:
+        args = SimpleNamespace(
+            command="migrate", scope="project", target=self.target, source=self.source,
+            agents=None, apply=apply,
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            result = manage_skills._run(args)
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def test_unified_migration_defaults_to_dry_run_then_applies_as_one_manifest_transition(self) -> None:
+        legacy = self.prepare_migration_source()
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        before = manifest_path.read_bytes()
+
+        result, output, error = self.run_migration()
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("remove: .agents/skills/devconcord-legacy-review", output)
+        self.assertIn("install: .agents/skills/devconcord", output)
+        self.assertIn("Dry run only", output)
+        self.assertTrue(legacy.is_dir())
+        self.assertFalse((self.target / ".agents/skills/devconcord").exists())
+        self.assertEqual(manifest_path.read_bytes(), before)
+
+        result, _, error = self.run_migration(apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertFalse(legacy.exists())
+        self.assertTrue((self.target / ".agents/skills/devconcord/SKILL.md").is_file())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(set(manifest["packages"][".agents/skills"]["skills"]), {"devconcord"})
+        self.assertEqual(manage_skills._transaction_directories(self.target), [])
+
+    def test_migration_refuses_local_legacy_edits(self) -> None:
+        legacy = self.prepare_migration_source()
+        (legacy / "local.md").write_text("keep me\n", encoding="utf-8")
+        result, _, error = self.run_migration(apply=True)
+        self.assertEqual(result, 2)
+        self.assertIn("local modifications detected", error)
+        self.assertTrue(legacy.is_dir())
+        self.assertFalse((self.target / ".agents/skills/devconcord").exists())
+
+    def test_migration_transaction_recovers_interrupted_legacy_deletion(self) -> None:
+        legacy = self.prepare_migration_source()
+        manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        real_write = manage_skills._write_atomically
+
+        def interrupt_manifest(path: Path, content: str) -> None:
+            if paths_equal(path, manifest_path):
+                raise KeyboardInterrupt()
+            real_write(path, content)
+
+        with patch.object(manage_skills, "_write_atomically", side_effect=interrupt_manifest):
+            with self.assertRaises(KeyboardInterrupt):
+                self.run_migration(apply=True)
+
+        self.assertFalse(legacy.exists())
+        self.assertTrue((self.target / ".agents/skills/devconcord").exists())
+        self.assertEqual(len(manage_skills._transaction_directories(self.target)), 1)
+        result, _, error = self.run_recovery(apply=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertTrue(legacy.is_dir())
+        self.assertFalse((self.target / ".agents/skills/devconcord").exists())
+        self.assertEqual(manage_skills._transaction_directories(self.target), [])
+
+    def test_migration_preserves_unmanaged_legacy_looking_directory(self) -> None:
+        legacy = self.prepare_migration_source()
+        unmanaged = self.target / ".agents/skills/devconcord-unmanaged"
+        unmanaged.mkdir(parents=True)
+        (unmanaged / "user.md").write_text("do not delete\n", encoding="utf-8")
+        result, output, error = self.run_migration(apply=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("preserving unmanaged legacy-looking", output)
+        self.assertTrue(unmanaged.is_dir())
+        self.assertFalse(legacy.exists())
+
+    def test_migration_refuses_manifest_only_legacy_record(self) -> None:
+        legacy = self.prepare_migration_source()
+        shutil.rmtree(legacy)
+        result, _, error = self.run_migration(apply=True)
+        self.assertEqual(result, 2)
+        self.assertIn("legacy manifest record", error)
+        manifest = json.loads((self.target / ".devconcord/skills-manifest.json").read_text())
+        self.assertIn("devconcord-legacy-review", manifest["packages"][".agents/skills"]["skills"])
+        self.assertFalse((self.target / ".agents/skills/devconcord").exists())
+
+    def test_unified_reference_uses_package_manifest_identity(self) -> None:
+        skill = self.write_skill("devconcord", "package-v1")
+        (skill / "references").mkdir(exist_ok=True)
+        (skill / "references" / "shared.md").write_text("Package-level reference.\n", encoding="utf-8")
+        source_repo = self.source.parents[1]
+        self.git(source_repo, "add", ".")
+        self.git(source_repo, "commit", "-qm", "unified package")
+        shutil.rmtree(self.source / "sample-skill")
+        self.git(source_repo, "add", "-A")
+        self.git(source_repo, "commit", "-qm", "remove external fixture")
+        repository = self.source.parents[1]
+        self.assertEqual(self.run_config("set-source", source_root=repository, replace=False)[0], 0)
+        self.assertEqual(self.run_user_operation("install", agents=["codex"], apply=True, source=self.source)[0], 0)
+        result, output, error = self.run_reference(path=".agents/skills/devconcord/references/shared.md", skill="devconcord")
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Package-level reference", output)
+        self.assertIn("Reference: installed Skill", output)
+
+    def test_cli_old_skills_option_explains_unified_migration(self) -> None:
+        stderr = io.StringIO()
+        with patch("sys.argv", ["manage_skills.py", "install", "--agent", "codex",
+                                "--skills", "devconcord-design-security"]):
+            with contextlib.redirect_stderr(stderr):
+                result = manage_skills.main()
+        self.assertEqual(result, 2)
+        self.assertIn("--skills selection is retired", stderr.getvalue())
+        self.assertIn("migrate --scope", stderr.getvalue())
+
 if __name__ == "__main__":
     unittest.main()

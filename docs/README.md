@@ -4,7 +4,7 @@
 
 初回利用では[実行例付きの導入ガイド](getting-started.md)からUser ScopeのSkillsセットアップ、Bootstrap、Adoptionの該当シナリオを選んでください。Agent Skillsはユーザー単位が標準で、Project Scopeはチーム共有・CI等に使う任意の方式です。ワークフロー作業は導入先を作業コンテキストとし、DevConcordを参照元として使います。Skillsの出典管理・復旧などの詳細は[Agent Skills運用ガイド](agent-skills.md)が正本です。
 
-作業別の再利用可能なAgent Skillsの正本はリポジトリルートの [`.agents/skills/`](../.agents/skills/) にあります。[`devconcord-reference`](../.agents/skills/devconcord-reference/SKILL.md)は共通資料を読むためのAI向け窓口、[`manage_skills.py reference`](../scripts/manage_skills.py)は出典・版・パスを検証して内容を返す決定的なCLIです。各業務Skillが必要な資料パスを決め、共通Skillが使えない場合も同じCLIを直接実行できます。Skillsの選択は[Agent Skills運用ガイドの一覧](agent-skills.md#skills)、Scopeや参照の詳細は[運用手順](agent-skills.md#ローカルdevconcord資料の参照)を参照してください。Skills非対応環境では、該当する `SKILL.md` と必要な `references/` の全文を対象エージェントへ渡します。
+公開Agent Skillはリポジトリルートの [`.agents/skills/devconcord/`](../.agents/skills/devconcord/) にある `devconcord` 一つです。内部モジュールは `references/modules/` に整理し、個別Skillとして公開しません。`manage_skills.py reference` は出典・版・パスを検証して内容を返す決定的なCLIです。作業別のルーティングと導入/移行手順は[Agent Skills運用ガイド](agent-skills.md)を参照してください。Skill非対応環境では、`SKILL.md` と必要な内部モジュールの全文を対象エージェントへ渡します。
 
 ## 共通
 
@@ -12,15 +12,8 @@
 |---|---|
 | [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness / Replaceability / Security / Observability by Design、Risk-Proportional Skill Application / Verification、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
 | [ドキュメント設計ガイド](common/documentation-design.md) | 読者中心の情報設計、README・文書の役割、ナビゲーション、Single Source of Truth、変更影響、Docs as Code |
-| [Agent Skills運用ガイド](agent-skills.md) | 導入先へのSkillsの選択導入、共用、更新、manifest、復旧、検証 |
-| [`devconcord-reference` Skill](../.agents/skills/devconcord-reference/SKILL.md) | ローカル共通資料を要求元Skillの版に合わせて参照する |
-| [`devconcord-design-orchestration` Skill](../.agents/skills/devconcord-design-orchestration/SKILL.md) | 委任された範囲で、要求・設計・判断・検証を段階的に具体化・改善し、整合させる |
-| [`devconcord-development-orchestration` Skill](../.agents/skills/devconcord-development-orchestration/SKILL.md) | 既存設計と課題表に基づく複数の開発反復を、検証・レビュー・品質ゲートで制御する |
-| [`devconcord-agent-behavior-evaluation` Skill](../.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md) | 実エージェントがSkillsを発見・選択・実行する品質を独立証拠から評価する |
-| [`devconcord-root-cause-analysis` Skill](../.agents/skills/devconcord-root-cause-analysis/SKILL.md) | 障害・回帰の原因仮説と切り分け実験を扱う。診断だけでは修正権限を与えない |
-| [`devconcord-compatibility-migration` Skill](../.agents/skills/devconcord-compatibility-migration/SKILL.md) | 変更される公開契約・保存/交換形式の互換性と移行安全性を扱う |
-| [`devconcord-release-engineering` Skill](../.agents/skills/devconcord-release-engineering/SKILL.md) | 明示的なリリース作業の証拠評価を支援し、実行・承認とは分離する |
-| [`devconcord-dependency-governance` Skill](../.agents/skills/devconcord-dependency-governance/SKILL.md) | 外部依存の採用・変更・維持・廃止と重要リスクを評価する |
+| [Agent Skills運用ガイド](agent-skills.md) | 統合DevConcord Skillの導入、同期、参照、移行、復旧 |
+| [`devconcord` Unified Skill](../.agents/skills/devconcord/SKILL.md) | コマンド/意図ルーティングから専門モジュールを選ぶ単一の公開入口 |
 
 ## アプリ設計
 
@@ -48,37 +41,37 @@
 |---|---|
 | 設計原則とAI支援開発の共通ルールを理解する | [AI支援開発ガイド](common/ai-assisted-development.md)、[AI開発クイックリファレンス](common/ai-development-quick-reference.md) |
 | 要求仕様や設計判断を記録する | [要求仕様テンプレート](application-design/templates/requirements.md)、[ADRテンプレート](application-design/templates/adr.md) |
-| 複数の設計領域をまたいで設計を進める・改善する | [`devconcord-design-orchestration` Skill](../.agents/skills/devconcord-design-orchestration/SKILL.md) |
-| 利用者タスクから機能・状態・UIモックアップを設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md)、[`devconcord-ux-functional-design` Skill](../.agents/skills/devconcord-ux-functional-design/SKILL.md) |
-| 性能・堅牢性・依存境界・セキュリティを検討する | [設計原則](common/ai-assisted-development.md)、[Secrets by Design](application-design/secrets-by-design.md)と個別の `devconcord-design-performance`、`devconcord-design-robustness`、`devconcord-design-replaceability`、`devconcord-design-security` [Skills](agent-skills.md#skills) |
-| 可観測性・診断可能性を設計する | [AI支援開発ガイド §9.5](common/ai-assisted-development.md#95-robustness-by-design)、[`devconcord-observability-design` Skill](../.agents/skills/devconcord-observability-design/SKILL.md) |
-| READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`devconcord-documentation-architecture` Skill](../.agents/skills/devconcord-documentation-architecture/SKILL.md) |
-| DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](../.agents/skills/devconcord-gap-analysis/SKILL.md) |
-| 提案された変更の実装前影響を評価する | [`devconcord-repository-review` Skill](../.agents/skills/devconcord-repository-review/SKILL.md)のChange Impact Assessment |
-| 要求・契約から独立したテストを設計する | [`devconcord-test-design` Skill](../.agents/skills/devconcord-test-design/SKILL.md) |
-| 複雑な変更を検証可能な実装単位へ計画する | [`devconcord-implementation-planning` Skill](../.agents/skills/devconcord-implementation-planning/SKILL.md) |
-| 既存課題表から実装対象を選び、検証・状態更新する | [`devconcord-issue-driven-development` Skill](../.agents/skills/devconcord-issue-driven-development/SKILL.md) |
-| 複数の実装単位を反復し、品質を再評価して続行・停止する | [`devconcord-development-orchestration` Skill](../.agents/skills/devconcord-development-orchestration/SKILL.md) |
-| エージェントのSkill発見・選択・実行を評価する | [`devconcord-agent-behavior-evaluation` Skill](../.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md) |
-| 原因不明の障害・テスト失敗・性能回帰を診断する | [`devconcord-root-cause-analysis` Skill](../.agents/skills/devconcord-root-cause-analysis/SKILL.md) |
-| API・データ・プロトコル変更の互換性を確認する | [`devconcord-compatibility-migration` Skill](../.agents/skills/devconcord-compatibility-migration/SKILL.md) |
-| リリース候補や配布・更新経路の証拠を評価する | [`devconcord-release-engineering` Skill](../.agents/skills/devconcord-release-engineering/SKILL.md) |
-| 依存の追加・更新・置換・廃止を判断する | [`devconcord-dependency-governance` Skill](../.agents/skills/devconcord-dependency-governance/SKILL.md) |
+| 複数の設計領域をまたいで設計を進める・改善する | [`devconcord design evolve` workflow module](../.agents/skills/devconcord/references/modules/design/devconcord-design-orchestration/module.md) |
+| 利用者タスクから機能・状態・UIモックアップを設計する | [UI/UX設計ガイド](application-design/ui-ux-guide.md)、[UI/UXクイックチェック](application-design/ui-ux-quick-reference.md)、[`devconcord quality ux` workflow module](../.agents/skills/devconcord/references/modules/design/devconcord-ux-functional-design/module.md) |
+| 性能・堅牢性・依存境界・セキュリティを検討する | [設計原則](common/ai-assisted-development.md)、[Secrets by Design](application-design/secrets-by-design.md)と個別の `devconcord-design-performance`、`devconcord-design-robustness`、`devconcord-design-replaceability`、`devconcord quality security` [workflow modules](agent-skills.md#skills) |
+| 可観測性・診断可能性を設計する | [AI支援開発ガイド §9.5](common/ai-assisted-development.md#95-robustness-by-design)、[`devconcord quality observability` workflow module](../.agents/skills/devconcord/references/modules/quality/devconcord-observability-design/module.md) |
+| READMEや文書体系を改善する | [ドキュメント設計ガイド](common/documentation-design.md)、[`devconcord quality documentation` workflow module](../.agents/skills/devconcord/references/modules/quality/devconcord-documentation-architecture/module.md) |
+| DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord review gap` workflow module](../.agents/skills/devconcord/references/modules/verification/devconcord-gap-analysis/module.md) |
+| 提案された変更の実装前影響を評価する | [`devconcord review repository` workflow module](../.agents/skills/devconcord/references/modules/verification/devconcord-repository-review/module.md)のChange Impact Assessment |
+| 要求・契約から独立したテストを設計する | [`devconcord verify test-design` workflow module](../.agents/skills/devconcord/references/modules/verification/devconcord-test-design/module.md) |
+| 複雑な変更を検証可能な実装単位へ計画する | [`devconcord develop plan` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-implementation-planning/module.md) |
+| 既存課題表から実装対象を選び、検証・状態更新する | [`devconcord develop issue` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-issue-driven-development/module.md) |
+| 複数の実装単位を反復し、品質を再評価して続行・停止する | [`devconcord develop iterate` workflow module](../.agents/skills/devconcord/references/modules/development/devconcord-development-orchestration/module.md) |
+| エージェントのSkill発見・選択・実行を評価する | [`devconcord evaluate agent` workflow module](../.agents/skills/devconcord/references/modules/evaluation/devconcord-agent-behavior-evaluation/module.md) |
+| 原因不明の障害・テスト失敗・性能回帰を診断する | [`devconcord diagnose root-cause` workflow module](../.agents/skills/devconcord/references/modules/verification/devconcord-root-cause-analysis/module.md) |
+| API・データ・プロトコル変更の互換性を確認する | [`devconcord lifecycle compatibility` workflow module](../.agents/skills/devconcord/references/modules/lifecycle/devconcord-compatibility-migration/module.md) |
+| リリース候補や配布・更新経路の証拠を評価する | [`devconcord lifecycle release` workflow module](../.agents/skills/devconcord/references/modules/lifecycle/devconcord-release-engineering/module.md) |
+| 依存の追加・更新・置換・廃止を判断する | [`devconcord lifecycle dependencies` workflow module](../.agents/skills/devconcord/references/modules/lifecycle/devconcord-dependency-governance/module.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
-| レビュー基準を作る・調べる | [`devconcord-generate-agent-guidance` Skill](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEW.md) |
-| 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`devconcord-bootstrap-from-design` Skill](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |
-| 既存プロジェクトへ規約を導入する | [Adoptionの実行例](getting-started.md#4-既存リポジトリへadoptionするcodex-cli)、[`devconcord-adopt-guidance` Skill](../.agents/skills/devconcord-adopt-guidance/SKILL.md) |
-| 導入済み共通資料を更新する | [資料Synchronizationの実行例](getting-started.md#8-共通ガイドのsynchronization)、[`devconcord-sync-guidance` Skill](../.agents/skills/devconcord-sync-guidance/SKILL.md) |
+| レビュー基準を作る・調べる | [`devconcord manage guidance` workflow module](../.agents/skills/devconcord/references/modules/management/devconcord-generate-agent-guidance/module.md)、[レビュー指針](../REVIEW.md) |
+| 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`devconcord manage bootstrap` workflow module](../.agents/skills/devconcord/references/modules/management/devconcord-bootstrap-from-design/module.md) |
+| 既存プロジェクトへ規約を導入する | [Adoptionの実行例](getting-started.md#4-既存リポジトリへadoptionするcodex-cli)、[`devconcord manage adopt` workflow module](../.agents/skills/devconcord/references/modules/management/devconcord-adopt-guidance/module.md) |
+| 導入済み共通資料を更新する | [資料Synchronizationの実行例](getting-started.md#8-共通ガイドのsynchronization)、[`devconcord manage sync` workflow module](../.agents/skills/devconcord/references/modules/management/devconcord-sync-guidance/module.md) |
 | User ScopeのSkillsを導入・更新・検証する | [Skillsの実行例](getting-started.md#2-agent-skillsをユーザー単位でインストールする)、[Agent Skills運用ガイド](agent-skills.md) |
 | Project Scopeを使ってSkillを共有する | [Project Scopeの実行例](getting-started.md#7-project-scopeでskillsを導入する任意)、[Agent Skills運用ガイド](agent-skills.md) |
 
 ## 選択と適用
 
-これらの資料は適用先に合わせて選びます。README、公開サイト、ディレクトリ構造、既存規約を調査し、必要な部分だけを導入してください。Bootstrapは設計書から新規構成を作る手順、Adoptionは既存成果物を保護した初回導入、資料Synchronizationは導入済み共通資料の差分更新です。変更提案の実装前影響評価、テスト設計、実装計画もそれぞれ目的に応じた任意の作業です。Bootstrap / Adoption後の専門Skill推奨は、確認済みの設計状況や未解決事項に基づき一律実行しません。これらのSkillワークフローと、`manage_skills.py sync` によるAgent Skillsパッケージの同期は別操作です。具体的な作業場所・コマンド・検証は[はじめての導入と運用](getting-started.md)、Skillsの詳細契約は[Agent Skills運用ガイド](agent-skills.md)を参照してください。
+これらの資料は適用先に合わせて選びます。README、公開サイト、ディレクトリ構造、既存規約を調査し、必要な部分だけを導入してください。Bootstrapは設計書から新規構成を作る手順、Adoptionは既存成果物を保護した初回導入、資料Synchronizationは導入済み共通資料の差分更新です。変更提案の実装前影響評価、テスト設計、実装計画もそれぞれ目的に応じた任意の作業です。Bootstrap / Adoption後の専門module推奨は、確認済みの設計状況や未解決事項に基づき一律実行しません。これらのworkflow moduleと、`manage_skills.py sync` によるAgent Skillsパッケージの同期は別操作です。具体的な作業場所・コマンド・検証は[はじめての導入と運用](getting-started.md)、Skillsの詳細契約は[Agent Skills運用ガイド](agent-skills.md)を参照してください。
 
 要求IDからADR・実装・検証・課題への参照は変更リスクに応じて設けます。設計書の出典と共通資料の `guidance-provenance.md` を区別し、未確認事項を確定仕様にしません。課題表を作業管理の正本とし、リスク対応作業の別台帳は追加しません。完成度は既存10軸で評価し、SDSは独立した補助指標として総合完成度へ加算しません。新しい品質評価軸は追加しません。
 
-文書品質の詳しい原則は[ドキュメント設計ガイド](common/documentation-design.md)、Skillsの安全な配置・重複・出典・復旧は[Agent Skills運用ガイド](agent-skills.md)、個別設計原則はリンク先のガイド・Skillを正本として参照してください。資料やテンプレートを一部だけ導入する場合は、相対リンクを対象リポジトリ内で解決できる配置へ合わせます。
+文書品質の詳しい原則は[ドキュメント設計ガイド](common/documentation-design.md)、Skillsの安全な配置・重複・出典・復旧は[Agent Skills運用ガイド](agent-skills.md)、個別設計原則はリンク先のガイド・moduleを正本として参照してください。資料やテンプレートを一部だけ導入する場合は、相対リンクを対象リポジトリ内で解決できる配置へ合わせます。
 
 ## 自動検証
 

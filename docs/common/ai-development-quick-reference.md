@@ -66,17 +66,17 @@
 | SDD、要求仕様 | [AI支援開発ガイド §4](ai-assisted-development.md#4-sdd仕様駆動開発) |
 | 契約設計 | [AI支援開発ガイド §5](ai-assisted-development.md#5-dbc契約による設計) |
 | BDD、ATDD、TDD、テスト独立性 | [AI支援開発ガイド §6–7](ai-assisted-development.md#6-bddatdd振る舞いと受け入れの設計) |
-| 変更影響評価、テスト設計、実装計画 | [`devconcord-repository-review`](../../.agents/skills/devconcord-repository-review/SKILL.md)、[`devconcord-test-design`](../../.agents/skills/devconcord-test-design/SKILL.md)、[`devconcord-implementation-planning`](../../.agents/skills/devconcord-implementation-planning/SKILL.md) |
-| 委任範囲内で複数領域の設計を具体化・改善 | [`devconcord-design-orchestration`](../../.agents/skills/devconcord-design-orchestration/SKILL.md) |
-| 複数の開発単位で実装・検証・レビューを反復し、続行・停止判断 | [`devconcord-development-orchestration`](../../.agents/skills/devconcord-development-orchestration/SKILL.md) |
+| 変更影響評価、テスト設計、実装計画 | [`devconcord review repository`](../../.agents/skills/devconcord/references/modules/verification/devconcord-repository-review/module.md)、[`devconcord verify test-design`](../../.agents/skills/devconcord/references/modules/verification/devconcord-test-design/module.md)、[`devconcord develop plan`](../../.agents/skills/devconcord/references/modules/development/devconcord-implementation-planning/module.md) |
+| 委任範囲内で複数領域の設計を具体化・改善 | [`devconcord design evolve`](../../.agents/skills/devconcord/references/modules/design/devconcord-design-orchestration/module.md) |
+| 複数の開発単位で実装・検証・レビューを反復し、続行・停止判断 | [`devconcord develop iterate`](../../.agents/skills/devconcord/references/modules/development/devconcord-development-orchestration/module.md) |
 | ADR | [AI支援開発ガイド §8](ai-assisted-development.md#8-adr設計判断の記録) |
 | 課題管理・完成度評価 | [課題管理規約](../work-management/issue-tracking.md) |
 | Self-documenting Code、SDS | [開発ガイド §2.1](ai-assisted-development.md#21-self-documenting-codeへの貢献)、[課題管理規約 §3.5](../work-management/issue-tracking.md#35-self-documenting-scoresds) |
 | Doc Comments、Annotation Comments | [開発ガイド §2.2](ai-assisted-development.md#22-doc-commentsとannotation-comments) |
 | 性能・堅牢性設計 | [Performance by Design §9.4](ai-assisted-development.md#94-performance-by-design)、[Robustness by Design §9.5](ai-assisted-development.md#95-robustness-by-design)、[要求仕様テンプレート](../application-design/templates/requirements.md) |
 | 交換可能性・技術依存境界 | [Replaceability by Design §9.6](ai-assisted-development.md#96-replaceability-by-design)、[ADRテンプレート](../application-design/templates/adr.md) |
-| セキュリティ設計・脅威分析 | [Security by Design §9.7](ai-assisted-development.md#97-security-by-design)、[Threat Modeling §11.1](ai-assisted-development.md#111-threat-modeling)、[`devconcord-design-security` Skill](../../.agents/skills/devconcord-design-security/SKILL.md) |
-| 可観測性・診断設計 | [Robustness by Design §9.5](ai-assisted-development.md#95-robustness-by-design)、[`devconcord-observability-design` Skill](../../.agents/skills/devconcord-observability-design/SKILL.md) |
+| セキュリティ設計・脅威分析 | [Security by Design §9.7](ai-assisted-development.md#97-security-by-design)、[Threat Modeling §11.1](ai-assisted-development.md#111-threat-modeling)、[`devconcord quality security` workflow module](../../.agents/skills/devconcord/references/modules/quality/devconcord-design-security/module.md) |
+| 可観測性・診断設計 | [Robustness by Design §9.5](ai-assisted-development.md#95-robustness-by-design)、[`devconcord quality observability` workflow module](../../.agents/skills/devconcord/references/modules/quality/devconcord-observability-design/module.md) |
 | 資格情報・Secretless設計 | [Secrets by Design](../application-design/secrets-by-design.md) |
 | UI/UXを機能設計へ接続 | [UI/UX設計ガイド §2.5](../application-design/ui-ux-guide.md#sec02-design-to-function)、[UI/UXクイックチェック](../application-design/ui-ux-quick-reference.md) |
 | プライバシー・環境衛生 | [Privacy & Environment Hygiene §11.3](ai-assisted-development.md#113-privacy-environment-hygiene) |

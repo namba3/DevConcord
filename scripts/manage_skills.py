@@ -112,6 +112,11 @@ def _resolve_source_repository(source_root: Path) -> tuple[Path, Path]:
 def _validate_source_repository(source_root: Path) -> tuple[Path, Path]:
     repository, skills_root = _resolve_source_repository(source_root)
     validation_errors = validate_skill_roots([skills_root])
+    # Keep generic temporary/source repositories usable by the manager API and
+    # its fixtures. Apply DevConcord's public-name contract to an actual
+    # DevConcord checkout, identified by its canonical Skill documentation.
+    if (repository / "docs" / "agent-skills.md").is_file():
+        validation_errors.extend(validate_official_skill_names(skills_root))
     if validation_errors:
         raise SkillManagementError(
             "DevConcord Skill source validation failed:\n" + "\n".join(validation_errors)
@@ -1042,6 +1047,8 @@ def _plan(
         raise SkillManagementError(f"Skill source directory does not exist: {source_root}")
 
     validation_errors = validate_skill_roots([source_root])
+    if source_root == DEFAULT_SOURCE.resolve():
+        validation_errors.extend(validate_official_skill_names(source_root))
     if validation_errors:
         raise SkillManagementError(
             "Skill source validation failed:\n" + "\n".join(validation_errors)
@@ -1252,8 +1259,8 @@ def _plan(
                 else:
                     conflicts.append(
                         f"{name}: an installed Skill differs from the source; install will "
-                        "not update it. Run sync to review/update existing Skills, or use "
-                        "--skills NAME [NAME ...] to install only the selected Skills"
+                        "not update it. Run sync to review/update existing packages. "
+                        "Use migrate only for managed legacy DevConcord Skills"
                     )
                     continue
                 actions.append(
@@ -1304,6 +1311,72 @@ def _plan(
 
     if conflicts:
         raise SkillManagementError("preflight conflicts; no files changed:\n- " + "\n- ".join(conflicts))
+    return actions, manifest, manifest_path, migrated, duplicate_exposure, dirty, revision, repository
+
+
+def _migration_plan(
+    target_root: Path,
+    source_root: Path,
+    requested_agents: set[str],
+    *,
+    scope: str,
+    discovery_paths: tuple[str, ...],
+) -> tuple[list[tuple[tuple[SkillAction, str], str]], dict[str, Any], Path, bool, bool, bool, str, str]:
+    """Plan unified package installation and exact-hash removal of managed legacy Skills."""
+    official_errors = validate_official_skill_names(source_root)
+    if official_errors:
+        raise SkillManagementError(
+            "migration requires the single official devconcord source package:\n"
+            + "\n".join(official_errors)
+        )
+    actions, manifest, manifest_path, migrated, duplicate_exposure, dirty, revision, repository = _plan(
+        "install", target_root, source_root, requested_agents, None, False, False,
+        discovery_paths, scope,
+    )
+    target_root = target_root.resolve()
+    removable: list[tuple[tuple[SkillAction, str], str]] = []
+    unmanaged: list[str] = []
+    eligible_roots = set(_package_paths(requested_agents))
+    for relative, package in manifest["packages"].items():
+        if relative not in eligible_roots:
+            continue
+        installed = package["skills"]
+        destination_root = target_root / relative
+        # Include only legacy public package names; module files under devconcord are not Skills.
+        for name in sorted(tuple(installed)):
+            if not name.startswith("devconcord-"):
+                continue
+            target = destination_root / name
+            if target.is_symlink() or not target.is_dir():
+                raise SkillManagementError(
+                    f"legacy manifest record has no safe installed package: {relative}/{name}; "
+                    "preserving all files and manifest records"
+                )
+            record = installed[name]
+            digest = _recorded_package_digest(target, record)
+            if digest != record.get("installed_tree_sha256"):
+                raise SkillManagementError(
+                    f"legacy Skill local modifications detected or invalid manifest hash: "
+                    f"{relative}/{name}; resolve it manually before migration"
+                )
+            source_commit = record.get("source_commit", "unknown")
+            dirty_note = " (source was dirty)" if record.get("source_dirty") else ""
+            print(
+                f"managed legacy Skill: {relative}/{name} "
+                f"(source commit {source_commit}{dirty_note})"
+            )
+            removable.append((("remove", target, name, digest, tree_digest(target), ()), relative))
+        if destination_root.is_dir():
+            recorded_names = set(installed)
+            for candidate in sorted(destination_root.iterdir()):
+                if candidate.name.startswith("devconcord-") and candidate.name not in recorded_names:
+                    unmanaged.append(f"{relative}/{candidate.name}")
+    if unmanaged:
+        print("preserving unmanaged legacy-looking directories: " + ", ".join(unmanaged))
+    for (action_tuple, relative) in removable:
+        name = action_tuple[2]
+        manifest["packages"][relative]["skills"].pop(name, None)
+    actions.extend(removable)
     return actions, manifest, manifest_path, migrated, duplicate_exposure, dirty, revision, repository
 
 
@@ -1476,7 +1549,8 @@ def _recover_transaction(target_root: Path, transaction_root: Path) -> str:
         if destination_relative in destinations:
             raise SkillManagementError("duplicate destination in recovery journal")
         destinations.add(destination_relative)
-        if not _is_sha256(entry.get("new_tree_sha256")) or (
+        new_digest = entry.get("new_tree_sha256")
+        if (new_digest is not None and not _is_sha256(new_digest)) or (
             entry.get("old_tree_sha256") is not None
             and not _is_sha256(entry.get("old_tree_sha256"))
         ):
@@ -1494,7 +1568,13 @@ def _recover_transaction(target_root: Path, transaction_root: Path) -> str:
             else None
         )
         staged_relative = entry.get("staged")
-        if not isinstance(staged_relative, str):
+        if staged_relative is None:
+            if new_digest is not None or entry.get("old_tree_sha256") is None:
+                raise SkillManagementError("invalid deletion entry in recovery journal")
+            if backup is not None and backup.exists() and tree_digest(backup) != entry["old_tree_sha256"]:
+                raise SkillManagementError(f"backup integrity check failed: {backup}")
+            continue
+        if not isinstance(staged_relative, str) or new_digest is None:
             raise SkillManagementError("invalid staged path in recovery journal")
         staged_parts = Path(staged_relative).parts
         if (
@@ -1520,7 +1600,7 @@ def _recover_transaction(target_root: Path, transaction_root: Path) -> str:
             raise SkillManagementError("staged path escapes transaction") from error
         if staged.is_symlink():
             raise SkillManagementError("staged Skill is a symlink")
-        if staged.exists() and tree_digest(staged) != entry["new_tree_sha256"]:
+        if staged.exists() and tree_digest(staged) != new_digest:
             raise SkillManagementError(f"staged Skill integrity check failed: {staged}")
         if backup is not None and backup.exists():
             if entry.get("old_tree_sha256") is None or tree_digest(backup) != entry["old_tree_sha256"]:
@@ -1571,12 +1651,12 @@ def _recover_transaction(target_root: Path, transaction_root: Path) -> str:
     for entry in reversed(entries):
         destination = _safe_target_path(target_root, entry["destination"])
         current_hash = _tree_digest_or_missing(destination)
+        old_hash = entry.get("old_tree_sha256")
         backup = (
             _safe_backup_path(transaction_root, entry["backup"])
-            if entry.get("backup")
+            if entry.get("backup") and old_hash is not None
             else None
         )
-        old_hash = entry.get("old_tree_sha256")
         if current_hash == old_hash:
             continue
         if current_hash not in {None, entry.get("new_tree_sha256")}:
@@ -1782,10 +1862,8 @@ def _apply(
                 expected_target_hash,
                 executable_files,
             ) = action_tuple
-            if action not in {"install", "update"}:
+            if action not in {"install", "update", "remove"}:
                 continue
-            staged_dir = staged_root / relative / name
-            staged_dir.parent.mkdir(parents=True, exist_ok=True)
             destination = target_root / relative / name
             _check_destination_path(target_root, destination.parent)
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -1794,17 +1872,25 @@ def _apply(
                     "Skill destination and transaction journal are on different filesystems; "
                     "cross-filesystem atomic recovery is unavailable"
                 )
-            shutil.copytree(source, staged_dir)
-            if _executable_mode_is_reliable(target_root):
-                _apply_executable_files(staged_dir, executable_files)
-            if _portable_tree_digest(staged_dir, executable_files) != source_hash:
-                raise SkillManagementError(f"staged Skill differs from source: {name}")
+            if action == "remove":
+                staged_relative = None
+                new_digest = None
+            else:
+                staged_dir = staged_root / relative / name
+                staged_dir.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(source, staged_dir)
+                if _executable_mode_is_reliable(target_root):
+                    _apply_executable_files(staged_dir, executable_files)
+                if _portable_tree_digest(staged_dir, executable_files) != source_hash:
+                    raise SkillManagementError(f"staged Skill differs from source: {name}")
+                staged_relative = staged_dir.relative_to(transaction_root).as_posix()
+                new_digest = tree_digest(staged_dir)
             journal_entries.append(
                 {
                     "destination": destination.relative_to(target_root).as_posix(),
-                    "staged": staged_dir.relative_to(transaction_root).as_posix(),
+                    "staged": staged_relative,
                     "backup": f"backups/{index}",
-                    "new_tree_sha256": tree_digest(staged_dir),
+                    "new_tree_sha256": new_digest,
                     "old_tree_sha256": expected_target_hash,
                 }
             )
@@ -1819,7 +1905,9 @@ def _apply(
                 executable_files,
             ) = action_tuple
             package = manifest["packages"][relative]
-            if action in {"install", "update", "metadata", "unchanged"}:
+            if action == "remove":
+                package["skills"].pop(name, None)
+            elif action in {"install", "update", "metadata", "unchanged"}:
                 package["skills"][name] = {
                     "source_repository": source_repository,
                     "source_commit": source_commit,
@@ -1850,7 +1938,9 @@ def _apply(
 
         for entry in journal_entries:
             destination = _safe_target_path(target_root, entry["destination"])
-            staged_dir = transaction_root / entry["staged"]
+            staged_dir = (
+                transaction_root / entry["staged"] if entry["staged"] is not None else None
+            )
             backup = transaction_root / entry["backup"]
             if destination.is_symlink():
                 raise SkillManagementError(
@@ -1875,7 +1965,8 @@ def _apply(
                     raise SkillManagementError(
                         f"target changed during replacement; refusing to overwrite {destination.name}"
                     )
-            os.replace(staged_dir, destination)
+            if staged_dir is not None:
+                os.replace(staged_dir, destination)
             _fsync_directory(destination.parent)
 
         rendered_manifest = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
@@ -1996,6 +2087,73 @@ def _run(args: argparse.Namespace) -> int:
     except (SkillManagementError, OSError, ValueError) as error:
         print(f"ERROR: Skill scope could not be resolved safely: {error}", file=sys.stderr)
         return 2
+
+    if args.command == "migrate":
+        lock_path: Path | None = None
+        try:
+            explicit_source = getattr(args, "source", None)
+            configured_source = (
+                _configured_source_skills(required=False)
+                if scope == "user" and explicit_source is None
+                else None
+            )
+            source_root = (
+                explicit_source.expanduser().resolve()
+                if explicit_source is not None
+                else configured_source or DEFAULT_SOURCE.resolve()
+            )
+            requested_agents = set(getattr(args, "agents", None) or [])
+            if not requested_agents:
+                existing, _ = _read_manifest(target_root / MANIFEST_PATH)
+                requested_agents = {
+                    agent for package in existing["packages"].values()
+                    for agent in package["agents"]
+                }
+            if not requested_agents:
+                raise SkillManagementError(
+                    "no managed agent destinations found; install unified devconcord with --agent first"
+                )
+            if not target_root.is_dir():
+                raise SkillManagementError(f"{scope} Skill destination root does not exist: {target_root}")
+            if args.apply:
+                if scope == "user":
+                    _user_state_directory(create=True)
+                lock_path = _acquire_lock(target_root)
+            else:
+                lock_candidate = target_root / ".devconcord" / "skills.lock"
+                _check_destination_path(target_root, lock_candidate.parent)
+                if lock_candidate.exists() or lock_candidate.is_symlink():
+                    raise SkillManagementError("a Skill operation lock exists; migration planning is blocked")
+            pending = _transaction_directories(target_root)
+            if pending:
+                raise SkillManagementError(
+                    "interrupted Skill transactions must be recovered first: "
+                    + ", ".join(path.name for path in pending)
+                )
+            expected_manifest = _read_expected_manifest(target_root)
+            discovery_paths = GLOBAL_DISCOVERY_PATHS if scope == "user" else DISCOVERY_PATHS
+            result = _migration_plan(
+                target_root, source_root, requested_agents, scope=scope,
+                discovery_paths=discovery_paths,
+            )
+            actions, manifest, manifest_path, _migrated, _duplicate, dirty, revision, repository = result
+            for (action, _src, name, _hash, _old, _exec), relative in actions:
+                print(f"{action}: {relative}/{name}")
+            print(f"Source: {repository} @ {revision}")
+            print(f"Scope: {scope} ({target_root})")
+            if not args.apply:
+                print("Dry run only; pass --apply to migrate files and manifest.")
+                return 0
+            _apply(actions, target_root, manifest, manifest_path, dirty, revision, repository,
+                   expected_manifest, discovery_paths)
+            print(f"Migrated managed Skills transactionally; manifest: {manifest_path}")
+            return 0
+        except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+            print(f"ERROR: migration stopped safely: {error}", file=sys.stderr)
+            return 2
+        finally:
+            if lock_path is not None:
+                _release_lock(lock_path)
 
     if args.command == "recover":
         lock_path: Path | None = None
@@ -2120,7 +2278,7 @@ def _run(args: argparse.Namespace) -> int:
             target_root,
             source_root,
             requested_agents,
-            args.skills,
+            getattr(args, "skills", None),
             getattr(args, "allow_duplicate_discovery", False),
             getattr(args, "allow_dirty_source", False),
             discovery_paths,
@@ -2148,7 +2306,7 @@ def _run(args: argparse.Namespace) -> int:
         if not args.apply:
             print("Dry run only; pass --apply to write changes.")
         else:
-            changes = [entry for entry in actions if entry[0][0] in {"install", "update"}]
+            changes = [entry for entry in actions if entry[0][0] in {"install", "update", "remove"}]
             original_manifest = (
                 _read_manifest(manifest_path)[0]
                 if manifest_path.exists()
@@ -2685,7 +2843,7 @@ def build_parser() -> argparse.ArgumentParser:
         action.add_argument(
             "--skills",
             nargs="+",
-            help="skill names; install defaults to all, sync defaults to recorded Skills",
+            help=argparse.SUPPRESS,
         )
         action.add_argument(
             "--apply",
@@ -2702,6 +2860,14 @@ def build_parser() -> argparse.ArgumentParser:
             action="store_true",
             help="explicitly install from a source checkout with uncommitted changes",
         )
+    migrate = commands.add_parser("migrate", help="plan or safely migrate managed legacy Skills")
+    migrate.add_argument("--scope", choices=("user", "project"))
+    migrate.add_argument("--target", type=Path, help="Project Scope repository root")
+    migrate.add_argument("--agents", nargs="+", choices=sorted(AGENT_ROOTS),
+                         help="agent destinations; defaults to agents recorded in the old manifest")
+    migrate.add_argument("--source", type=Path, help="unified DevConcord source repository")
+    migrate.add_argument("--apply", action="store_true", help="apply the reviewed migration plan")
+
     recover = commands.add_parser("recover", help="inspect or recover interrupted Skill updates")
     recover.add_argument("--scope", choices=("user", "project"))
     recover.add_argument("--target", type=Path, help="Project Scope repository root")
@@ -2764,7 +2930,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
-    return _run(build_parser().parse_args())
+    args = build_parser().parse_args()
+    if getattr(args, "skills", None):
+        print(
+            "ERROR: --skills selection is retired; install or sync the unified "
+            "devconcord package. Existing multi-Skill installations can be inspected "
+            "with `migrate --scope user|project` (dry-run by default).",
+            file=sys.stderr,
+        )
+        return 2
+    return _run(args)
 
 
 if __name__ == "__main__":

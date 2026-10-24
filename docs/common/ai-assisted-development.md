@@ -608,7 +608,7 @@ Robustness by Designは、例外処理を後付けで網羅することではな
 | Resource Safety | ファイル、ロック、メモリ、接続等の所有・解放・上限を明らかにする | 制限値は対象環境・運用条件を根拠に定め、無制限な待機・蓄積を避ける |
 | Observability / Diagnosability | 利用者と運用者が結果、原因、相関関係を診断できるようにする | 個人情報・秘密をログに出さず、必要な詳細を適切な利用者へ分けて示す |
 
-Observability & Diagnosability by Designは、重要な状態・操作・失敗・回復について「誰が何を知りたいか」から必要な証拠を選ぶ横断的な設計原則である。ログ、メトリクス、トレース、診断レポートをすべて追加する規則ではなく、収集量より診断価値・データ保護・性能・保存や送信の失敗契約を優先する。詳細な設計判断には、利用可能性と必要性を確認して [`devconcord-observability-design`](../../.agents/skills/devconcord-observability-design/SKILL.md) を使える。詳細設計、Skill利用、実装、検証の成功はそれぞれ区別する。
+Observability & Diagnosability by Designは、重要な状態・操作・失敗・回復について「誰が何を知りたいか」から必要な証拠を選ぶ横断的な設計原則である。ログ、メトリクス、トレース、診断レポートをすべて追加する規則ではなく、収集量より診断価値・データ保護・性能・保存や送信の失敗契約を優先する。詳細な設計判断には、利用可能性と必要性を確認して [`devconcord quality observability`](../../.agents/skills/devconcord/references/modules/quality/devconcord-observability-design/module.md) を使える。詳細設計、Skill利用、実装、検証の成功はそれぞれ区別する。
 
 #### 異常条件・失敗時契約の設計
 
@@ -622,7 +622,7 @@ Observability & Diagnosability by Designは、重要な状態・操作・失敗�
 
 重要な操作では、失敗時にどのデータが変更済みか、原子性の範囲、再実行時の副作用、ロールバック・補償・再開の可否、利用者へ返す状態と診断情報を定める。UI上のキャンセルは見た目だけの操作ではなく、アプリケーション層・ドメイン処理・外部I/Oまで含む停止地点、すでに適用済みの変更、整合性保証を持つ機能要求である。再試行は一時的エラー、タイムアウト、重複実行の可能性と冪等性を確認し、無条件に行わない。
 
-並行性を導入する場合は、共有状態・資源の所有者、操作間の順序、変更が確定・可視化される地点、必要なスナップショット整合性を定める。言語レベルのデータ競合を防いでも、lost update、TOCTOU、重複実行、古い読み取り、順序違反などの論理競合は起こり得る。待機・ロック・資源取得・子タスク終了の循環も必要に応じて確認し、逐次処理で要求を満たせるなら不要な並行性を加えない。並行性やキャンセルの詳細設計には、利用可能性と必要性に応じて [`devconcord-design-robustness`](../../.agents/skills/devconcord-design-robustness/SKILL.md) を使える。
+並行性を導入する場合は、共有状態・資源の所有者、操作間の順序、変更が確定・可視化される地点、必要なスナップショット整合性を定める。言語レベルのデータ競合を防いでも、lost update、TOCTOU、重複実行、古い読み取り、順序違反などの論理競合は起こり得る。待機・ロック・資源取得・子タスク終了の循環も必要に応じて確認し、逐次処理で要求を満たせるなら不要な並行性を加えない。並行性やキャンセルの詳細設計には、利用可能性と必要性に応じて [`devconcord quality robustness`](../../.agents/skills/devconcord/references/modules/quality/devconcord-design-robustness/module.md) を使える。
 
 処理の種類に応じて、境界値・Property-Based・状態機械/モデルベース・Fault Injection・復旧・並行性・リソース枯渇・回帰テストから必要な検証を選ぶ。データ損失、不変条件違反、重大な運用影響があり得るほど強い検証を選び、すべてを一律必須にしない。テストやログが示すのは実際に検証した条件の範囲であり、未検証の環境や故障モードまで保証したとは扱わない。
 
@@ -1127,19 +1127,19 @@ repository/
 
 ### 17.2 設計書から新規リポジトリを初期化する
 
-新規プロジェクトでは、設計書をコード生成の指示としてだけでなく、要求・責務・契約・品質特性・検証条件の出典として扱います。[Design-to-Repository Bootstrap](../../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) は、入力資料の読取範囲と矛盾を整理してから、指定範囲に応じた開発基盤・設計資料・テスト・最小骨格を作るための専用ワークフローです。既存プロジェクトへの共通資料導入や導入済み資料の同期とは区別します。
+新規プロジェクトでは、設計書をコード生成の指示としてだけでなく、要求・責務・契約・品質特性・検証条件の出典として扱います。[Design-to-Repository Bootstrap](../../.agents/skills/devconcord/references/modules/management/devconcord-bootstrap-from-design/module.md) は、入力資料の読取範囲と矛盾を整理してから、指定範囲に応じた開発基盤・設計資料・テスト・最小骨格を作るための専用ワークフローです。既存プロジェクトへの共通資料導入や導入済み資料の同期とは区別します。
 
 設計書の出典・節からTASK/REQ/NFR、ADR、構造、初期課題、受け入れ条件へ必要な範囲で追跡し、読めなかった内容・仮定・未決事項を残します。要求仕様書とADRテンプレートの出典欄を使い、独立台帳や設計書の複製は必要性・共有許可がある場合に限ります。対象の既存ファイルやGit履歴は保護し、初期化範囲外の機能や成功を偽るスタブは作りません。実装済みと検証済み、実行済みの確認と将来の検証計画を区別します。
 
 ### 17.3 Bootstrap / Adoption後の設計Skill推奨
 
-BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、後続作業として専門Skillが有用かを判断する。推奨だけのために対象全体を再調査せず、Bootstrapが実施した初期設計を繰り返さない。対象プロジェクトの実態と、今回の作業で実際に確認できた根拠から、次の関係を説明できる候補だけを示す。
+BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、後続作業として専門workflowが有用かを判断する。推奨だけのために対象全体を再調査せず、Bootstrapが実施した初期設計を繰り返さない。対象プロジェクトの実態と、今回の作業で実際に確認できた根拠から、次の関係を説明できる候補だけを示す。
 
-ここでいう設計専門SkillはDevConcord系の `devconcord-design-*`、`devconcord-ux-functional-design`、`devconcord-documentation-architecture`です。`devconcord-repository-review`と`devconcord-gap-analysis`は具体的なレビュー/変更影響評価と横断評価を担う関連評価Skillです。`devconcord-test-design`は既存契約から独立検証を設計し、`devconcord-implementation-planning`は複雑な変更を検証可能な実装単位へ分割する任意の作業Skillです。Bootstrap / Adoption / Sync / Generate / Referenceの運用Skillとは役割を分けます。これらの区分は他の提供元の有用なSkillを排除せず、利用義務や自動実行を意味しません。
+ここでいう設計専門moduleはDevConcordの専門設計workflow modulesです。`devconcord review repository`と`devconcord review gap`は具体的なレビュー/変更影響評価と横断評価を担う関連評価workflowです。`devconcord verify test-design`は既存契約から独立検証を設計し、`devconcord develop plan`は複雑な変更を検証可能な実装単位へ分割する任意の作業Skillです。`devconcord manage bootstrap/adopt/sync/guidance/reference` の運用workflowとは役割を分けます。これらの区分は他の提供元の有用なSkillを排除せず、利用義務や自動実行を意味しません。
 
 > 確認済みの特徴または未解決事項 → 設計上の影響 → 必要な専門的検討 → Skill → 期待成果物と検証
 
-`devconcord-design-orchestration` は、ユーザーが設計の段階的な具体化・横断的な改善を委任したときに、要求・ADR・関連設計資産・検証条件の整合を範囲を区切った単位で進める統合Skillです。読み取り専用のGap Analysis、具体的欠陥を調べるRepository Review、専門設計判断、Implementation Planning、Issue-Driven Developmentを置き換えません。単一の明確な設計判断や小さな修正には、必要な専門Skillだけで十分な場合があります。
+`devconcord design evolve` は、ユーザーが設計の段階的な具体化・横断的な改善を委任したときに、要求・ADR・関連設計資産・検証条件の整合を範囲を区切った単位で進める統合workflowです。読み取り専用のGap Analysis、具体的欠陥を調べるRepository Review、専門設計判断、Implementation Planning、Issue-Driven Developmentを置き換えません。単一の明確な設計判断や小さな修正には、必要な専門workflowだけで十分な場合があります。
 
 #### 推奨状態
 
@@ -1147,10 +1147,10 @@ BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、
 |---|---|
 | 実施推奨 | 重要な設計判断・不足を次の作業として検討する価値が高い |
 | 後続フェーズで推奨 | 必要性はあるが、依存する要求・設計・実装が整うまで待つ方がよい |
-| 現状で十分 | 確認した範囲では追加の専門Skill作業の価値が低い。設計・実装の完全性や品質保証を意味しない |
+| 現状で十分 | 確認した範囲では追加の専門workflow作業の価値が低い。設計・実装の完全性や品質保証を意味しない |
 | 対象外 | 製品特性や要求から適用する必要がない |
 
-必要な情報や証拠が足りない場合は、状態を推測せず「判断保留」または「未評価」とし、確認に必要な情報を述べる。「現状で十分」は、対象の記録や検証を確認した範囲に限る。専門Skillを利用した事実と成果物の十分性、実装・検証済みであることは別々に扱う。
+必要な情報や証拠が足りない場合は、状態を推測せず「判断保留」または「未評価」とし、確認に必要な情報を述べる。「現状で十分」は、対象の記録や検証を確認した範囲に限る。専門workflowを利用した事実と成果物の十分性、実装・検証済みであることは別々に扱う。
 
 #### 候補Skillの選択
 
@@ -1158,38 +1158,38 @@ BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、
 
 | Skill | 検討する根拠の例 |
 |---|---|
-| `devconcord-design-orchestration` | 新規・未完成の設計を段階的に具体化する、または複数の要求・ADR・設計資産にまたがる改善を委任された。単一領域や読み取り専用評価が目的なら該当する専門Skill/評価Skillを選ぶ |
-| `devconcord-ux-functional-design` | ユーザータスクと機能の対応、利用者とのCLI/API契約、操作や状態遷移、エラー・取消・進捗、アクセシビリティに重要な未決事項がある。GUI固有の要求はGUI製品だけに適用する |
-| `devconcord-design-performance` | 大量データ、高頻度処理、重要な応答・資源制約、I/O・並列・ストリーミング等の構造判断、ワークロードや計測方法の未定義がある。根拠のない数値目標は作らない |
-| `devconcord-design-robustness` | 永続データやファイルの変更、部分成功、取消・再試行・復旧、並行・非同期・外部依存、重要な整合性不変条件について未解決事項がある |
-| `devconcord-design-replaceability` | 交換価値のあるUI・ストレージ・OS・通信・サービス等の依存があり、結合・移行・互換性の影響が大きい。全依存の抽象化は推奨しない |
-| `devconcord-design-security` | 機密情報、外部入力、ネットワーク、権限境界、信頼を越えるデータ/制御フロー、攻撃面、セキュリティ不変条件に重要な未整理事項がある。脅威に応じ分析深度を選ぶ |
-| `devconcord-observability-design` | 利用者・開発者・運用者が重要な状態や失敗を判断するための診断質問、信号の意味、機密データ境界、計測コストや保存/送信失敗時の扱いが未整理である。小規模なCLIに監視基盤を要求しない |
-| `devconcord-documentation-architecture` | 読者・目的が複数ある、文書の重複や矛盾、公開API/CLIの案内、正本・導線・更新責務、設計と実装の整合に有意な問題がある。小規模な対象に複雑な階層を求めない |
-| `devconcord-gap-analysis` | Adoption後などに複数領域の現状・要求/設計/実装/検証の関係が未評価で、横断的なFull Assessmentに価値がある。既存の有効なレポートがあれば無条件に再実行せず、Incremental Assessmentまたは該当Skillを検討する |
-| `devconcord-test-design` | 受け入れ条件・契約はあるが、独立した期待値、代表的な境界/失敗ケース、適切な検証方法が未整理である |
-| `devconcord-implementation-planning` | 複数領域・依存関係を含む変更で、順序・検証可能な実装単位・既存課題との関係が不明確である |
-| `devconcord-root-cause-analysis` | 重要な障害・失敗・回帰があり、原因候補を証拠で区別できていない。診断は修正権限を与えない |
-| `devconcord-compatibility-migration` | 公開API、永続/通信/設定形式、DB schema、plugin等の変更に実質的な互換性・移行リスクがある |
-| `devconcord-release-engineering` | リリース候補、配布、インストール、更新、ロールバック、リリース後確認が作業対象である |
-| `devconcord-dependency-governance` | 外部依存の採用・更新・置換・廃止、または脆弱性/ライセンス/供給網等の重大リスクを判断する |
-| `devconcord-agent-behavior-evaluation` | エージェントがSkillを発見・選択・実行する品質を固定シナリオと独立証拠から評価する |
+| `devconcord design evolve` | 新規・未完成の設計を段階的に具体化する、または複数の要求・ADR・設計資産にまたがる改善を委任された。単一領域や読み取り専用評価が目的なら該当する専門workflow/評価workflowを選ぶ |
+| `devconcord quality ux` | ユーザータスクと機能の対応、利用者とのCLI/API契約、操作や状態遷移、エラー・取消・進捗、アクセシビリティに重要な未決事項がある。GUI固有の要求はGUI製品だけに適用する |
+| `devconcord quality performance` | 大量データ、高頻度処理、重要な応答・資源制約、I/O・並列・ストリーミング等の構造判断、ワークロードや計測方法の未定義がある。根拠のない数値目標は作らない |
+| `devconcord quality robustness` | 永続データやファイルの変更、部分成功、取消・再試行・復旧、並行・非同期・外部依存、重要な整合性不変条件について未解決事項がある |
+| `devconcord quality replaceability` | 交換価値のあるUI・ストレージ・OS・通信・サービス等の依存があり、結合・移行・互換性の影響が大きい。全依存の抽象化は推奨しない |
+| `devconcord quality security` | 機密情報、外部入力、ネットワーク、権限境界、信頼を越えるデータ/制御フロー、攻撃面、セキュリティ不変条件に重要な未整理事項がある。脅威に応じ分析深度を選ぶ |
+| `devconcord quality observability` | 利用者・開発者・運用者が重要な状態や失敗を判断するための診断質問、信号の意味、機密データ境界、計測コストや保存/送信失敗時の扱いが未整理である。小規模なCLIに監視基盤を要求しない |
+| `devconcord quality documentation` | 読者・目的が複数ある、文書の重複や矛盾、公開API/CLIの案内、正本・導線・更新責務、設計と実装の整合に有意な問題がある。小規模な対象に複雑な階層を求めない |
+| `devconcord review gap` | Adoption後などに複数領域の現状・要求/設計/実装/検証の関係が未評価で、横断的なFull Assessmentに価値がある。既存の有効なレポートがあれば無条件に再実行せず、Incremental Assessmentまたは該当Skillを検討する |
+| `devconcord verify test-design` | 受け入れ条件・契約はあるが、独立した期待値、代表的な境界/失敗ケース、適切な検証方法が未整理である |
+| `devconcord develop plan` | 複数領域・依存関係を含む変更で、順序・検証可能な実装単位・既存課題との関係が不明確である |
+| `devconcord diagnose root-cause` | 重要な障害・失敗・回帰があり、原因候補を証拠で区別できていない。診断は修正権限を与えない |
+| `devconcord lifecycle compatibility` | 公開API、永続/通信/設定形式、DB schema、plugin等の変更に実質的な互換性・移行リスクがある |
+| `devconcord lifecycle release` | リリース候補、配布、インストール、更新、ロールバック、リリース後確認が作業対象である |
+| `devconcord lifecycle dependencies` | 外部依存の採用・更新・置換・廃止、または脆弱性/ライセンス/供給網等の重大リスクを判断する |
+| `devconcord evaluate agent` | エージェントがSkillを発見・選択・実行する品質を固定シナリオと独立証拠から評価する |
 
-具体的なコード欠陥や変更の回帰リスクが詳しい調査を必要とする場合は `devconcord-repository-review` を後続候補にできる。実装前の提案なら影響評価モード、既存コードや差分ならレビューとして扱う。これは設計Skill推奨の一律対象ではない。
+具体的なコード欠陥や変更の回帰リスクが詳しい調査を必要とする場合は `devconcord review repository` を後続候補にできる。実装前の提案なら影響評価モード、既存コードや差分ならレビューとして扱う。これは設計Skill推奨の一律対象ではない。
 
 #### 推奨の出力と境界
 
 推奨を出す場合は、必要な候補だけを示し、Skill名、状態、対象機能/設計領域、確認した根拠と影響、未解決事項、実施時期と依存関係、期待する成果物・検証、関連するREQ/ADR/既存課題IDを含める。優先度は対象プロジェクトに既存の尺度があればそれを使い、新しい数値スコアは作らない。複数Skillの順序は実際の設計依存関係から決め、依存しない作業を不必要に直列化しない。Bootstrap / Adoptionの範囲外の作業であることを示す。関連Skillがない小さな修正にSkillを割り当てず、不要な候補を列挙しない。
 
-推奨はSkillの自動実行・自動インストール・作業範囲拡張を許可しない。Skill間の自動呼び出しを前提にせず、専門Skillの実行結果を確認するまでは設計課題を解消済みにしない。既存の要求、ADR、課題表、リスク記録を参照し、推奨専用の台帳やスコアは作らない。
+推奨はSkillの自動実行・自動インストール・作業範囲拡張を許可しない。module間の自動呼び出しを前提にせず、専門workflowの実行結果を確認するまでは設計課題を解消済みにしない。既存の要求、ADR、課題表、リスク記録を参照し、推奨専用の台帳やスコアは作らない。
 
 ---
 
 ### 17.4 複数作業単位の開発反復
 
-設計・要求と課題表が整備されたプロジェクトで、実装・検証・レビューをまたぐ有限の開発反復を委任する場合は、[`devconcord-development-orchestration`](../../.agents/skills/devconcord-development-orchestration/SKILL.md)を候補にできます。これは読み取り専用のPlan、許可範囲内のIterate、新機能を加えないStabilizeを扱い、各単位の品質ゲートを通過した後に次へ進むか判断します。反復予算の既定値は最大3作業単位、各単位につき診断済みの修復1回です。ユーザー指定の上限を優先し、許可なく予算を拡大しません。
+設計・要求と課題表が整備されたプロジェクトで、実装・検証・レビューをまたぐ有限の開発反復を委任する場合は、[`devconcord develop iterate`](../../.agents/skills/devconcord/references/modules/development/devconcord-development-orchestration/module.md)を候補にできます。これは読み取り専用のPlan、許可範囲内のIterate、新機能を加えないStabilizeを扱い、各単位の品質ゲートを通過した後に次へ進むか判断します。反復予算の既定値は最大3作業単位、各単位につき診断済みの修復1回です。ユーザー指定の上限を優先し、許可なく予算を拡大しません。
 
-単一課題や限定Batchは `devconcord-issue-driven-development`、複雑な変更の順序づけは `devconcord-implementation-planning`、具体的な欠陥レビューは `devconcord-repository-review`、横断的なギャップ評価は `devconcord-gap-analysis` が担います。実装中に重大な設計判断が現れた場合は、依存する作業を止めて `devconcord-design-orchestration` へ接続する候補とします。これらのSkill間の自動呼び出しは保証されず、実行可能性とユーザーの範囲を確認します。
+単一課題や限定Batchは `devconcord develop issue`、複雑な変更の順序づけは `devconcord develop plan`、具体的な欠陥レビューは `devconcord review repository`、横断的なギャップ評価は `devconcord review gap` が担います。実装中に重大な設計判断が現れた場合は、依存する作業を止めて `devconcord design evolve` へ接続する候補とします。これらのmodule間の自動呼び出しは保証されず、実行可能性とユーザーの範囲を確認します。
 
 Root Cause Analysis、Compatibility Migration、Release Engineering、Dependency Governance、Agent Behavior Evaluationは独立した任意ワークフローであり、Development Orchestrationの標準ループ、必須依存、Quality Gateには含めません。ユーザーが明示的に指定した場合、または作業中にそれぞれの実質的リスクが確認された場合に利用を検討します。未導入・利用不能だけで無関係な作業を停止せず、未使用を品質欠陥と評価しません。ただし、関連リスクが現実にある場合の基本的な互換性、データ保護、セキュリティ、検証は通常の開発・レビュー契約で扱います。Stabilize ModeからRelease Engineeringを提案できても、自動的なリリースや承認は行いません。Skill利用の提案は自動呼び出し・インストール・権限拡張を許可しません。
 
@@ -1201,19 +1201,19 @@ Root Cause Analysis、Compatibility Migration、Release Engineering、Dependency
 
 > Apply specialized Agent Skills according to the material risks, impact, uncertainty, and verification needs of the task—not merely because those Skills are available.
 
-作業に内在する重要なリスク、影響、不確実性、検証の必要性に応じて専門Skillの適用を選びます。Skillが存在することや一覧に載っていることだけで実行を要求しません。軽微な変更には必要十分な作業を行い、重要なリスクには相応の専門判断と検証を投入します。
+作業に内在する重要なリスク、影響、不確実性、検証の必要性に応じて専門workflowの適用を選びます。Skillが存在することや一覧に載っていることだけで実行を要求しません。軽微な変更には必要十分な作業を行い、重要なリスクには相応の専門判断と検証を投入します。
 
 判断では、関係する範囲に限り、問題時の影響（Impact）、発生可能性（Likelihood）、要求・設計・実装・環境の不確実性（Uncertainty）、影響範囲（Blast Radius）、変更や失敗の可逆性（Reversibility）、検証証拠の信頼性・適用可能性（Evidence Confidence）を確認します。データ完全性、セキュリティ露出、互換性、可用性、利用者影響、性能感度、運用複雑性、配布環境、依存の重要性なども、該当すれば考慮します。毎回全項目を採点したり、固定点数を合計したりせず、判定根拠・未確認事項・残余リスクを必要な範囲で示します。
 
 以下を別々の状態として扱います。
 
 1. 変更に関連する開発原則を考慮した。
-2. 関連する専門Skillの適用可能性を評価した。
+2. 関連する専門workflowの適用可能性を評価した。
 3. 適切なSkillを選択した、または選択しないと判断した。
 4. Skillの内容を実際に参照・適用した。
 5. そのSkillに基づく検証を設計・実施し、結果を得た。
 
-Skillの導入状態、エージェントからの発見可能性、選択、内容の適用、検証実施も互いに区別します。利用可能性を確認できないSkillを実行済みと扱わず、Skill間の自動呼び出し、Skillの記述による権限拡大、選択したことによる承認を前提にしません。Skillを選択しなかった場合も、関連する基本的な互換性・データ保護・セキュリティ・契約確認義務は残ります。
+Skillの導入状態、エージェントからの発見可能性、選択、内容の適用、検証実施も互いに区別します。利用可能性を確認できないSkillを実行済みと扱わず、module間の自動呼び出し、Skillの記述による権限拡大、選択したことによる承認を前提にしません。Skillを選択しなかった場合も、関連する基本的な互換性・データ保護・セキュリティ・契約確認義務は残ります。
 
 リスクが不明なことは低リスクの根拠になりません。重要な契約、利用者、影響範囲、実行環境または証拠の不足が判断を変える場合は確認し、解消しない不確実性を残余リスクとして扱います。重大または不可逆的な影響を発生可能性との平均で隠さず、承認境界・安全性・データ損失のレッドフラッグは個別に扱います。検証しやすさはリスクの低さを意味せず、検証費用の高さも重大リスクを無視する根拠になりません。リスク評価は作業権限を拡張せず、高リスクを理由に委任外の変更を行いません。
 
@@ -1223,19 +1223,19 @@ Skillの導入状態、エージェントからの発見可能性、選択、内
 
 | 重要な問い・変更 | 検討するSkill候補 |
 |---|---|
-| 利用者タスク、操作、状態、アクセシビリティ | `devconcord-ux-functional-design` |
-| 代表ワークロード、遅延、資源制約 | `devconcord-design-performance` |
-| 整合性、不変条件、並行性、取消、復旧 | `devconcord-design-robustness` |
-| 資産、脅威、権限、信頼境界、秘密 | `devconcord-design-security` |
-| 診断したい状態や失敗、必要な観測信号 | `devconcord-observability-design`; 原因不明の重大障害は `devconcord-root-cause-analysis` |
-| 価値のある技術依存境界や交換影響 | `devconcord-design-replaceability` |
-| 文書の正本、読者、重複、導線 | `devconcord-documentation-architecture` |
-| 受け入れ条件、独立したオラクル、検証方法 | `devconcord-test-design` |
-| 具体的欠陥、変更影響、回帰リスク | `devconcord-repository-review` |
-| 複数領域をまたぐ委任設計 | `devconcord-design-orchestration` |
-| 課題単位の実装、複数単位の反復、複雑な順序づけ | `devconcord-issue-driven-development`, `devconcord-development-orchestration`, `devconcord-implementation-planning` のうち作業範囲に対応するもの |
-| 実エージェントのSkill発見・選択・実行品質 | `devconcord-agent-behavior-evaluation` |
-| 公開API/データ形式の互換性、明示的リリース、依存判断 | `devconcord-compatibility-migration`, `devconcord-release-engineering`, `devconcord-dependency-governance` のうち実際の作業に対応する任意Skill |
+| 利用者タスク、操作、状態、アクセシビリティ | `devconcord quality ux` |
+| 代表ワークロード、遅延、資源制約 | `devconcord quality performance` |
+| 整合性、不変条件、並行性、取消、復旧 | `devconcord quality robustness` |
+| 資産、脅威、権限、信頼境界、秘密 | `devconcord quality security` |
+| 診断したい状態や失敗、必要な観測信号 | `devconcord quality observability`; 原因不明の重大障害は `devconcord diagnose root-cause` |
+| 価値のある技術依存境界や交換影響 | `devconcord quality replaceability` |
+| 文書の正本、読者、重複、導線 | `devconcord quality documentation` |
+| 受け入れ条件、独立したオラクル、検証方法 | `devconcord verify test-design` |
+| 具体的欠陥、変更影響、回帰リスク | `devconcord review repository` |
+| 複数領域をまたぐ委任設計 | `devconcord design evolve` |
+| 課題単位の実装、複数単位の反復、複雑な順序づけ | `devconcord develop issue`, `devconcord develop iterate`, `devconcord develop plan` のうち作業範囲に対応するもの |
+| 実エージェントのSkill発見・選択・実行品質 | `devconcord evaluate agent` |
+| 公開API/データ形式の互換性、明示的リリース、依存判断 | `devconcord lifecycle compatibility`, `devconcord lifecycle release`, `devconcord lifecycle dependencies` のうち実際の作業に対応する任意Skill |
 
 既に十分な設計・検証証拠がある場合は重複分析を省けます。複数Skillの組合せは互いに補う場合に限り、役割と引き継ぐ判断を明確にします。Compatibility Migration、Release Engineering、Dependency Governanceは必要時だけ利用する独立した専門工程です。これらや他の任意Skillの未導入・非利用だけで無関係な作業を停止せず、非利用自体を品質欠陥にしません。一方、実際の互換性破壊、データ損失、重大なセキュリティ・信頼性リスクをOptional扱いで見過ごしません。
 
