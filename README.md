@@ -22,6 +22,11 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 状態・処理・障害を安全で必要十分な情報から診断する | [`devconcord-observability-design` Skill](.agents/skills/devconcord-observability-design/SKILL.md) |
 | 利用者タスクからUIを設計し、必要なモックアップを検証する | [UI/UX設計ガイド](docs/application-design/ui-ux-guide.md)、[`devconcord-ux-functional-design` Skill](.agents/skills/devconcord-ux-functional-design/SKILL.md) |
 | DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](.agents/skills/devconcord-gap-analysis/SKILL.md) |
+| Skillを使うAIエージェントの発見・選択・実行品質を評価する | [`devconcord-agent-behavior-evaluation` Skill](.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md) |
+| 原因不明の障害・回帰を証拠から診断する | [`devconcord-root-cause-analysis` Skill](.agents/skills/devconcord-root-cause-analysis/SKILL.md) |
+| 公開API・保存/通信形式の互換性と移行を評価する | [`devconcord-compatibility-migration` Skill](.agents/skills/devconcord-compatibility-migration/SKILL.md) |
+| 明示的なリリース候補・配布・更新の証拠を評価する | [`devconcord-release-engineering` Skill](.agents/skills/devconcord-release-engineering/SKILL.md) |
+| 依存の採用・更新・置換・廃止を判断する | [`devconcord-dependency-governance` Skill](.agents/skills/devconcord-dependency-governance/SKILL.md) |
 | 導入済みの共通資料を更新する | [資料Synchronizationの実行例](docs/getting-started.md#8-共通ガイドのsynchronization) |
 | 共通原則・テンプレートを探す | [資料一覧](docs/README.md) |
 | 資産・脅威・信頼境界からセキュリティ設計する | [`devconcord-design-security` Skill](.agents/skills/devconcord-design-security/SKILL.md)、[Security by Design](docs/common/ai-assisted-development.md#97-security-by-design)、[Secrets by Design](docs/application-design/secrets-by-design.md) |
@@ -37,7 +42,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 - DDD、Self-documenting Code、SDD、DbC、TDD、Performance / Robustness / Replaceability / Security / Observability by Design等の開発・設計ガイド
 - 要求仕様、ADR、課題管理、リスク管理、完成度評価の規約とテンプレート
 - READMEを含む文書設計、導入、更新、検証のための共通指針
-- `AGENTS.md`・`REVIEW.md`生成、Bootstrap、Adoption、設計・開発オーケストレーション、影響評価、テスト設計、実装計画、課題駆動開発、Observability設計、Synchronization、品質ギャップ分析用Agent Skills
+- `AGENTS.md`・`REVIEW.md`生成、Bootstrap、Adoption、設計・開発オーケストレーション、影響評価、テスト設計、実装計画、課題駆動開発、Observability設計、原因分析、エージェント評価、互換性移行、リリース、依存ガバナンス、Synchronization、品質ギャップ分析用Agent Skills
 - 複数エージェントで再利用するAgent Skillsと、安全な配布・同期スクリプト
 
 ## 適用方針

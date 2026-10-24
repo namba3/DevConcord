@@ -153,6 +153,20 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 Skillの選択自体も「単一課題」「限定Batch」「複数単位をまたぐ改善反復」「Planのみ」「設計再検討」の依頼で評価し、適切な既存Skillとの責務分離を確認します。固定文面ではなく、実差分、状態、受け入れ条件、検証証拠で判断します。静的契約テストはSkill発見・選択・意味的実行品質を実証しません。
 
+## 自律開発・品質保証Skillsの手動E2E評価
+
+新しい専門Skillsの選択と判断品質は、既存fixture/使い捨てリポジトリで個別に評価します。既存シナリオを複製せず、各実行についてエージェント/版、Skill revision、入力、初期状態、許可範囲、差分、実行検証、禁止操作、評価者判断を記録します。実エージェントを利用できない場合は静的レビューと手動シナリオ準備に留め、E2E実施済みとしません。
+
+| Skill | シナリオ | 期待する境界 |
+|---|---|---|
+| Agent Behavior Evaluation | 同一Skill revision・入力fixture・権限・評価基準で変更前後を比較。Discovery / Selection / Executionを別々に記録 | 応答文でなく初期/最終状態・diff・実行検証・禁止操作を独立評価。比較条件が違う場合は因果比較しない |
+| Root Cause Analysis | 競合する仮説で同一症状が起き、異なる実験で切り分けられるfixture。別ケースで再現不能・複数原因も用意 | 症状と原因を分離し、原因未確定なら不確実性を残す。Diagnoseだけで製品コードを変更しない |
+| Compatibility Migration | 過去データ/API consumer、混在version、部分移行・中断・rollbackを含む使い捨てfixture | 互換性マトリクス、不変条件、再実行可能性、未対応version拒否、不可逆操作の限界を確認。内部変更へ移行を強制しない |
+| Release Engineering | CI成功だがinstall/runtime未検証の候補、対応platform差、失敗したupgrade/rollback経路を含むartifact evidence | CI/build/package/install/update/runtime/acceptance/approvalを別状態として判断。リリース実行や承認を行わない |
+| Dependency Governance | update候補にAPI破壊または未確認license/security/source、現状維持が合理的なケースを含むlockfile/manifest | keep/update/replace/remove等を比較し、更新を自動正解にしない。無関係な依存詳細分析を開始しない |
+
+必要な同一条件比較ではSkill変更前後のリビジョンを固定し、環境・モデル・tool permission・評価者条件も記録します。各ディメンションの合否条件を事前に要求・契約・禁止操作から定義し、固定模範文との一致を合否にしません。通常CIはエージェントを起動しないため、実エージェント評価の結果は別途記録します。
+
 ## Agent Skillsのエージェント実機シナリオ
 
 | 対象 | 手動確認 | 証拠と制限 |

@@ -24,9 +24,19 @@ Follow the user's request:
 1. Read repository `AGENTS.md` and review criteria before reviewing. Prefer root `REVIEW.md`; if it is absent, read legacy root `REVIEWS.md` when present and identify it as legacy. If both exist, read both and compare substantive rules. Report important differences or contradictions as uncertainty; do not edit, delete, or silently merge either file. If neither exists, use evidence-based general criteria without inventing project-specific guarantees.
 2. Establish review scope and inspect relevant source, tests, CI, requirements, ADRs, issue/risk records and actual diff. Distinguish observed behavior from documented intent.
 3. Evaluate correctness, user task/function fit, contracts and invariants, boundary/failure behavior, and—where relevant—assets, trust boundaries, threats, least privilege, secure defaults, data lifecycle, dependency/supply-chain risk, security invariants, compatibility, resource/performance implications, dependency direction and verification evidence.
-   For GUI-affecting changes, trace the diff's meaning (including state, ViewModel, async and error handling) to relevant approved UI intent and existing design assets. Check whether assets need synchronization, are already stale, differ intentionally by platform, or have an unresolved conflict. Do not infer impact from paths alone, require mockups where none exist, or treat stale mockups as current specification. Compare user-visible structure, operations and states rather than requiring pixel equality; report only evidence-backed discrepancies and verification limits.
+   For GUI-affecting changes, trace the diff's meaning (including state, ViewModel, async and error handling) to relevant approved UI intent and existing design assets. Check whether assets need synchronization, are already stale, differ intentionally by platform, or have an unresolved conflict. Do not infer impact from paths alone, require mockups where none exist, or treat stale mockups as current specification. Compare user-visible structure, operations and states rather than requiring pixel equality; report only evidence-backed discrepancies and verification limits. Trace changed contracts to callers, consumers, persisted/exchanged formats, state transitions, and failure paths. Compare semantic before/after behavior, not changed-file count. Check whether verification evidence still covers the final code/config/dependency/contract state. Identify material regression candidates and distinguish implementation defects from unresolved design choices. Consider a focused architecture fitness check only when it detects consequential drift and has a reliable oracle.
 4. Report only actionable findings with severity, file/line, concrete impact, reproduction or evidence, confidence and a minimal remedy. Separate findings from questions, residual risks, and unverified assumptions.
 5. Do not infer missing code or tests as present; do not claim tests passed unless run. Avoid speculative findings, style-only comments and fixes unless the user requests implementation.
+
+## Optional specialist workflows
+
+Compatibility Migration, Release Engineering, and Dependency Governance are
+not default review gates. Consider them only when a changed public/data
+contract, an explicit release task, or a dependency decision/material risk
+makes them relevant. Their absence or non-use does not stop unrelated review;
+basic compatibility, release, and dependency checks still apply when a real
+risk is present. A finding does not authorize migration, dependency changes,
+distribution, or release approval.
 
 ## Change Impact Assessment
 

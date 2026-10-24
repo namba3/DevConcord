@@ -190,6 +190,7 @@ def _resolve_scope_target(args: argparse.Namespace) -> tuple[str, Path]:
 
 
 def tree_digest(root: Path) -> str:
+    """Hash exact target state, including empty directories and permission bits."""
     digest = hashlib.sha256()
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
@@ -230,6 +231,7 @@ def _filesystem_executable_files(root: Path) -> tuple[str, ...]:
 
 
 def _portable_tree_digest(root: Path, executable_files: tuple[str, ...]) -> str:
+    """Hash Git-portable package content, excluding empty dirs and host modes."""
     executable_set = set(executable_files)
     regular_files: set[str] = set()
     paths = sorted(root.rglob("*"))

@@ -43,6 +43,29 @@ for that work.
    implemented test, executed test, pass/failure result, and the requirement's
    actual fulfillment.
 
+## Select verification methods by defect model
+
+Choose a method only when its oracle and cost are justified by the contract:
+
+| Method | Useful for | Entry condition and oracle | Cost / limit; when to omit |
+|---|---|---|---|
+| Unit / integration / acceptance | Local logic, boundaries, user-visible flows | Stable contract and observable result at the chosen boundary | Environment and maintenance cost; omit redundant layers without a distinct observation |
+| Property-based | Broad input spaces and invariants | General property plus reproducible/shrinkable counterexample | Runtime and property quality; omit for a tiny finite domain covered by examples |
+| Fuzzing | Parsers, decoders, hostile inputs | Safe harness, crash/invariant oracle, corpus handling | Long/noisy runs do not prove absence; omit without actionable oracle |
+| Mutation | Whether tests detect selected fault classes | Defined mutation operators and kill/survival interpretation | Compute and triage cost; not required for every suite |
+| Model-based | Stateful workflows and operation sequences | Reviewed reference model and observable state contract | Model may share specification defects; omit for simple stateless behavior |
+| Differential | Compatibility or equivalent implementations | Trusted independent implementation/version and normalized comparison | Comparators can share defects or semantics can differ; omit without sound comparator |
+| Fault injection | Recovery, timeout, partial success, cancellation | Failure points and required post-failure invariants | Instrumentation and realism limits; omit irrelevant failure modes |
+| Concurrency | Races, ordering, atomicity, deadlock | Required histories/invariants and controlled schedules where possible | Nondeterminism; stress alone cannot prove absence; omit for single-threaded contracts |
+| Benchmarking | Performance requirements/regressions | Representative workload/environment, repeated measurements, tolerance | Noise and machine cost; omit when no performance claim or constraint is affected |
+| Security verification | Threat-specific controls and negative cases | Asset, threat, invariant, observable rejection/containment | Scope and tool limits; choose by threat, not tool availability |
+| Formal verification | Critical invariants with tractable formal model | Precise model, assumptions, proof boundary | Expertise/model cost; omit when evidence value does not justify it |
+
+Passing tests establish only the observations and conditions exercised. Keep
+test presence, execution, result, acceptance fulfillment, and residual risk as
+separate claims. Do not use implementation behavior alone as the oracle when
+the requirement or independent contract is available.
+
 ## Boundaries
 
 - UX-Driven Functional Design defines user tasks, behavior, and acceptance

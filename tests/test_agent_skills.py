@@ -180,6 +180,13 @@ description: Use this Skill for a focused task.
 
         self.assertEqual(validate_skill_directory(skill_dir), [])
 
+    def test_rejects_junction_skill_directory(self) -> None:
+        skill_dir = self.make_skill("junction-skill")
+        with patch("scripts.agent_skills._is_junction", return_value=True):
+            errors = validate_skill_directory(skill_dir)
+
+        self.assertEqual(errors, [f"{skill_dir}: skill directory must be a real directory"])
+
     def test_rejects_symlinked_skill_entry_before_reading_its_target(self) -> None:
         skill_dir = self.make_skill("linked-skill")
         skill_file = skill_dir / "SKILL.md"
@@ -199,12 +206,47 @@ description: Use this Skill for a focused task.
 
         self.assertEqual(errors, [f"{skill_file}: SKILL.md must not be a symlink"])
 
+    def test_rejects_nested_symlink_before_markdown_link_validation(self) -> None:
+        skill_dir = self.make_skill("nested-link-skill")
+        references = skill_dir / "references"
+        references.mkdir()
+        outside = self.root / "outside.md"
+        outside.write_text("outside", encoding="utf-8")
+        linked = references / "linked.md"
+        try:
+            linked.symlink_to(outside)
+        except OSError as error:
+            self.skipTest(f"symlinks are unavailable: {type(error).__name__}")
+
+        with patch("scripts.validate_docs.check_links", side_effect=AssertionError("must stop before reading")):
+            errors = validate_skill_directory(skill_dir)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn(str(linked), errors[0])
+        self.assertIn("links are not allowed", errors[0])
+
+    @unittest.skipUnless(hasattr(__import__("os"), "mkfifo"), "FIFO creation is unavailable")
+    def test_rejects_fifo_before_markdown_link_validation(self) -> None:
+        import os
+
+        skill_dir = self.make_skill("fifo-skill")
+        fifo = skill_dir / "references" / "blocked.md"
+        fifo.parent.mkdir()
+        os.mkfifo(fifo)
+
+        with patch("scripts.validate_docs.check_links", side_effect=AssertionError("must stop before reading")):
+            errors = validate_skill_directory(skill_dir)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn(str(fifo), errors[0])
+        self.assertIn("regular files only", errors[0])
+
     def test_official_skill_set_uses_devconcord_namespace(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 19)
+        self.assertEqual(len(skill_dirs), 24)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
@@ -724,6 +766,46 @@ description: Use this Skill for a focused task.
         ):
             with self.subTest(manual_case=expected_case):
                 self.assertIn(expected_case, scenarios)
+
+    def test_optional_specialist_skills_do_not_gate_development_orchestration(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skills_root = repository_root / ".agents" / "skills"
+        orchestration = (
+            skills_root / "devconcord-development-orchestration" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        scenarios = (repository_root / "tests" / "integration" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        optional_names = (
+            "devconcord-root-cause-analysis",
+            "devconcord-compatibility-migration",
+            "devconcord-release-engineering",
+            "devconcord-dependency-governance",
+            "devconcord-agent-behavior-evaluation",
+        )
+        for name in optional_names:
+            with self.subTest(skill=name):
+                skill_dir = skills_root / name
+                self.assertEqual(validate_skill_directory(skill_dir), [])
+                self.assertIn(name, orchestration)
+                self.assertIn(name.removeprefix("devconcord-").replace("-", " ").title(), scenarios)
+
+        for contract in (
+            "not standard-loop steps",
+            "not a gate",
+            "do not stop unrelated work",
+            "does not authorize an automatic handoff",
+            "Stabilize",
+        ):
+            self.assertIn(contract.lower(), " ".join(orchestration.lower().split()))
+
+        release = (skills_root / "devconcord-release-engineering" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        for stage in ("CI success", "build success", "installation", "runtime behavior", "release approval"):
+            self.assertIn(stage.lower(), release.lower())
+        self.assertIn("release-checklist.md", release)
+        self.assertIn("does not perform or approve a release", release)
 
     def test_gap_analysis_is_documented_and_manual_scenarios_cover_contract(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
@@ -1414,21 +1496,22 @@ description: Use this Skill for a focused task.
         ):
             with self.subTest(skill=skill_dir.name):
                 text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+                normalized_text = " ".join(text.split())
                 self.assertIn("## DevConcord References", text)
                 self.assertIn("`devconcord-reference`", text)
                 self.assertIn(f"--skill {skill_dir.name}", text)
                 self.assertIn("scripts/manage_skills.py reference", text)
                 self.assertIn("--revision installed", text)
                 self.assertIn("--scope project --target", text)
-                self.assertIn("If the common Skill cannot be selected", text)
+                self.assertIn("If the common Skill cannot be selected", normalized_text)
                 if skill_dir.name == "devconcord-gap-analysis":
                     self.assertIn("Do not silently switch revisions", text)
                     self.assertIn("stop\nthat reference operation", text)
                     self.assertIn("partial-assessment contract", text)
                 else:
                     self.assertIn("Do not silently switch revisions", text)
-                    self.assertIn("If a required reference cannot be read, stop", text)
-                    self.assertIn("if it is optional", text)
+                    self.assertIn("If a required reference cannot be read, stop", normalized_text)
+                    self.assertIn("if it is optional", normalized_text)
                 self.assertFalse(
                     (skill_dir / "references" / "local-devconcord.md").exists()
                 )

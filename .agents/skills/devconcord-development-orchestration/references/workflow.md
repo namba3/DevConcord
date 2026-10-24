@@ -78,6 +78,14 @@ covers the final relevant diff; rerun affected checks after repairs. Static
 validation, fixtures, mocks, browser, native/device behavior, remote CI, and
 real-agent execution are separate evidence categories.
 
+For material fixes or optimizations, keep reasoning proportionate: record the
+observed problem, cause hypothesis, supporting or contradicting evidence,
+proposed change, expected effect, failure/reversal condition, and actual
+result. Trivial mechanical edits do not need a formal hypothesis record.
+Reassess evidence freshness against changed code, configuration, dependencies,
+contracts, and environment; rerun checks whose basis changed, not unrelated
+suites by ritual.
+
 If a check fails, identify whether evidence supports an implementation defect,
 test issue, pre-existing failure, environment problem, design conflict,
 requirement uncertainty, regression, or evidence gap. A single focused repair
@@ -87,6 +95,12 @@ tests to pass a gate. If unresolved, stop dependent units and report the safe
 recovery point.
 
 ## 5. Review and integrate
+
+Detect stagnation such as repeated identical failures, unknown cause,
+successive changes without verification, weakened expectations that hide the
+defect, no acceptance/risk progress, exhausted budget, or change risk exceeding
+likely benefit. Switch to diagnosis, revise the plan within authority, or stop
+safely; do not add a loop ledger or score.
 
 Review the final diff against the request, requirements, acceptance
 conditions, target review criteria, and initial worktree. Look for contract

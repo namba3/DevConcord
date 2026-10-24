@@ -1169,6 +1169,11 @@ BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、
 | `devconcord-gap-analysis` | Adoption後などに複数領域の現状・要求/設計/実装/検証の関係が未評価で、横断的なFull Assessmentに価値がある。既存の有効なレポートがあれば無条件に再実行せず、Incremental Assessmentまたは該当Skillを検討する |
 | `devconcord-test-design` | 受け入れ条件・契約はあるが、独立した期待値、代表的な境界/失敗ケース、適切な検証方法が未整理である |
 | `devconcord-implementation-planning` | 複数領域・依存関係を含む変更で、順序・検証可能な実装単位・既存課題との関係が不明確である |
+| `devconcord-root-cause-analysis` | 重要な障害・失敗・回帰があり、原因候補を証拠で区別できていない。診断は修正権限を与えない |
+| `devconcord-compatibility-migration` | 公開API、永続/通信/設定形式、DB schema、plugin等の変更に実質的な互換性・移行リスクがある |
+| `devconcord-release-engineering` | リリース候補、配布、インストール、更新、ロールバック、リリース後確認が作業対象である |
+| `devconcord-dependency-governance` | 外部依存の採用・更新・置換・廃止、または脆弱性/ライセンス/供給網等の重大リスクを判断する |
+| `devconcord-agent-behavior-evaluation` | エージェントがSkillを発見・選択・実行する品質を固定シナリオと独立証拠から評価する |
 
 具体的なコード欠陥や変更の回帰リスクが詳しい調査を必要とする場合は `devconcord-repository-review` を後続候補にできる。実装前の提案なら影響評価モード、既存コードや差分ならレビューとして扱う。これは設計Skill推奨の一律対象ではない。
 
@@ -1185,6 +1190,8 @@ BootstrapやAdoptionで既に集めた情報・成果物・確認結果から、
 設計・要求と課題表が整備されたプロジェクトで、実装・検証・レビューをまたぐ有限の開発反復を委任する場合は、[`devconcord-development-orchestration`](../../.agents/skills/devconcord-development-orchestration/SKILL.md)を候補にできます。これは読み取り専用のPlan、許可範囲内のIterate、新機能を加えないStabilizeを扱い、各単位の品質ゲートを通過した後に次へ進むか判断します。反復予算の既定値は最大3作業単位、各単位につき診断済みの修復1回です。ユーザー指定の上限を優先し、許可なく予算を拡大しません。
 
 単一課題や限定Batchは `devconcord-issue-driven-development`、複雑な変更の順序づけは `devconcord-implementation-planning`、具体的な欠陥レビューは `devconcord-repository-review`、横断的なギャップ評価は `devconcord-gap-analysis` が担います。実装中に重大な設計判断が現れた場合は、依存する作業を止めて `devconcord-design-orchestration` へ接続する候補とします。これらのSkill間の自動呼び出しは保証されず、実行可能性とユーザーの範囲を確認します。
+
+Root Cause Analysis、Compatibility Migration、Release Engineering、Dependency Governance、Agent Behavior Evaluationは独立した任意ワークフローであり、Development Orchestrationの標準ループ、必須依存、Quality Gateには含めません。ユーザーが明示的に指定した場合、または作業中にそれぞれの実質的リスクが確認された場合に利用を検討します。未導入・利用不能だけで無関係な作業を停止せず、未使用を品質欠陥と評価しません。ただし、関連リスクが現実にある場合の基本的な互換性、データ保護、セキュリティ、検証は通常の開発・レビュー契約で扱います。Stabilize ModeからRelease Engineeringを提案できても、自動的なリリースや承認は行いません。Skill利用の提案は自動呼び出し・インストール・権限拡張を許可しません。
 
 続行・修復・設計再検討・ブロック・停止は、受け入れ条件、最終差分に対応する検証証拠、回帰リスク、残余リスク、予算から決めます。課題表を作業管理の正本とし、既存の完成度10軸・重み、課題ID・履歴を維持します。別の進捗台帳やスコアは追加しません。予算到達、証拠不足、重要ゲート失敗、承認待ち、収束、または追加変更の価値が低い場合は止めます。実エージェントや対象環境を試していないときは、その境界を明記します。
 

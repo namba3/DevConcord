@@ -50,6 +50,17 @@ or issue records unless the user explicitly includes those changes.
    verification that remains unrun. A plan is not implementation, test
    execution, or evidence of requirement fulfillment.
 
+## Reassess an invalidated plan
+
+During authorized execution, pause dependent units when evidence changes a
+planning assumption: a dependency or blocker appears, a consequential design
+decision is needed, a planned unit has no usable oracle/environment, or actual
+scope/cost materially differs. Reconfirm constraints and dependencies,
+preserve completed evidence, split/reorder/defer/remove affected units, and
+state the next decision point. Do not disguise a design change as replanning or
+weaken acceptance conditions to fit the plan. This Skill plans; it does not
+implement or gain execution authority.
+
 ## Plan quality
 
 A useful increment can be reviewed and verified on its own where dependencies

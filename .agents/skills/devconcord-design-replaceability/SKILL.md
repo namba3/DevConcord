@@ -18,6 +18,12 @@ description: >
 5. Avoid interface-for-everything, unused alternative implementations, one-to-one library wrappers, least-common-denominator APIs and costly conversions/dispatch without evidence. A single concrete implementation can be correct.
 6. Verify the claim with dependency-direction checks, adapter contract tests, integration/migration tests, or a small replacement experiment as appropriate. State exactly what can be preserved and what must change.
 
+For consequential architecture constraints, consider a narrowly scoped
+fitness function (static dependency rule, contract test, or migration check)
+only if it detects drift that matters and has a reliable oracle. Keep the
+constraint in existing design/test artifacts; do not add an abstraction or
+permanent check merely to demonstrate replaceability.
+
 ## Completion
 
 Document the dependency, reason to isolate it, boundary/semantic contract, allowed migration scope, abstraction costs and verification evidence. Do not promise zero-change replacement.

@@ -93,6 +93,11 @@ plan in chat is not a register update and is not completed work.
    obligations are met. Otherwise retain or set the accurate state (`進行中`,
    `レビュー待ち`, or `ブロック`, according to local rules) and record why.
 
+When a failure has an unclear cause, separate observations from hypotheses
+and prefer a discriminating reproduction/check before repair. This is
+proportionate reasoning, not a separate issue ledger or a requirement to
+invoke Root Cause Analysis. Keep evidence fresh against the final relevant diff.
+
 ## 5. Batch Mode — bounded multi-issue work
 
 1. Honor the user's explicit issue range, time/effort limit, exclusions, and

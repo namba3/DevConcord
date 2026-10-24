@@ -47,14 +47,55 @@ def _frontmatter(skill_file: Path) -> tuple[dict[str, Any] | None, str | None]:
     return value, None
 
 
+def _validate_skill_entries(skill_dir: Path) -> list[str]:
+    """Reject links and special files before any package content is read."""
+    errors: list[str] = []
+    pending = [skill_dir]
+    while pending:
+        directory = pending.pop()
+        try:
+            with os.scandir(directory) as scan:
+                entries = sorted(scan, key=lambda entry: entry.name)
+        except OSError as error:
+            errors.append(
+                f"{directory}: cannot inspect Skill package ({type(error).__name__})"
+            )
+            continue
+        for entry in entries:
+            path = Path(entry.path)
+            try:
+                is_junction = _is_junction(path)
+                metadata = path.lstat()
+            except OSError as error:
+                errors.append(
+                    f"{path}: cannot inspect Skill package entry ({type(error).__name__})"
+                )
+                continue
+            if stat.S_ISLNK(metadata.st_mode) or is_junction:
+                errors.append(f"{path}: links are not allowed in portable Skill packages")
+            elif stat.S_ISDIR(metadata.st_mode):
+                pending.append(path)
+            elif not stat.S_ISREG(metadata.st_mode):
+                errors.append(f"{path}: Skill packages accept regular files only")
+    return errors
+
+
+def _is_junction(path: Path) -> bool:
+    """Keep junction checks compatible with Python versions before 3.12."""
+    return getattr(path, "is_junction", lambda: False)()
+
+
 def validate_skill_directory(skill_dir: Path) -> list[str]:
     errors: list[str] = []
     name = skill_dir.name
     skill_file = skill_dir / "SKILL.md"
-    if not skill_dir.is_dir() or skill_dir.is_symlink():
+    if not skill_dir.is_dir() or skill_dir.is_symlink() or _is_junction(skill_dir):
         return [f"{skill_dir}: skill directory must be a real directory"]
     if skill_file.is_symlink():
         return [f"{skill_file}: SKILL.md must not be a symlink"]
+    entry_errors = _validate_skill_entries(skill_dir)
+    if entry_errors:
+        return entry_errors
     if not skill_file.is_file():
         return [f"{skill_file}: SKILL.md must be a regular file"]
     if not SKILL_NAME.fullmatch(name) or len(name) > 64:
@@ -106,9 +147,6 @@ def validate_skill_directory(skill_dir: Path) -> list[str]:
         if len(body.splitlines()) > 500:
             errors.append(f"{skill_file}: keep SKILL.md under 500 lines; move detail to references")
 
-    for path in skill_dir.rglob("*"):
-        if path.is_symlink():
-            errors.append(f"{path}: symlinks are not allowed in portable skill packages")
     if skill_file.is_file():
         try:
             if __package__:
@@ -146,6 +184,7 @@ def skill_directories(skills_root: Path) -> list[Path]:
 
 
 def _skill_fingerprint(skill_dir: Path) -> str:
+    """Hash exact installed filesystem state, including empty dirs and modes."""
     digest = hashlib.sha256()
     for path in sorted(skill_dir.rglob("*")):
         if path.is_symlink():
@@ -201,6 +240,7 @@ def _portable_skill_fingerprint(
     skill_dir: Path,
     executable_files: tuple[str, ...],
 ) -> str:
+    """Compare portable package contents with explicit executable metadata."""
     executable_set = set(executable_files)
     digest = hashlib.sha256()
     regular_files: set[str] = set()

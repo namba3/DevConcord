@@ -78,6 +78,26 @@ Do not duplicate specialist workflows or assume automatic Skill handoffs:
   `devconcord-gap-analysis` assesses cross-cutting quality gaps.
 - `devconcord-design-orchestration` handles authorized design evolution;
   focused design Skills address individual quality attributes.
+- `devconcord-root-cause-analysis` can be considered when a material failure
+  has an unclear or disputed cause; diagnosis does not authorize repair.
+- `devconcord-compatibility-migration` is considered when a changed public
+  contract or persisted/exchanged format creates a real compatibility risk.
+- `devconcord-release-engineering` can be proposed from Stabilize when the
+  user asks to assess a release candidate, distribution, upgrade, or recovery.
+- `devconcord-dependency-governance` is considered when dependency adoption,
+  change, removal, or a material dependency risk is in scope.
+- `devconcord-agent-behavior-evaluation` evaluates whether agents discover,
+  select, and execute Skills; it is not a gate for ordinary product work.
+
+These optional Skills are not standard-loop steps, mandatory dependencies, or
+quality gates. Do not create a per-run checklist for them. Do not stop unrelated
+work because an optional Skill is unavailable, or treat non-use as a defect. Consider one
+only when the user explicitly requests it or the work reveals a material
+related risk. Core compatibility, security, and data-loss checks remain part
+of the relevant work even when a specialist Skill is not used. A suggestion
+does not authorize an automatic handoff, broader permissions, release action,
+or approval. Continue to use the existing requirements, issue register,
+verification, and review contracts without these optional Skills.
 
 Check Skill availability in the actual User or Project Scope before relying on
 it. Report the selected scope, completed and partial work units, changed

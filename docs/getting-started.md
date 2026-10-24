@@ -12,6 +12,8 @@ DevConcord公式Skill名には `devconcord-` が付きます。旧名Skillを導
 
 既存設計と課題表に沿って複数の開発単位を実装・検証・レビューし、品質を再評価しながら続行・停止を判断する場合は、[`devconcord-development-orchestration`](../.agents/skills/devconcord-development-orchestration/SKILL.md)を検討できます。読み取り専用のPlan、許可範囲で反復するIterate、新機能を追加しないStabilizeを依頼から選びます。単一課題や限定BatchにはIssue-Driven Developmentを使い、開発反復Skillも無期限の実装・自動コミットを許可しません。
 
+必要な場面に限り、原因不明の失敗は[`devconcord-root-cause-analysis`](../.agents/skills/devconcord-root-cause-analysis/SKILL.md)、実際のAPI/データ形式変更は[`devconcord-compatibility-migration`](../.agents/skills/devconcord-compatibility-migration/SKILL.md)、リリース候補や配布・更新は[`devconcord-release-engineering`](../.agents/skills/devconcord-release-engineering/SKILL.md)、依存の採用・変更・重大リスクは[`devconcord-dependency-governance`](../.agents/skills/devconcord-dependency-governance/SKILL.md)を候補にできます。通常の開発ループの必須工程ではなく、Skill未導入だけで無関係な作業を停止しません。エージェント自身のSkill発見・選択・実行品質を評価する場合は[`devconcord-agent-behavior-evaluation`](../.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md)を使えます。利用例とE2E評価境界は[Skills一覧](agent-skills.md)と[統合評価シナリオ](../tests/integration/README.md)を参照してください。
+
 重要な処理や障害の原因を利用者・開発者・運用者が安全に調査する必要がある場合は、[`devconcord-observability-design`](../.agents/skills/devconcord-observability-design/SKILL.md)で診断の問いと必要な信号を設計できます。小規模なCLIのエラー出力で十分なこともあり、監視基盤・分散トレース・リモートテレメトリを一律に導入しません。
 
 Bootstrap / Adoption / 資料Synchronizationは、導入先リポジトリを作業コンテキストとして実行します。DevConcordは読み取り専用の参照元です。Agent Skills管理CLIは別操作で、User Scopeではユーザー環境、Project Scopeでは `--target` に指定したリポジトリを変更します。

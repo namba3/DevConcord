@@ -25,8 +25,15 @@
 | [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEW.md` の作成・更新 |
 | [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
 | [`devconcord-design-orchestration`](../.agents/skills/devconcord-design-orchestration/SKILL.md) | 委任範囲内で設計を段階的に具体化・改善し、関連要求・ADR・設計資産・検証条件の整合を進める |
+| [`devconcord-agent-behavior-evaluation`](../.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md) | 固定シナリオと独立証拠から、実エージェントのSkill発見・選択・実行を評価 |
+| [`devconcord-root-cause-analysis`](../.agents/skills/devconcord-root-cause-analysis/SKILL.md) | 失敗・回帰の原因仮説を検証し、根拠または不確実性を整理 |
+| [`devconcord-compatibility-migration`](../.agents/skills/devconcord-compatibility-migration/SKILL.md) | 公開契約・データ形式・プロトコルの実際の互換性/移行リスクを評価 |
+| [`devconcord-release-engineering`](../.agents/skills/devconcord-release-engineering/SKILL.md) | 明示されたリリース作業の候補、配布、更新、復旧の証拠を評価。実行・承認はしない |
+| [`devconcord-dependency-governance`](../.agents/skills/devconcord-dependency-governance/SKILL.md) | 依存採用・更新・置換・廃止・重大リスクを価値と証拠から評価 |
 
 `devconcord-development-orchestration` は複数の作業単位をまたぐ有限の開発反復を制御します。単一課題・限定Batchの実装手順は `devconcord-issue-driven-development`、複雑な変更の順序は `devconcord-implementation-planning`、設計の再検討は `devconcord-design-orchestration` と役割を分けます。Skill間の自動呼び出しは前提にしません。
+
+Development Orchestrationの通常ループにRoot Cause Analysis、Compatibility Migration、Release Engineering、Dependency Governance、Agent Behavior Evaluationを必須工程・依存Skill・Quality Gateとして加えません。原因不明の重大な失敗、実在する互換性リスク、明示的なリリース作業、依存判断/重大リスク、またはエージェントSkill品質評価が依頼に含まれるときだけ、関連Skillを候補にします。未導入や利用不能だけで無関係な作業を停止せず、非利用自体を欠陥にしません。基本の互換性・データ保護・セキュリティ確認はリスクがあれば実施します。StabilizeからRelease Engineeringを提案しても、自動リリース・承認は行いません。
 
 `devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を読み取り専用で整理します。`devconcord-design-orchestration` はユーザーが委任した設計作業を段階的に具体化・改善し、設計資産の整合を進めますが、gap assessmentを再実行したり専門設計手順を複製したりしません。具体的なコード上の欠陥は `devconcord-repository-review`、文書体系の設計は `devconcord-documentation-architecture`、実装単位の計画は `devconcord-implementation-planning`、課題実装は `devconcord-issue-driven-development` がそれぞれ担います。必要に応じて別作業として選び、エージェント間の自動Skill呼び出しは前提にしません。
 

@@ -189,6 +189,11 @@ load measurements, or operational exercises as justified. A test's existence,
 execution, result, and covered condition are distinct. Verify instrumentation
 without treating the instrumented behavior as proof of the underlying
 business requirement. Report uncovered environments and failure modes.
+When fault injection or a reproducible failure is available, exercise the
+diagnostic path and verify expected context survives redaction, transport,
+storage, and resource limits. Separate an unexecuted scenario from a
+successful diagnosis; do not require fault injection without a meaningful
+failure condition or safe harness.
 
 ## 8. Use existing records and report
 

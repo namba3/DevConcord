@@ -1493,6 +1493,43 @@ Version: {version}
             ),
         )
 
+    def test_install_validate_sync_validate_preserves_digest_contract(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        self.assertEqual(self.run_validation()[0], 0)
+
+        installed = self.target / ".agents" / "skills" / "sample-skill"
+        (installed / "unexpected-empty-directory").mkdir()
+        result, _, error = self.run_validation()
+        self.assertEqual(result, 1)
+        self.assertIn("differs from manifest hash", error)
+        (installed / "unexpected-empty-directory").rmdir()
+        self.assertEqual(self.run_validation()[0], 0)
+
+        self.write_skill("sample-skill", "v2")
+        source_repo = self.source.parents[1]
+        self.git(source_repo, "add", ".")
+        self.git(source_repo, "commit", "-qm", "v2")
+        self.assertEqual(self.run_operation("sync", apply=True)[0], 0)
+        self.assertEqual(self.run_validation()[0], 0)
+
+    def test_target_validation_detects_deleted_managed_skill_file(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        details = (
+            self.target
+            / ".agents"
+            / "skills"
+            / "sample-skill"
+            / "references"
+            / "details.md"
+        )
+        self.assertTrue(details.is_file())
+        details.unlink()
+
+        result, _, error = self.run_validation()
+
+        self.assertEqual(result, 1)
+        self.assertIn("differs from manifest hash", error)
+
     def test_install_supports_selected_skill_subset(self) -> None:
         self.write_skill("other-skill", "v1")
         source_repo = self.source.parents[1]

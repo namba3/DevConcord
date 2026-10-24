@@ -16,6 +16,11 @@
 | [`devconcord-reference` Skill](../.agents/skills/devconcord-reference/SKILL.md) | ローカル共通資料を要求元Skillの版に合わせて参照する |
 | [`devconcord-design-orchestration` Skill](../.agents/skills/devconcord-design-orchestration/SKILL.md) | 委任された範囲で、要求・設計・判断・検証を段階的に具体化・改善し、整合させる |
 | [`devconcord-development-orchestration` Skill](../.agents/skills/devconcord-development-orchestration/SKILL.md) | 既存設計と課題表に基づく複数の開発反復を、検証・レビュー・品質ゲートで制御する |
+| [`devconcord-agent-behavior-evaluation` Skill](../.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md) | 実エージェントがSkillsを発見・選択・実行する品質を独立証拠から評価する |
+| [`devconcord-root-cause-analysis` Skill](../.agents/skills/devconcord-root-cause-analysis/SKILL.md) | 障害・回帰の原因仮説と切り分け実験を扱う。診断だけでは修正権限を与えない |
+| [`devconcord-compatibility-migration` Skill](../.agents/skills/devconcord-compatibility-migration/SKILL.md) | 変更される公開契約・保存/交換形式の互換性と移行安全性を扱う |
+| [`devconcord-release-engineering` Skill](../.agents/skills/devconcord-release-engineering/SKILL.md) | 明示的なリリース作業の証拠評価を支援し、実行・承認とは分離する |
+| [`devconcord-dependency-governance` Skill](../.agents/skills/devconcord-dependency-governance/SKILL.md) | 外部依存の採用・変更・維持・廃止と重要リスクを評価する |
 
 ## アプリ設計
 
@@ -54,6 +59,11 @@
 | 複雑な変更を検証可能な実装単位へ計画する | [`devconcord-implementation-planning` Skill](../.agents/skills/devconcord-implementation-planning/SKILL.md) |
 | 既存課題表から実装対象を選び、検証・状態更新する | [`devconcord-issue-driven-development` Skill](../.agents/skills/devconcord-issue-driven-development/SKILL.md) |
 | 複数の実装単位を反復し、品質を再評価して続行・停止する | [`devconcord-development-orchestration` Skill](../.agents/skills/devconcord-development-orchestration/SKILL.md) |
+| エージェントのSkill発見・選択・実行を評価する | [`devconcord-agent-behavior-evaluation` Skill](../.agents/skills/devconcord-agent-behavior-evaluation/SKILL.md) |
+| 原因不明の障害・テスト失敗・性能回帰を診断する | [`devconcord-root-cause-analysis` Skill](../.agents/skills/devconcord-root-cause-analysis/SKILL.md) |
+| API・データ・プロトコル変更の互換性を確認する | [`devconcord-compatibility-migration` Skill](../.agents/skills/devconcord-compatibility-migration/SKILL.md) |
+| リリース候補や配布・更新経路の証拠を評価する | [`devconcord-release-engineering` Skill](../.agents/skills/devconcord-release-engineering/SKILL.md) |
+| 依存の追加・更新・置換・廃止を判断する | [`devconcord-dependency-governance` Skill](../.agents/skills/devconcord-dependency-governance/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
 | レビュー基準を作る・調べる | [`devconcord-generate-agent-guidance` Skill](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEW.md) |
 | 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`devconcord-bootstrap-from-design` Skill](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |
