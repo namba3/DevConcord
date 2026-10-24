@@ -42,10 +42,12 @@
 
 ## 指摘の基準
 
+公式公開Skillは `devconcord` の一つです。過去の `devconcord-*` 公開名は、現行の配布対象ではなく、内部モジュールIDまたは履歴上の名称です。利用案内では `devconcord review repository`、`devconcord review gap`、`devconcord verify test-design`、`devconcord develop implementation-plan`、`devconcord quality security` などの論理コマンドを使い、必要な内部モジュールは統合Skillのroutingに従って選びます。論理コマンドもSkillの独立導入や権限付与を意味しません。
+
 実際の不整合、誤用、データ損失、検証漏れにつながる具体的な影響を示します。好みの文体や規約の追加だけを欠陥として指摘せず、変更の規模とリスクに応じて確認範囲を絞ります。
 
-重要な設計不足が見つかった場合は、まず具体的な根拠と影響を指摘し、詳細な設計判断に価値があるときだけ対応する専門Skillを改善候補として示します。検証方法・独立した期待値の不足には`devconcord-test-design`、複雑な変更の未分割や検証順序の欠落には`devconcord-implementation-planning`を、指摘の影響と改善目的に結び付く場合だけ候補にします。原則を考慮することとSkillを実行することは別であり、Skillの推奨は指摘や修正・検証の代用になりません。利用可能と確認できないSkillは実行可能と断定せず、軽微な変更や既に十分な根拠がある領域では追加分析を求めません。
+重要な設計不足が見つかった場合は、まず具体的な根拠と影響を指摘し、詳細な設計判断に価値があるときだけ対応する専門workflowを改善候補として示します。検証方法・独立した期待値の不足には `devconcord verify test-design`、複雑な変更の未分割や検証順序の欠落には `devconcord develop implementation-plan` を、指摘の影響と改善目的に結び付く場合だけ候補にします。原則を考慮することとworkflowを実行することは別であり、workflowの推奨は指摘や修正・検証の代用になりません。利用可能と確認できないworkflowは実行可能と断定せず、軽微な変更や既に十分な根拠がある領域では追加分析を求めません。
 
-候補は問題の性質に合わせます。利用者タスクや機能フローは `devconcord-ux-functional-design`、ワークロードや資源制約は `devconcord-design-performance`、失敗時の契約・整合性・回復は `devconcord-design-robustness`、交換価値のある依存境界は `devconcord-design-replaceability`、資産・権限・信頼境界は `devconcord-design-security`、文書の正本・構造・導線は `devconcord-documentation-architecture` を検討します。具体的な欠陥・回帰リスクのレビューには `devconcord-repository-review`、複数領域にまたがる原則適用状況と改善ロードマップには `devconcord-gap-analysis` を使い分けます。Skillを実行しただけで問題が解消した、または品質が保証されたとは扱いません。
+候補は問題の性質に合わせます。利用者タスクや機能フローは `devconcord quality ux`、ワークロードや資源制約は `devconcord quality performance`、失敗時の契約・整合性・回復は `devconcord quality robustness`、交換価値のある依存境界は `devconcord quality replaceability`、資産・権限・信頼境界は `devconcord quality security`、文書の正本・構造・導線は `devconcord quality documentation` を検討します。具体的な欠陥・回帰リスクのレビューには `devconcord review repository`、複数領域にまたがる原則適用状況と改善ロードマップには `devconcord review gap` を使い分けます。workflowを実行しただけで問題が解消した、または品質が保証されたとは扱いません。
 
-`devconcord-root-cause-analysis`は重要な失敗で原因が不明な場合、`devconcord-compatibility-migration`は実際の公開契約/形式変更、`devconcord-release-engineering`は明示的なリリース/配布作業、`devconcord-dependency-governance`は依存の変更/重大リスク、`devconcord-agent-behavior-evaluation`はSkillを使う実エージェントの品質評価に限り任意候補とします。Development Orchestrationの通常品質ゲートには追加せず、非利用・利用不能で無関係な変更を停止しません。実際の互換性破壊・データ損失・セキュリティリスクはSkillのOptional扱いを理由に見過ごさず、レビュー対象の通常契約として確認します。リリース提案をリリース実行・承認と混同しません。
+必要に応じて `devconcord diagnose root-cause` は重要な失敗で原因が不明な場合、`devconcord lifecycle compatibility` は実際の公開契約/形式変更、`devconcord lifecycle release` は明示的なリリース/配布作業、`devconcord lifecycle dependencies` は依存の変更/重大リスク、`devconcord evaluate agent` はSkillを使う実エージェントの品質評価に限り任意候補とします。Compatibility Migration、Release Engineering、Dependency GovernanceはDevelopment Orchestrationの標準品質ゲートに追加せず、非利用・利用不能で無関係な変更を停止しません。実際の互換性破壊・データ損失・セキュリティリスクはworkflowのOptional扱いを理由に見過ごさず、レビュー対象の通常契約として確認します。リリース提案をリリース実行・承認と混同しません。

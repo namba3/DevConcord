@@ -198,7 +198,7 @@ python3 scripts/manage_skills.py validate --scope user
 python3 scripts/manage_skills.py doctor --target ~/projects/my-app
 ```
 
-`doctor` はUser Scopeの状態を検証し、任意の対象プロジェクトとの同名Skill衝突を表示します。エージェントごとの優先順位は断定しません。
+`doctor` はUser Scopeの移行状態を検証し、`--target` 指定時はProject Scopeの旧Skill残存・manifest・provenance・重複許可の状態も読み取り専用で表示します。さらに両Scope間の同名Skill衝突を報告します。保護対象の削除やmanifest修正は行わず、エージェントごとの優先順位も断定しません。
 
 ### Project ScopeのSkills同期
 

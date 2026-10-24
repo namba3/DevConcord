@@ -68,6 +68,26 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertEqual(validate_skill_directory(PACKAGE), [])
         self.assertEqual(validate_skill_roots([SKILLS_ROOT]), [])
 
+    def test_review_guidance_uses_unified_logical_commands(self) -> None:
+        review = (ROOT / "REVIEW.md").read_text(encoding="utf-8")
+        routing = (PACKAGE / "references" / "routing.md").read_text(encoding="utf-8")
+        section = review.split("## 指摘の基準", maxsplit=1)[1]
+        guidance = section.split("\n## ", maxsplit=1)[0]
+        for command in (
+            "review repository",
+            "review gap",
+            "verify test-design",
+            "develop implementation-plan",
+            "quality security",
+            "lifecycle compatibility",
+            "lifecycle release",
+            "lifecycle dependencies",
+        ):
+            self.assertIn(f"`devconcord {command}`", guidance)
+            self.assertIn(f"`{command}`", routing)
+        self.assertIn("公式公開Skillは `devconcord` の一つ", guidance)
+        self.assertIn("Development Orchestrationの標準品質ゲートに追加せず", guidance)
+
     def test_every_legacy_workflow_is_an_internal_module_without_skill_frontmatter(self) -> None:
         discovered = {
             category: {path.name for path in (MODULES / category).iterdir() if path.is_dir()}

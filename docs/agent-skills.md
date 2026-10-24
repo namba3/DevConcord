@@ -23,7 +23,7 @@
 
 ### 旧Skillインストールの移行
 
-統合前の公式24名だけを旧Skill候補として認識します。名前の接頭辞だけでは削除対象とせず、管理記録、現在の導入先ハッシュ、DevConcord source identity、完全なsource commit、記録されたsource tree hashを照合します。確認できない管理済み記録は削除せず、診断として残します。未管理の似た名前、別source、ローカル変更は削除しません。旧Skill群が導入されている環境は、対象Scopeごとにまずdry-runします。Project Scopeでは `--target` を指定します。
+統合前の公式24名だけを旧Skill候補として認識します。名前の接頭辞だけでは削除対象とせず、管理記録、現在の導入先ハッシュ、DevConcord source identity、完全なsource commit、記録されたsource tree hashを照合します。確認できない管理済み記録は削除せず、診断として残します。未管理の似た名前、別source、ローカル変更は削除しません。旧Skill群が導入されている環境は、対象Scopeごとにまずdry-runします。Project Scopeでは `--target` を指定します。結果は `COMPLETE`、`PARTIAL`、`BLOCKED` として表示されます。`PARTIAL` は統合パッケージの導入が成功していても、保護・保留された旧Skillが残る状態です。`BLOCKED` は前提競合で適用できなかった状態です。中断済みjournalは `RECOVERY REQUIRED` として扱い、同じScope/targetの `recover` を先に実行します。既存CLIとの互換性を保ち、部分移行だけを理由に終了コードは変更しません。
 
 ```sh
 python3 scripts/manage_skills.py migrate --scope user
@@ -38,7 +38,7 @@ python3 scripts/manage_skills.py migrate --scope user --allow-duplicate-discover
 python3 scripts/manage_skills.py migrate --scope user --allow-duplicate-discovery --apply
 ```
 
-導入先ハッシュが旧manifestと一致する管理済みSkillだけが削除対象です。ローカル編集、manifestのみの記録、未管理ディレクトリ、既存トランザクションは保護され、競合時は停止します。異なる旧コミットはplanに表示します。適用後の失敗は `recover` でjournalを検査し、rollbackまたは完了状態を確認してください。`install`/`sync` は統合パッケージ全体を扱い、旧 `--skills` 引数は `migrate` の案内付きで拒否されます。
+導入先ハッシュが旧manifestと一致し、source identity・commit・記録済みsource hashも検証できる管理済みSkillだけが削除対象です。ローカル編集、manifestのみの記録、未管理ディレクトリ、既存トランザクションは保護され、競合時は停止します。結果には対象scope/agent、削除予定・削除済み、保護理由、次の安全な操作を表示します。完全に削除され、全探索先とmanifestに記録が残らない旧公式Skillのduplicate-discovery許可だけを、Skill削除と同じjournal付きmanifest更新で整理します。管理外コピー・残存記録・別名の許可は保持します。`doctor` はUser Scopeの残存状態を常に診断し、`--target` 指定時はProject Scopeも読み取り専用で診断します。適用後の失敗は `recover` でjournalを検査し、rollbackまたは完了状態を確認してください。`install`/`sync` は統合パッケージ全体を扱い、旧 `--skills` 引数は `migrate` の案内付きで拒否されます。
 
 ## User Scope
 
@@ -73,7 +73,7 @@ User ScopeのSkillsと管理情報は次のように分離されています。�
 
 Copilot CLIが公式にサポートする`~/.copilot/skills/`は別の個人探索先です。DevConcordはそこへSkillsを導入・同期・削除しませんが、同名のSkillがある場合はUser Scopeの導入・検証を停止して、既存内容を保護します。CopilotではプロジェクトSkillsが個人Skillsより優先されるため、同名時は`doctor --target <project>`でも診断してください。
 
-`doctor --target <project>` はユーザー状態を検証し、指定リポジトリとの同名Skillを診断します。これは静的な名前・配置診断であり、エージェントの実際の選択順位を示しません。
+`doctor --target <project>` はユーザー状態とProject Scope双方の旧Skill移行状態を診断し、さらにUser/Project間の同名Skillを報告します。旧Skillの管理状態、導入先hash、source provenance、重複発見リスク、不要な旧名allowance候補を表示します。読み取り専用であり、保護されたSkillの削除やallowance整理は行いません。これは静的な名前・配置・manifest診断であり、エージェントの実際の選択順位を示しません。
 
 ### ローカルDevConcord資料の参照
 

@@ -1354,7 +1354,7 @@ def _migration_plan(
     scope: str,
     discovery_paths: tuple[str, ...],
     allow_duplicate_discovery: bool = False,
-) -> tuple[list[tuple[tuple[SkillAction, str], str]], dict[str, Any], Path, bool, bool, bool, str, str]:
+) -> tuple[list[tuple[tuple[SkillAction, str], str]], dict[str, Any], Path, bool, bool, bool, str, str, dict[str, list[str]]]:
     """Plan unified package installation and exact-hash removal of managed legacy Skills."""
     official_errors = validate_official_skill_names(source_root)
     if official_errors:
@@ -1433,15 +1433,102 @@ def _migration_plan(
             for candidate in sorted(destination_root.iterdir()):
                 if candidate.name.startswith("devconcord-") and candidate.name not in recorded_names:
                     unmanaged.append(f"{relative}/{candidate.name}")
+    pending_removals = {
+        (relative, action_tuple[2], action_tuple[2].casefold())
+        for action_tuple, relative in removable
+    }
+    for relative in discovery_paths:
+        discovery_root = target_root / relative
+        _check_destination_path(target_root, discovery_root)
+        if not discovery_root.exists():
+            continue
+        if discovery_root.is_symlink() or not discovery_root.is_dir():
+            raise SkillManagementError(f"cannot inspect Skill discovery path {relative}")
+        for candidate in sorted(discovery_root.iterdir()):
+            key = candidate.name.casefold()
+            if key not in LEGACY_DEVCONCORD_SKILLS or any(
+                planned_root == relative and planned_name == candidate.name
+                for planned_root, planned_name, _planned_key in pending_removals
+            ):
+                continue
+            recorded = manifest["packages"].get(relative, {}).get("skills", {})
+            if candidate.name in recorded:
+                prefix = f"{relative}/{candidate.name} "
+                if relative not in eligible_roots and not any(
+                    item.startswith(prefix) for item in preserved
+                ):
+                    preserved.append(
+                        f"{relative}/{candidate.name} (outside requested agent scope; preserved)"
+                    )
+            else:
+                item = f"{relative}/{candidate.name}"
+                if item not in unmanaged:
+                    unmanaged.append(item)
+
     if unmanaged:
-        print("preserving unmanaged legacy-looking directories: " + ", ".join(unmanaged))
+        print("preserving unmanaged legacy-looking directories: " + ", ".join(sorted(unmanaged)))
     if preserved:
-        print("preserving unverified or non-official Skill records: " + ", ".join(preserved))
+        print("preserving unverified or non-official Skill records: " + ", ".join(sorted(preserved)))
     for (action_tuple, relative) in removable:
         name = action_tuple[2]
         manifest["packages"][relative]["skills"].pop(name, None)
     actions.extend(removable)
-    return actions, manifest, manifest_path, migrated, duplicate_exposure, dirty, revision, repository
+
+    # Retire legacy allowances only when every physical copy is part of this
+    # removal plan and no manifest record remains. The manifest is committed by
+    # _apply with the removals, so recovery restores both together.
+    for allowance in manifest.get("duplicate_discovery_allowances", []):
+        name = allowance["skill"]
+        if name not in LEGACY_DEVCONCORD_SKILLS:
+            continue
+        key = name.casefold()
+        if not any(pending_key == key for _relative, _pending_name, pending_key in pending_removals):
+            continue
+        has_manifest_record = any(
+            key == recorded_name.casefold()
+            for package in manifest["packages"].values()
+            for recorded_name in package["skills"]
+        )
+        has_unplanned_copy = False
+        for relative in discovery_paths:
+            root = target_root / relative
+            if not root.is_dir() or root.is_symlink():
+                continue
+            if any(
+                entry.name.casefold() == key
+                and not any(
+                    planned_root == relative and planned_name == entry.name
+                    for planned_root, planned_name, _planned_key in pending_removals
+                )
+                for entry in root.iterdir()
+            ):
+                has_unplanned_copy = True
+                break
+        if has_manifest_record or has_unplanned_copy:
+            continue
+        manifest["duplicate_discovery_allowances"] = [
+            record
+            for record in manifest["duplicate_discovery_allowances"]
+            if record["skill"].casefold() != key
+        ]
+
+    details = {
+        "removed": sorted(f"{relative}/{action_tuple[2]}" for action_tuple, relative in removable),
+        "preserved": sorted(preserved),
+        "preserved_legacy": sorted(
+            item for item in preserved
+            if item.split(" ", maxsplit=1)[0].rsplit("/", maxsplit=1)[-1]
+            .casefold() in LEGACY_DEVCONCORD_SKILLS
+        ),
+        "unmanaged": sorted(unmanaged),
+        "unmanaged_legacy": sorted(
+            item for item in unmanaged
+            if item.rsplit("/", maxsplit=1)[-1].casefold() in LEGACY_DEVCONCORD_SKILLS
+        ),
+        "agents": sorted(requested_agents),
+        "scope": [scope],
+    }
+    return actions, manifest, manifest_path, migrated, duplicate_exposure, dirty, revision, repository, details
 
 
 def _write_bytes_atomically(path: Path, content: bytes) -> None:
@@ -2201,11 +2288,46 @@ def _run(args: argparse.Namespace) -> int:
                 discovery_paths=discovery_paths,
                 allow_duplicate_discovery=getattr(args, "allow_duplicate_discovery", False),
             )
-            actions, manifest, manifest_path, _migrated, _duplicate, dirty, revision, repository = result
+            actions, manifest, manifest_path, _migrated, _duplicate, dirty, revision, repository, details = result
             for (action, _src, name, _hash, _old, _exec), relative in actions:
                 print(f"{action}: {relative}/{name}")
             print(f"Source: {repository} @ {revision}")
             print(f"Scope: {scope} ({target_root})")
+            print(f"Agents: {', '.join(details['agents'])}")
+            partial = bool(details["preserved_legacy"] or details["unmanaged_legacy"])
+            planned_unified = any(
+                "devconcord" in package.get("skills", {})
+                for package in manifest["packages"].values()
+            )
+            unified_operation = next(
+                (
+                    action_tuple[0]
+                    for action_tuple, _relative in actions
+                    if action_tuple[2] == "devconcord"
+                    and action_tuple[0] in {"install", "update"}
+                ),
+                None,
+            )
+            phase = "planned" if not args.apply else "applied"
+            print(f"Migration status ({phase}): {'PARTIAL' if partial else 'COMPLETE'}")
+            print(
+                "Unified package: "
+                + (f"devconcord will be {'installed' if unified_operation == 'install' else 'updated'}" if unified_operation else
+                   "devconcord: installed (unchanged)" if not args.apply and planned_unified else
+                   "devconcord: installed" if planned_unified else "devconcord: not installed")
+            )
+            print("Removed legacy Skills:")
+            for item in details["removed"]:
+                print(f"  {item}" if args.apply else f"  planned: {item}")
+            print("Preserved:")
+            for item in details["preserved"]:
+                print(f"  {item}")
+            for item in details["unmanaged"]:
+                print(f"  {item} (unmanaged; preserved)")
+            if partial:
+                print("Next action: inspect preserved Skill contents and provenance, then rerun migrate after resolution.")
+            else:
+                print("Next action: no migration follow-up required.")
             if _duplicate:
                 print(
                     "WARNING: duplicate discovery paths are exposed to Copilot; duplicate "
@@ -2216,9 +2338,15 @@ def _run(args: argparse.Namespace) -> int:
                 return 0
             _apply(actions, target_root, manifest, manifest_path, dirty, revision, repository,
                    expected_manifest, discovery_paths)
-            print(f"Migrated managed Skills transactionally; manifest: {manifest_path}")
+            print(f"Migration transaction applied; manifest: {manifest_path}")
             return 0
         except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+            recovery = "recovery required" if "interrupted" in str(error).lower() else "BLOCKED"
+            print(f"Migration status: {recovery.upper()}", file=sys.stderr)
+            if recovery == "recovery required":
+                print("Next action: run scripts/manage_skills.py recover with the same scope/target (dry-run first).", file=sys.stderr)
+            else:
+                print("Next action: resolve the reported precondition safely, then rerun migrate.", file=sys.stderr)
             print(f"ERROR: migration stopped safely: {error}", file=sys.stderr)
             return 2
         finally:
@@ -2808,6 +2936,200 @@ def _reference_command(args: argparse.Namespace) -> int:
         return 2
 
 
+def _diagnose_legacy_state(
+    target_root: Path,
+    *,
+    scope: str,
+    discovery_paths: tuple[str, ...],
+    source_root: Path | None,
+) -> None:
+    """Report the observed unified/legacy state without changing files."""
+    transactions = _transaction_directories(target_root)
+    if transactions:
+        print(f"{scope} migration diagnosis:")
+        print("  Migration status: RECOVERY REQUIRED")
+        for transaction in transactions:
+            print(f"  Interrupted transaction: {transaction.name}")
+        print("  Next action: inspect and run scripts/manage_skills.py recover for this scope/target.")
+        return
+    manifest_path = target_root / MANIFEST_PATH
+    manifest, _migrated = _read_manifest(manifest_path)
+    package_records = manifest["packages"]
+    unified_record_paths = {
+        relative
+        for relative, package in package_records.items()
+        if "devconcord" in package.get("skills", {})
+    }
+    candidates: dict[str, list[tuple[str, Path]]] = {}
+    unified_present_paths: set[str] = set()
+    for relative in discovery_paths:
+        root = target_root / relative
+        _check_destination_path(target_root, root)
+        if not root.exists():
+            continue
+        if root.is_symlink() or not root.is_dir():
+            raise SkillManagementError(f"Skill discovery path is unsafe: {relative}")
+        for entry in sorted(root.iterdir()):
+            name = entry.name.casefold()
+            if name in LEGACY_DEVCONCORD_SKILLS:
+                candidates.setdefault(name, []).append((relative, entry))
+            elif name == "devconcord":
+                unified_present_paths.add(relative)
+
+    blockers: list[str] = []
+    unified_hashes_valid = True
+    for relative in unified_record_paths:
+        package_path = target_root / relative / "devconcord"
+        record = package_records[relative]["skills"]["devconcord"]
+        try:
+            if package_path.is_symlink() or not package_path.is_dir():
+                unified_hashes_valid = False
+            elif _recorded_package_digest(package_path, record) != record.get("installed_tree_sha256"):
+                unified_hashes_valid = False
+        except (OSError, SkillManagementError, KeyError, TypeError, ValueError):
+            unified_hashes_valid = False
+    unified_consistent = (
+        bool(unified_record_paths)
+        and unified_record_paths == unified_present_paths
+        and unified_hashes_valid
+    )
+    unified_any = bool(unified_record_paths or unified_present_paths)
+    if unified_any and not unified_consistent:
+        blockers.append("unified package/manifest/hash mismatch")
+
+    print(f"{scope} migration diagnosis:")
+    print(
+        "  Unified package: "
+        + ("installed; manifest and package hashes verified" if unified_consistent else
+           "present or recorded; state differs" if unified_any else
+           "not found")
+    )
+    if len(unified_present_paths) > 1:
+        unified_allowances = _duplicate_allowances(manifest)
+        roots = sorted(unified_present_paths)
+        unified_digests = []
+        for relative in roots:
+            try:
+                unified_digests.append(
+                    _portable_tree_digest(target_root / relative / "devconcord", ())
+                )
+            except (OSError, SkillManagementError):
+                unified_digests.append("")
+        print(
+            "  Unified duplicate contents: "
+            + ("identical" if len(set(unified_digests)) == 1 else "different or unreadable")
+        )
+        pairs = [
+            (roots[index], roots[other])
+            for index in range(len(roots))
+            for other in range(index + 1, len(roots))
+        ]
+        for first, second in pairs:
+            status = "recorded" if ("devconcord", (first, second)) in unified_allowances else "missing"
+            print(f"  Unified duplicate discovery allowance {status}: {first} + {second}")
+    partial: list[str] = []
+    for name in sorted(candidates):
+        for relative, path in candidates[name]:
+            record = package_records.get(relative, {}).get("skills", {}).get(path.name)
+            if path.is_symlink() or not path.is_dir():
+                state = "unsafe path; preserved"
+                blockers.append(f"{relative}/{path.name}")
+            elif record is None:
+                state = "unmanaged; preserved"
+                partial.append(f"{relative}/{path.name}")
+            else:
+                try:
+                    installed_digest = _recorded_package_digest(path, record)
+                except (OSError, SkillManagementError, KeyError, TypeError, ValueError):
+                    installed_digest = ""
+                if installed_digest != record.get("installed_tree_sha256"):
+                    state = "local changes or manifest hash mismatch; preserved"
+                    blockers.append(f"{relative}/{path.name}")
+                else:
+                    source_ok = False
+                    if source_root is not None:
+                        try:
+                            _source_commit, _source_dirty, identity = _user_source_revision(source_root / ".agents" / "skills")
+                            recorded_commit = record.get("source_commit")
+                            source_ok = (
+                                not record.get("source_dirty")
+                                and _source_identities_match(record.get("source_repository"), identity)
+                                and isinstance(recorded_commit, str)
+                                and _full_commit_id(recorded_commit)
+                                and record.get("hash_version", 1) in {1, SKILL_HASH_VERSION}
+                                and _git_skill_digest(
+                                    source_root / ".agents" / "skills",
+                                    recorded_commit,
+                                    path.name,
+                                    legacy=record.get("hash_version", 1) == 1,
+                                ) == record.get("source_tree_sha256")
+                            )
+                        except (OSError, SkillManagementError, ValueError):
+                            source_ok = False
+                    state = "managed; source verified; eligible for reviewed migration" if source_ok else "managed; source unverified, preserved"
+                    partial.append(f"{relative}/{path.name}")
+            print(f"  Legacy {relative}/{path.name}: {state}")
+        if len(candidates[name]) > 1:
+            digests: list[str] = []
+            for _relative, path in candidates[name]:
+                try:
+                    digests.append(_portable_tree_digest(path, ()))
+                except (OSError, SkillManagementError):
+                    digests.append("")
+            print(
+                "    Duplicate discovery: "
+                + ("identical copies; inspect recorded allowance" if len(set(digests)) == 1 else
+                   "different or unreadable copies; conflict risk")
+            )
+            allowances = _duplicate_allowances(manifest)
+            roots = sorted(relative for relative, _path in candidates[name])
+            pairs = [
+                (roots[index], roots[other])
+                for index in range(len(roots))
+                for other in range(index + 1, len(roots))
+            ]
+            for first, second in pairs:
+                if (name, (first, second)) in allowances:
+                    print(f"    Allowance: recorded for {first} + {second}")
+                else:
+                    print(f"    Allowance: missing for {first} + {second}")
+
+    stale = []
+    for allowance in manifest.get("duplicate_discovery_allowances", []):
+        key = allowance["skill"].casefold()
+        if key not in LEGACY_DEVCONCORD_SKILLS:
+            continue
+        recorded = any(
+            name.casefold() == key
+            for package in package_records.values()
+            for name in package.get("skills", {})
+        )
+        if key not in candidates and not recorded:
+            stale.append((allowance["skill"], allowance["paths"]))
+    for name, paths in stale:
+        print(f"  Stale legacy duplicate allowance: {name} ({', '.join(paths)})")
+
+    if blockers:
+        status = "BLOCKED"
+    elif partial:
+        status = "PARTIAL"
+    elif unified_consistent:
+        status = "COMPLETE"
+    elif candidates:
+        status = "BLOCKED"
+    else:
+        status = "NOT MIGRATED / NO LEGACY SKILLS FOUND"
+    print(f"  Migration status: {status}")
+    if stale:
+        print("  Next action: review stale allowance records; doctor is read-only.")
+    elif blockers:
+        print("  Next action: inspect local contents and manifest provenance; resolve safely before migrate.")
+    elif partial:
+        print("  Next action: review preserved legacy Skills and provenance; rerun migrate after resolution.")
+    elif status == "COMPLETE":
+        print("  Next action: no migration action required.")
+
+
 def _doctor_command(args: argparse.Namespace) -> int:
     try:
         config, config_path = _read_user_config(validate_skills=False)
@@ -2821,15 +3143,24 @@ def _doctor_command(args: argparse.Namespace) -> int:
         managed: dict[str, list[tuple[str, dict[str, Any]]]] = {}
         if manifest_path.exists():
             manifest, _migrated = _read_manifest(manifest_path)
-            errors = _validate_user_installation(home)
-            if errors:
-                raise SkillManagementError("; ".join(errors))
+            if not _transaction_directories(home):
+                errors = _validate_user_installation(home)
+                if errors:
+                    raise SkillManagementError("; ".join(errors))
             for package_path, package in manifest["packages"].items():
                 for name, record in package["skills"].items():
                     managed.setdefault(name.casefold(), []).append((package_path, record))
         else:
             print("No User Scope DevConcord Skill manifest is installed.")
         _report_configured_source_validation(config)
+
+        user_source = Path(config["source_root"]) if config else None
+        _diagnose_legacy_state(
+            home,
+            scope="User Scope",
+            discovery_paths=GLOBAL_DISCOVERY_PATHS,
+            source_root=user_source,
+        )
 
         target = getattr(args, "target", None)
         if target is None:
@@ -2838,6 +3169,12 @@ def _doctor_command(args: argparse.Namespace) -> int:
         project = target.expanduser().resolve()
         if not project.is_dir():
             raise SkillManagementError(f"project directory does not exist: {project}")
+        _diagnose_legacy_state(
+            project,
+            scope="Project Scope",
+            discovery_paths=DISCOVERY_PATHS,
+            source_root=DEFAULT_SOURCE.parents[1],
+        )
         found = False
         for relative in DISCOVERY_PATHS:
             root = project / relative

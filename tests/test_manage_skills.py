@@ -2549,6 +2549,20 @@ Version: {version}
         manifest = json.loads((self.user_home / ".devconcord/skills-manifest.json").read_text())
         self.assertEqual(set(manifest["packages"][".agents/skills"]["skills"]), {"devconcord"})
 
+    def test_user_migration_reports_and_preserves_legacy_copy_in_unmanaged_discovery_root(self) -> None:
+        legacy = self.prepare_user_migration_source()
+        external = self.user_home / ".copilot/skills/devconcord-repository-review"
+        external.mkdir(parents=True)
+        (external / "SKILL.md").write_text("external copy\n", encoding="utf-8")
+
+        result, output, error = self.run_user_migration(apply=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Migration status (applied): PARTIAL", output)
+        self.assertIn(".copilot/skills/devconcord-repository-review", output)
+        self.assertFalse(legacy.exists())
+        self.assertTrue(external.is_dir())
+
     def test_user_migration_explicit_source_bypasses_stale_user_config(self) -> None:
         self.prepare_user_migration_source()
         config = self.user_home / ".devconcord/config.json"
@@ -2606,19 +2620,38 @@ Version: {version}
         self.assertEqual((result, error), (0, ""))
         self.assertIn("remove: .agents/skills/devconcord-repository-review", output)
         self.assertIn("install: .agents/skills/devconcord", output)
+        self.assertIn("Migration status (planned): COMPLETE", output)
         self.assertIn("Dry run only", output)
         self.assertTrue(legacy.is_dir())
         self.assertFalse((self.target / ".agents/skills/devconcord").exists())
         self.assertEqual(manifest_path.read_bytes(), before)
 
-        result, _, error = self.run_migration(apply=True)
+        result, output, error = self.run_migration(apply=True)
 
         self.assertEqual((result, error), (0, ""))
+        self.assertIn("Migration status (applied): COMPLETE", output)
         self.assertFalse(legacy.exists())
         self.assertTrue((self.target / ".agents/skills/devconcord/SKILL.md").is_file())
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual(set(manifest["packages"][".agents/skills"]["skills"]), {"devconcord"})
         self.assertEqual(manage_skills._transaction_directories(self.target), [])
+        self.assertEqual(self.run_operation("validate")[0], 0)
+        applied_manifest = manifest_path.read_bytes()
+        result, second_output, error = self.run_migration(apply=True)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Migration status (applied): COMPLETE", second_output)
+        self.assertEqual(manifest_path.read_bytes(), applied_manifest)
+        self.assertEqual(
+            self.run_config(
+                "set-source", source_root=self.source.parents[1], replace=False
+            )[0],
+            0,
+        )
+        result, output, error = self.run_reference(
+            path="docs/reference.md", scope="project", target=self.target, skill="devconcord"
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Initial committed guidance.", output)
 
     def test_migration_refuses_local_legacy_edits(self) -> None:
         legacy = self.prepare_migration_source()
@@ -2630,8 +2663,11 @@ Version: {version}
         self.assertFalse((self.target / ".agents/skills/devconcord").exists())
 
     def test_migration_transaction_recovers_interrupted_legacy_deletion(self) -> None:
-        legacy = self.prepare_migration_source()
+        legacy = self.prepare_migration_source(agents=["codex", "claude", "copilot"])
         manifest_path = self.target / ".devconcord" / "skills-manifest.json"
+        original_allowances = json.loads(manifest_path.read_text(encoding="utf-8"))[
+            "duplicate_discovery_allowances"
+        ]
         real_write = manage_skills._write_atomically
 
         def interrupt_manifest(path: Path, content: str) -> None:
@@ -2641,15 +2677,26 @@ Version: {version}
 
         with patch.object(manage_skills, "_write_atomically", side_effect=interrupt_manifest):
             with self.assertRaises(KeyboardInterrupt):
-                self.run_migration(apply=True)
+                self.run_migration(apply=True, allow_duplicate_discovery=True)
 
         self.assertFalse(legacy.exists())
         self.assertTrue((self.target / ".agents/skills/devconcord").exists())
         self.assertEqual(len(manage_skills._transaction_directories(self.target)), 1)
+        doctor_args = SimpleNamespace(command="doctor", target=self.target)
+        doctor_stdout = io.StringIO()
+        doctor_stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(doctor_stdout), contextlib.redirect_stderr(doctor_stderr):
+                doctor_result = manage_skills._run(doctor_args)
+        self.assertEqual((doctor_result, doctor_stderr.getvalue()), (0, ""))
+        self.assertIn("Migration status: RECOVERY REQUIRED", doctor_stdout.getvalue())
         result, _, error = self.run_recovery(apply=True)
         self.assertEqual((result, error), (0, ""))
         self.assertTrue(legacy.is_dir())
+        self.assertTrue((self.target / ".claude/skills/devconcord-repository-review").is_dir())
         self.assertFalse((self.target / ".agents/skills/devconcord").exists())
+        recovered_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(recovered_manifest["duplicate_discovery_allowances"], original_allowances)
         self.assertEqual(manage_skills._transaction_directories(self.target), [])
 
     def test_migration_preserves_unmanaged_legacy_looking_directory(self) -> None:
@@ -2707,15 +2754,22 @@ Version: {version}
         ] = "github.com/untrusted/other"
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
-        result, output, error = self.run_migration()
+        result, output, error = self.run_migration(apply=True)
 
         self.assertEqual((result, error), (0, ""))
         self.assertIn("source identity, commit, or source hash could not be verified", output)
+        self.assertIn("Migration status (applied): PARTIAL", output)
+        self.assertIn("Next action:", output)
         self.assertTrue(legacy.is_dir())
         self.assertIn(
             "devconcord-repository-review",
             json.loads(manifest_path.read_text(encoding="utf-8"))["packages"][".agents/skills"]["skills"],
         )
+        self.assertTrue((self.target / ".agents/skills/devconcord/SKILL.md").is_file())
+        result, doctor_output, doctor_error = self.run_user_operation("doctor", target=self.target)
+        self.assertEqual((result, doctor_error), (0, ""))
+        self.assertIn("Project Scope migration diagnosis", doctor_output)
+        self.assertIn("Migration status: PARTIAL", doctor_output)
 
     def test_migration_requires_explicit_duplicate_discovery_opt_in(self) -> None:
         self.prepare_migration_source(agents=["codex", "claude", "copilot"])
@@ -2745,6 +2799,80 @@ Version: {version}
         self.assertEqual(
             set(manifest["packages"][".claude/skills"]["skills"]), {"devconcord"}
         )
+        result, doctor_output, doctor_error = self.run_user_operation("doctor", target=self.target)
+        self.assertEqual((result, doctor_error), (0, ""))
+        self.assertIn("Unified package: installed; manifest and package hashes verified", doctor_output)
+        self.assertIn("Unified duplicate contents: identical", doctor_output)
+        self.assertIn("Unified duplicate discovery allowance recorded", doctor_output)
+
+    def test_migration_prunes_only_retired_legacy_allowance_and_keeps_unified_allowance(self) -> None:
+        self.prepare_migration_source(agents=["codex", "claude", "copilot"])
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["duplicate_discovery_allowances"].append(
+            {"skill": "devconcord-test-design", "paths": [".agents/skills", ".claude/skills"]}
+        )
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+        result, output, error = self.run_migration(
+            apply=True, allow_duplicate_discovery=True
+        )
+
+        self.assertEqual((result, error), (0, ""))
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertNotIn(
+            "devconcord-repository-review",
+            {entry["skill"] for entry in manifest["duplicate_discovery_allowances"]},
+        )
+        self.assertIn(
+            {"skill": "devconcord", "paths": [".agents/skills", ".claude/skills"]},
+            manifest["duplicate_discovery_allowances"],
+        )
+        self.assertIn(
+            {"skill": "devconcord-test-design", "paths": [".agents/skills", ".claude/skills"]},
+            manifest["duplicate_discovery_allowances"],
+        )
+        self.assertIn("Migration status (applied): COMPLETE", output)
+
+    @unittest.skipIf(os.name == "nt", "case-distinct Skill directories require a case-sensitive filesystem")
+    def test_migration_preserves_allowance_when_casefold_duplicate_remains(self) -> None:
+        self.prepare_migration_source(agents=["codex", "claude", "copilot"])
+        duplicate = self.target / ".agents/skills/DEVCONCORD-REPOSITORY-REVIEW"
+        duplicate.mkdir()
+        (duplicate / "user.md").write_text("preserve case-distinct copy\n", encoding="utf-8")
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+
+        result, output, error = self.run_migration(
+            apply=True, allow_duplicate_discovery=True
+        )
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Migration status (applied): PARTIAL", output)
+        self.assertTrue(duplicate.is_dir())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertIn(
+            {"skill": "devconcord-repository-review", "paths": [".agents/skills", ".claude/skills"]},
+            manifest["duplicate_discovery_allowances"],
+        )
+
+    def test_doctor_reports_project_legacy_state_read_only(self) -> None:
+        legacy = self.prepare_migration_source()
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        before_manifest = manifest_path.read_bytes()
+        before_legacy = (legacy / "SKILL.md").read_bytes()
+        args = SimpleNamespace(command="doctor", target=self.target)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+
+        self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertIn("Project Scope migration diagnosis", stdout.getvalue())
+        self.assertIn("Legacy .agents/skills/devconcord-repository-review", stdout.getvalue())
+        self.assertIn("Migration status: PARTIAL", stdout.getvalue())
+        self.assertEqual(manifest_path.read_bytes(), before_manifest)
+        self.assertEqual((legacy / "SKILL.md").read_bytes(), before_legacy)
 
     def test_project_migration_supports_all_agent_combinations(self) -> None:
         combinations = (
