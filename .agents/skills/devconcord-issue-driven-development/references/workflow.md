@@ -48,6 +48,14 @@ allows a safe independent slice. Recheck whether a reported issue is already
 fixed, duplicated, obsolete, or underspecified before acting; preserve its ID
 and record the evidence rather than silently deleting or rewriting its history.
 
+Assess actual issue risk separately from priority and change size. Consider
+impact, likelihood, uncertainty, affected scope, reversibility, and whether
+existing evidence applies; include data integrity, security, compatibility,
+availability, or operational consequences when relevant. Unknown impact is
+not low risk, and a severe or irreversible outcome must not be averaged away.
+Select only specialist expertise and verification that can change the
+decision or detect a material failure.
+
 Use the existing issue register as the only issue/dependency source. Follow
 declared prerequisite links and verify their current state against the
 repository; identify missing references, cycles, and blockers before ordering
@@ -97,6 +105,10 @@ When a failure has an unclear cause, separate observations from hypotheses
 and prefer a discriminating reproduction/check before repair. This is
 proportionate reasoning, not a separate issue ledger or a requirement to
 invoke Root Cause Analysis. Keep evidence fresh against the final relevant diff.
+If implementation or verification reveals a materially different contract,
+affected scope, failure impact, or invalidated oracle, pause dependent work and
+reassess the selected Skills and checks. Do not alter priority, invent a risk
+score, or expand the authorized scope.
 
 ## 5. Batch Mode — bounded multi-issue work
 

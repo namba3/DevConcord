@@ -1195,6 +1195,52 @@ Root Cause Analysis、Compatibility Migration、Release Engineering、Dependency
 
 続行・修復・設計再検討・ブロック・停止は、受け入れ条件、最終差分に対応する検証証拠、回帰リスク、残余リスク、予算から決めます。課題表を作業管理の正本とし、既存の完成度10軸・重み、課題ID・履歴を維持します。別の進捗台帳やスコアは追加しません。予算到達、証拠不足、重要ゲート失敗、承認待ち、収束、または追加変更の価値が低い場合は止めます。実エージェントや対象環境を試していないときは、その境界を明記します。
 
+### 17.5 リスク比例型Skill適用と検証
+
+**Risk-Proportional Skill Application** は、次の原則です。
+
+> Apply specialized Agent Skills according to the material risks, impact, uncertainty, and verification needs of the task—not merely because those Skills are available.
+
+作業に内在する重要なリスク、影響、不確実性、検証の必要性に応じて専門Skillの適用を選びます。Skillが存在することや一覧に載っていることだけで実行を要求しません。軽微な変更には必要十分な作業を行い、重要なリスクには相応の専門判断と検証を投入します。
+
+判断では、関係する範囲に限り、問題時の影響（Impact）、発生可能性（Likelihood）、要求・設計・実装・環境の不確実性（Uncertainty）、影響範囲（Blast Radius）、変更や失敗の可逆性（Reversibility）、検証証拠の信頼性・適用可能性（Evidence Confidence）を確認します。データ完全性、セキュリティ露出、互換性、可用性、利用者影響、性能感度、運用複雑性、配布環境、依存の重要性なども、該当すれば考慮します。毎回全項目を採点したり、固定点数を合計したりせず、判定根拠・未確認事項・残余リスクを必要な範囲で示します。
+
+以下を別々の状態として扱います。
+
+1. 変更に関連する開発原則を考慮した。
+2. 関連する専門Skillの適用可能性を評価した。
+3. 適切なSkillを選択した、または選択しないと判断した。
+4. Skillの内容を実際に参照・適用した。
+5. そのSkillに基づく検証を設計・実施し、結果を得た。
+
+Skillの導入状態、エージェントからの発見可能性、選択、内容の適用、検証実施も互いに区別します。利用可能性を確認できないSkillを実行済みと扱わず、Skill間の自動呼び出し、Skillの記述による権限拡大、選択したことによる承認を前提にしません。Skillを選択しなかった場合も、関連する基本的な互換性・データ保護・セキュリティ・契約確認義務は残ります。
+
+リスクが不明なことは低リスクの根拠になりません。重要な契約、利用者、影響範囲、実行環境または証拠の不足が判断を変える場合は確認し、解消しない不確実性を残余リスクとして扱います。重大または不可逆的な影響を発生可能性との平均で隠さず、承認境界・安全性・データ損失のレッドフラッグは個別に扱います。検証しやすさはリスクの低さを意味せず、検証費用の高さも重大リスクを無視する根拠になりません。リスク評価は作業権限を拡張せず、高リスクを理由に委任外の変更を行いません。
+
+**Risk-Proportional Verification** は関連する失敗を捉えるのに十分な、独立した証拠を選ぶ実践原則です。検証深度は変更の性質、利用者への影響、可逆性、環境、要求保証、既存証拠を合わせて決めます。局所的な契約確認から関連呼び出し元・依存先の回帰確認、不変条件・異常系・復旧の確認、独立したオラクルや対象環境・承認を要する検証までを候補にできますが、これは固定レベル表や全項目チェックリストではありません。テスト手法の数を増やすのでなく、重要な失敗を検出できるオラクルと証拠を得ます。提案した検証、テスト実装、実行、結果、受け入れ条件の充足、残余リスクを分けて報告します。
+
+以下はリスク/作業内容から候補Skillを絞る簡易マップです。Skill実行表ではありません。Bootstrap / Adoption後の推奨状態と詳細な候補条件は§17.3を参照し、通常作業では作業目的・実際のリスク・既存契約から必要最小限を選びます。
+
+| 重要な問い・変更 | 検討するSkill候補 |
+|---|---|
+| 利用者タスク、操作、状態、アクセシビリティ | `devconcord-ux-functional-design` |
+| 代表ワークロード、遅延、資源制約 | `devconcord-design-performance` |
+| 整合性、不変条件、並行性、取消、復旧 | `devconcord-design-robustness` |
+| 資産、脅威、権限、信頼境界、秘密 | `devconcord-design-security` |
+| 診断したい状態や失敗、必要な観測信号 | `devconcord-observability-design`; 原因不明の重大障害は `devconcord-root-cause-analysis` |
+| 価値のある技術依存境界や交換影響 | `devconcord-design-replaceability` |
+| 文書の正本、読者、重複、導線 | `devconcord-documentation-architecture` |
+| 受け入れ条件、独立したオラクル、検証方法 | `devconcord-test-design` |
+| 具体的欠陥、変更影響、回帰リスク | `devconcord-repository-review` |
+| 複数領域をまたぐ委任設計 | `devconcord-design-orchestration` |
+| 課題単位の実装、複数単位の反復、複雑な順序づけ | `devconcord-issue-driven-development`, `devconcord-development-orchestration`, `devconcord-implementation-planning` のうち作業範囲に対応するもの |
+| 実エージェントのSkill発見・選択・実行品質 | `devconcord-agent-behavior-evaluation` |
+| 公開API/データ形式の互換性、明示的リリース、依存判断 | `devconcord-compatibility-migration`, `devconcord-release-engineering`, `devconcord-dependency-governance` のうち実際の作業に対応する任意Skill |
+
+既に十分な設計・検証証拠がある場合は重複分析を省けます。複数Skillの組合せは互いに補う場合に限り、役割と引き継ぐ判断を明確にします。Compatibility Migration、Release Engineering、Dependency Governanceは必要時だけ利用する独立した専門工程です。これらや他の任意Skillの未導入・非利用だけで無関係な作業を停止せず、非利用自体を品質欠陥にしません。一方、実際の互換性破壊、データ損失、重大なセキュリティ・信頼性リスクをOptional扱いで見過ごしません。
+
+Design / Development Orchestration、Issue-Driven Development、Implementation Planning、Test Design、Repository Review、Root Cause Analysisは同じ原則をそれぞれの責務で適用します。作業の途中で公開境界、データ損失、認可、競合・取消、性能制約など新しいリスクが分かった場合、前提・関連Skill・検証計画・停止条件を再評価します。リスク低下を裏付ける検証証拠が得られたときは、その残余リスクに応じて不要な追加作業を止められます。再評価は既存の反復・変更予算、課題表、要求承認、外部操作の権限を拡張しません。進捗・リスクの二重台帳、Skill利用数のスコア、既存の完成度10軸やSDSとの混同を導入しません。
+
 ## 18. 結論
 
 AIコーディングでは、コードの生成速度が上がる一方、誤った要求解釈・設計不整合・不十分な検証が高速に拡大する危険がある。

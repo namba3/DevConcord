@@ -48,6 +48,15 @@ readiness, rework avoided, and implementation cost. Keep formal issue priority
 separate from design-work order. Do not create a numeric ranking unless the
 target already requires one.
 
+Assess only risk dimensions that could change the design decision: impact,
+likelihood, uncertainty, affected scope, reversibility, and confidence that
+available evidence applies. Include data integrity, security, compatibility,
+availability, user impact, workload, operations, or deployment conditions
+when material. Do not average away a severe or irreversible outcome, treat
+unknown scope as low risk, or use an unsupported numeric score. Reuse the
+conditional Skill candidates in the canonical guidance §17.5; select only
+specialist analysis that adds decision value beyond existing evidence.
+
 ## 3. Find and frame design decisions
 
 For each material gap or improvement, identify the evidence, affected user or
@@ -88,6 +97,13 @@ use the canonical, version-pinned reference material when it is available and
 continue only within the contract it supports. If necessary design criteria
 remain unavailable, keep dependent decisions provisional or unassessed and
 report the limitation; do not install a Skill or invent its guidance.
+
+Reassess the selected design scope and verification expectations when analysis
+reveals a new public consumer, data-loss path, trust boundary, availability or
+performance constraint, or material incompatibility. If evidence reduces a
+previously material concern, avoid continuing heavyweight analysis without a
+remaining decision need. Reassessment never approves a major design change or
+increases the user's delegated scope.
 
 ## 4. Decide within authority
 

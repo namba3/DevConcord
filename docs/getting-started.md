@@ -4,6 +4,8 @@ DevConcordのAgent Skillsは **User Scope（ユーザー単位）** が標準で
 
 DevConcord公式Skill名には `devconcord-` が付きます。旧名Skillを導入済みの環境は自動変更されないため、新名で導入した後も既存Skillを確認し、必要なら利用者が別途整理してください。
 
+専門Skillと検証方法は、実際の影響・不確実性・波及範囲・可逆性・証拠に応じて選び、作業途中の新しいリスクに合わせて見直します。全Skillや重い検証手法の一律実行は求めません。詳細は[Risk-Proportional Skill Application / Verification](common/ai-assisted-development.md#175-リスク比例型skill適用と検証)を参照してください。
+
 変更を実装する前に影響範囲を整理したい場合は`devconcord-repository-review`のChange Impact Assessment、要求から独立した検証方法を設計したい場合は`devconcord-test-design`、複雑な作業を段階化したい場合は`devconcord-implementation-planning`を使えます。いずれも必要な場合だけ選ぶSkillで、自動実行・自動引継ぎは前提にしません。
 
 新規・未完成の設計を具体化したり、既存設計を複数領域にまたがって改善する作業を委任するときは、[`devconcord-design-orchestration`](../.agents/skills/devconcord-design-orchestration/SKILL.md)を検討できます。読み取り専用のExplore、設計成果物を扱うDesign、既存設計を扱うEvolveを依頼の範囲から選びます。Design/Evolveは実装コード変更を許可せず、重大な仕様・互換性判断は承認へ委ねます。単一領域の判断には対応する専門Skill、全体ギャップの評価にはGap Analysis、実装計画・課題実装にはそれぞれのSkillを使います。

@@ -19,6 +19,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 複雑な変更を検証可能な実装単位へ分ける | [`devconcord-implementation-planning` Skill](.agents/skills/devconcord-implementation-planning/SKILL.md) |
 | 既存課題表から対象を選び、範囲内で実装・検証・状態更新する | [`devconcord-issue-driven-development` Skill](.agents/skills/devconcord-issue-driven-development/SKILL.md) |
 | 複数の開発単位で実装・検証・レビューを反復し、続行・停止を判断する | [`devconcord-development-orchestration` Skill](.agents/skills/devconcord-development-orchestration/SKILL.md) |
+| 変更リスクに応じて専門Skillと検証深度を選ぶ | [Risk-Proportional Skill Application / Verification](docs/common/ai-assisted-development.md#175-リスク比例型skill適用と検証) |
 | 状態・処理・障害を安全で必要十分な情報から診断する | [`devconcord-observability-design` Skill](.agents/skills/devconcord-observability-design/SKILL.md) |
 | 利用者タスクからUIを設計し、必要なモックアップを検証する | [UI/UX設計ガイド](docs/application-design/ui-ux-guide.md)、[`devconcord-ux-functional-design` Skill](.agents/skills/devconcord-ux-functional-design/SKILL.md) |
 | DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](.agents/skills/devconcord-gap-analysis/SKILL.md) |

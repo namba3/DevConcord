@@ -40,7 +40,12 @@ baseline; select one coherent, verifiable work unit from existing project
 tracking; implement only within scope; verify; review the final diff; update
 authorized existing records; then decide to continue, repair, reconsider
 design, report blocked, or stop. Use proportionate checks and tie evidence to
-the final changed state.
+the final changed state. Assess relevant risk before selecting specialist
+Skills and verification depth, then reassess after implementation, failures,
+and review when evidence changes impact, uncertainty, affected scope, or
+evidence confidence. Follow the canonical principles in
+`docs/common/ai-assisted-development.md` §17.5; they do not add a checklist,
+score, or mandatory Skill gate.
 
 Use a finite iteration and change budget. Honor user limits; when none are
 specified, begin with at most three work units and at most one focused repair

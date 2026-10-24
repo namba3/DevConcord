@@ -28,6 +28,14 @@ Follow the user's request:
 4. Report only actionable findings with severity, file/line, concrete impact, reproduction or evidence, confidence and a minimal remedy. Separate findings from questions, residual risks, and unverified assumptions.
 5. Do not infer missing code or tests as present; do not claim tests passed unless run. Avoid speculative findings, style-only comments and fixes unless the user requests implementation.
 
+Set review breadth from the semantic change and material risk, not changed
+file or line count. Consider impact, uncertainty, affected consumers,
+reversibility, and evidence confidence only where they can change the review.
+Unknown scope is not low risk; keep severe or irreversible consequences
+visible without an arithmetic score. Match verification claims to the final
+diff and its tested conditions. For the shared decision principles, see
+`docs/common/ai-assisted-development.md` §17.5.
+
 ## Optional specialist workflows
 
 Compatibility Migration, Release Engineering, and Dependency Governance are

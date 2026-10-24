@@ -33,6 +33,8 @@
 
 `devconcord-development-orchestration` は複数の作業単位をまたぐ有限の開発反復を制御します。単一課題・限定Batchの実装手順は `devconcord-issue-driven-development`、複雑な変更の順序は `devconcord-implementation-planning`、設計の再検討は `devconcord-design-orchestration` と役割を分けます。Skill間の自動呼び出しは前提にしません。
 
+専門Skillの候補と検証深度は、作業の目的・意味的影響・不確実性・既存証拠から選び、低リスク作業に全Skillを要求せず、実際の重大リスクをOptional扱いで見過ごしません。途中でリスクが変化した場合は関連分析と検証を再評価します。判断要素、権限境界、リスクと検証費用の区別は[Risk-Proportional Skill Application / Verification](common/ai-assisted-development.md#175-リスク比例型skill適用と検証)を参照してください。
+
 Development Orchestrationの通常ループにRoot Cause Analysis、Compatibility Migration、Release Engineering、Dependency Governance、Agent Behavior Evaluationを必須工程・依存Skill・Quality Gateとして加えません。原因不明の重大な失敗、実在する互換性リスク、明示的なリリース作業、依存判断/重大リスク、またはエージェントSkill品質評価が依頼に含まれるときだけ、関連Skillを候補にします。未導入や利用不能だけで無関係な作業を停止せず、非利用自体を欠陥にしません。基本の互換性・データ保護・セキュリティ確認はリスクがあれば実施します。StabilizeからRelease Engineeringを提案しても、自動リリース・承認は行いません。
 
 `devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を読み取り専用で整理します。`devconcord-design-orchestration` はユーザーが委任した設計作業を段階的に具体化・改善し、設計資産の整合を進めますが、gap assessmentを再実行したり専門設計手順を複製したりしません。具体的なコード上の欠陥は `devconcord-repository-review`、文書体系の設計は `devconcord-documentation-architecture`、実装単位の計画は `devconcord-implementation-planning`、課題実装は `devconcord-issue-driven-development` がそれぞれ担います。必要に応じて別作業として選び、エージェント間の自動Skill呼び出しは前提にしません。

@@ -1284,6 +1284,80 @@ description: Use this Skill for a focused task.
             with self.subTest(scenario=expected):
                 self.assertIn(expected, integration)
 
+    def test_risk_proportional_skill_and_verification_guidance_is_integrated(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        guide = (repository_root / "docs/common/ai-assisted-development.md").read_text(
+            encoding="utf-8"
+        )
+        agents = (repository_root / "AGENTS.md").read_text(encoding="utf-8")
+        reviews = (repository_root / "REVIEW.md").read_text(encoding="utf-8")
+        integration = (repository_root / "tests/integration/README.md").read_text(
+            encoding="utf-8"
+        )
+        skill_root = repository_root / ".agents/skills"
+
+        for expected in (
+            "Risk-Proportional Skill Application",
+            "Risk-Proportional Verification",
+            "Impact",
+            "Likelihood",
+            "Uncertainty",
+            "Blast Radius",
+            "Reversibility",
+            "Evidence Confidence",
+            "リスクが不明なことは低リスクの根拠になりません",
+            "重大または不可逆的な影響",
+            "§17.3を参照",
+            "途中で公開境界",
+            "`devconcord-design-performance`",
+            "`devconcord-compatibility-migration`",
+            "`devconcord-agent-behavior-evaluation`",
+        ):
+            with self.subTest(canonical_rule=expected):
+                self.assertIn(expected, guide)
+
+        for file_name in (
+            "devconcord-design-orchestration/SKILL.md",
+            "devconcord-development-orchestration/SKILL.md",
+            "devconcord-issue-driven-development/SKILL.md",
+            "devconcord-implementation-planning/SKILL.md",
+            "devconcord-test-design/SKILL.md",
+            "devconcord-repository-review/SKILL.md",
+            "devconcord-root-cause-analysis/SKILL.md",
+        ):
+            content = (skill_root / file_name).read_text(encoding="utf-8")
+            with self.subTest(skill=file_name):
+                self.assertIn("§17.5", content)
+
+        self.assertIn("§17.5", agents)
+        self.assertIn("重大/不可逆", reviews)
+        for relative_path in (
+            ".agents/skills/devconcord-design-orchestration/references/workflow.md",
+            ".agents/skills/devconcord-development-orchestration/references/workflow.md",
+        ):
+            workflow = (repository_root / relative_path).read_text(encoding="utf-8")
+            with self.subTest(workflow=relative_path):
+                self.assertIn("§17.5", workflow)
+        for scenario in (
+            "READMEの誤字修正",
+            "GUIの装飾変更",
+            "画像ブラウザーのスクロール性能改善",
+            "並列ファイル転送のキャンセル変更",
+            "暗号化データの保存形式変更",
+            "内部リファクタリング",
+            "リリース候補の評価",
+            "依存ライブラリのメジャー更新",
+            "低リスクの想定から重大問題を発見",
+            "高リスク問題を検証によって解消",
+            "専門Skillが未導入",
+            "Skill数が多い環境",
+            "False Negative",
+            "Excessive Depth",
+            "Incorrect Escalation",
+        ):
+            with self.subTest(scenario=scenario):
+                self.assertIn(scenario, integration)
+
     def test_agent_guidance_generation_requires_compact_devconcord_baseline(self) -> None:
         repository_root = Path(__file__).resolve().parents[1]
         agents = (repository_root / "AGENTS.md").read_text(encoding="utf-8")

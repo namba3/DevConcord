@@ -75,6 +75,14 @@ in chat or saved to a requested existing location is not automatically an
 issue-register update. Preserve its IDs, statuses, and conventions; do not
 create task, risk, or score tracking alongside it.
 
+Size and order increments by semantic boundaries and material risk, not file
+count. For high-impact or hard-to-reverse outcomes, split where a meaningful
+contract and independent verification remain coherent; do not fragment work
+when that obscures atomicity or correctness. Reassess the plan when evidence
+changes impact, uncertainty, affected scope, verification oracle, or risk.
+Follow `docs/common/ai-assisted-development.md` §17.5 without adding fixed
+risk scoring or a parallel ledger.
+
 ## Boundaries
 
 - Bootstrap establishes a new repository foundation; this Skill plans changes

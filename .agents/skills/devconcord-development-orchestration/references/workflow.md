@@ -43,6 +43,16 @@ acceptance condition, proportionate verification, affected boundaries, and
 the stop condition. Do not add work just because it shares a file or looks
 easy.
 
+Before execution, assess only material risk dimensions and select relevant
+specialist expertise and verification evidence. Consider impact, likelihood,
+uncertainty, affected scope, reversibility, and evidence confidence where they
+change the decision; preserve severe/irreversible red flags instead of
+averaging them into a low classification. Use the existing conditional Skill
+mapping in `docs/common/ai-assisted-development.md` §17.5, not a per-unit
+inventory of every Skill. Skill availability, selection, application, and
+verification are distinct; selection does not authorize work or expand the
+iteration budget.
+
 ## 3. Implement within the delegated boundary
 
 Make the smallest change that meets the accepted contract. Apply relevant
@@ -93,6 +103,15 @@ pass per work unit is allowed within the default budget. Do not keep changing
 code while the cause is unknown, weaken expected behavior, or delete failing
 tests to pass a gate. If unresolved, stop dependent units and report the safe
 recovery point.
+
+Reassess risk and verification after implementation, failures, and review if
+new evidence changes a contract boundary, data integrity, security exposure,
+compatibility, availability, performance constraint, affected scope, or
+confidence in prior evidence. Increase or reduce depth to address the changed
+residual risk; do not skip a material check because a specialist Skill is
+unavailable, and do not continue expensive checks without a relevant oracle.
+This reassessment does not expand permissions, repair limits, or approval
+authority.
 
 ## 5. Review and integrate
 

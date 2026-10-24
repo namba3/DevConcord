@@ -11,6 +11,15 @@ description: >
 Use evidence to narrow causes before recommending repair. A root cause may be
 uncertain, multiple, or not recoverable from available evidence.
 
+Scale investigation to observed impact, recurrence, uncertainty, blast radius,
+reversibility, and evidence quality. A simple, isolated defect with a
+discriminating observation may need only a focused check; recurring, integrity,
+concurrency, security, or high-impact failures warrant stronger competing
+hypotheses and independent evidence. Do not infer low risk from missing
+telemetry or expensive experiments. Reassess if a hypothesis reveals a more
+serious impact, while keeping repair authority separate. See
+`docs/common/ai-assisted-development.md` §17.5 for the shared principles.
+
 ## Modes and authority
 
 - **Diagnose:** inspect evidence and report causes or bounded uncertainty.

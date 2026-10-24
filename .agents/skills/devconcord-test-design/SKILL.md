@@ -46,6 +46,13 @@ for that work.
 ## Select verification methods by defect model
 
 Choose a method only when its oracle and cost are justified by the contract:
+the desired evidence should be proportional to impact, likelihood,
+uncertainty, affected scope, reversibility, and confidence in existing
+verification. Do not treat unknown risk as low risk or verification cost as a
+reason to ignore a serious consequence. Reassess method and depth if new
+implementation or test evidence changes these conditions. The canonical risk
+and Skill-selection rules are in `docs/common/ai-assisted-development.md`
+§17.5.
 
 | Method | Useful for | Entry condition and oracle | Cost / limit; when to omit |
 |---|---|---|---|

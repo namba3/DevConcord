@@ -38,7 +38,12 @@ In every mode, distinguish confirmed facts, assumptions, unknowns, and
 verification evidence. Respect dependencies and blockers. Keep implementation
 increments small enough to review and verify. Apply relevant design principles
 proportionately; use specialized Skills only when available and useful, without
-assuming automatic handoff.
+assuming automatic handoff. Assess risk from the issue's actual contract,
+impact, uncertainty, affected scope, reversibility, and applicable evidence;
+do not infer risk from formal priority or change size alone. Reassess the
+verification and Skill choices when implementation or test results expose a
+materially different risk. Follow `docs/common/ai-assisted-development.md`
+§17.5 without adding a risk score or parallel issue ledger.
 
 ## Completion contract
 

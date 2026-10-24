@@ -10,7 +10,7 @@
 
 | 資料 | 用途 |
 |---|---|
-| [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness / Replaceability / Security / Observability by Design、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
+| [AI支援開発ガイド](common/ai-assisted-development.md) | DDD・自己説明性・Performance / Robustness / Replaceability / Security / Observability by Design、Risk-Proportional Skill Application / Verification、契約・検証、Doc Comments・Annotation Comments、プライバシー・環境衛生 |
 | [ドキュメント設計ガイド](common/documentation-design.md) | 読者中心の情報設計、README・文書の役割、ナビゲーション、Single Source of Truth、変更影響、Docs as Code |
 | [Agent Skills運用ガイド](agent-skills.md) | 導入先へのSkillsの選択導入、共用、更新、manifest、復旧、検証 |
 | [`devconcord-reference` Skill](../.agents/skills/devconcord-reference/SKILL.md) | ローカル共通資料を要求元Skillの版に合わせて参照する |

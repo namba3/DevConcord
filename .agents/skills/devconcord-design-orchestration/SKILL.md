@@ -56,7 +56,11 @@ Follow the bounded evolution loop in [`references/workflow.md`](references/workf
 Select only the design areas that matter to the task's users, scope, risks, and
 constraints. Do not require every principle, specialist Skill, artifact, or
 quality attribute for every change. Do not assume that one Skill can invoke
-another automatically.
+another automatically. Apply Risk-Proportional Skill Application from
+`docs/common/ai-assisted-development.md` §17.5: select the smallest set of
+available specialist expertise that can resolve a material design question;
+reassess when new evidence changes risk or uncertainty. Unknown impact is not
+evidence of low risk, and risk assessment does not expand design authority.
 
 ## Authority and completion
 

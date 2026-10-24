@@ -30,13 +30,18 @@ keywords. This Skill can assess DevConcord and other projects' agent workflows.
    for the task), **Contract compliance** (scope and constraints followed),
    **Behavioral correctness** (acceptance), **Execution reliability**,
    **Regression**, **Efficiency/proportionality**, and **permission boundaries**.
-6. Classify each result as pass, failure, inconclusive, or not run, with direct
+6. For risk-proportional selection, identify false negatives (missed material
+   expertise), false positives (unneeded specialist workflow), excessive or
+   insufficient depth, and incorrect escalation (missed approval/design
+   boundary or unnecessary stop). Judge against task evidence and outcomes;
+   neither fewer Skills nor a fixed Skill count is inherently better.
+7. Classify each result as pass, failure, inconclusive, or not run, with direct
    evidence and uncertainty. Static metadata/link checks establish package
    validity only; manual scenario review is not real-agent E2E.
-7. Compare revisions using the same scenario, initial state, agent/runtime,
+8. Compare revisions using the same scenario, initial state, agent/runtime,
    permissions, and evaluator criteria where possible. Explain any confounder;
    do not infer causality from unlike runs.
-8. Recommend the smallest improvement and regression scenario. Report
+9. Recommend the smallest improvement and regression scenario. Report
    remaining risks; do not create a new score or evaluation ledger.
 
 ## Boundaries
