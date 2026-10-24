@@ -102,10 +102,13 @@ verification, and review contracts without these optional workflows.
 
 Check whether the single public `devconcord` package is available in the actual
 User or Project Scope before relying on its internal workflows; package files
-alone do not prove that the host discovers or selects them. Report the selected scope, completed and partial work units, changed
-artifacts, checks and results, issue/evidence updates, remaining blockers,
-unverified conditions, and the continue/stop rationale. Do not claim real
-agent or target-environment evidence from static tests.
+alone do not prove that the host discovers or selects them. Lead with the
+outcome and material exceptions. Report completed or partial work, relevant
+changed artifacts and canonical-record updates, checks run and results,
+unverified conditions, remaining blockers, and the continue/stop rationale
+when applicable. Keep detailed logs in their source and omit empty sections
+or a narration of internal module selection. Do not claim real-agent or
+target-environment evidence from static tests.
 
 ## DevConcord References
 

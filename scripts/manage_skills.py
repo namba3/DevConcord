@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -2314,6 +2316,13 @@ def _run(args: argparse.Namespace) -> int:
                 None,
             )
             planned_status = "PARTIAL" if partial else "COMPLETE"
+            planned_manifest = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode(
+                "utf-8"
+            )
+            planned_changes = any(
+                action_tuple[0] in {"install", "update", "metadata", "remove"}
+                for action_tuple, _relative in actions
+            ) or expected_manifest != planned_manifest
             print(f"Migration status (planned): {planned_status}")
             print(
                 "Unified package: "
@@ -2329,16 +2338,30 @@ def _run(args: argparse.Namespace) -> int:
                 print(f"  {item}")
             for item in details["unmanaged"]:
                 print(f"  {item} (unmanaged; preserved)")
-            if partial:
-                print("Next action: inspect preserved Skill contents and provenance, then rerun migrate after resolution.")
-            else:
-                print("Next action: no migration follow-up required.")
             if _duplicate:
                 print(
                     "WARNING: duplicate discovery paths are exposed to Copilot; duplicate "
                     "resolution is host-dependent and has not been verified."
                 )
             if not args.apply:
+                print("Operation: DRY RUN")
+                print(f"Expected outcome if applied: {planned_status}")
+                print("Changes applied: NO")
+                if planned_changes:
+                    if partial:
+                        print(
+                            "Next action: review the planned changes and preserved entries, "
+                            "then rerun with --apply if the safe removals are intended."
+                        )
+                    else:
+                        print("Next action: review the plan, then rerun with --apply if intended.")
+                elif partial:
+                    print(
+                        "Next action: review the preserved legacy entries; no safe migration "
+                        "changes are currently planned."
+                    )
+                else:
+                    print("Next action: no migration changes are required; --apply is unnecessary.")
                 print("Migration operation: PLANNED (no files or manifest changed)")
                 print("Dry run only; pass --apply to migrate files and manifest.")
                 return 0
@@ -3251,7 +3274,7 @@ def _diagnose_legacy_state(
         print("  Next action: no migration action required.")
 
 
-def _doctor_command(args: argparse.Namespace) -> int:
+def _doctor_command_details(args: argparse.Namespace) -> int:
     try:
         config, config_path = _read_user_config(validate_skills=False)
         if config is None:
@@ -3328,6 +3351,113 @@ def _doctor_command(args: argparse.Namespace) -> int:
     except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
         print(f"ERROR: Skill environment diagnosis stopped safely: {error}", file=sys.stderr)
         return 2
+
+
+def _doctor_command(args: argparse.Namespace) -> int:
+    """Print a concise health summary before preserving the detailed diagnosis."""
+    output = io.StringIO()
+    errors = io.StringIO()
+    with contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
+        result = _doctor_command_details(args)
+
+    details = output.getvalue()
+    error_details = errors.getvalue()
+    statuses = [
+        line.strip().removeprefix("Migration status:").strip()
+        for line in details.splitlines()
+        if "Migration status:" in line
+    ]
+    relevant_warnings = [
+        line for line in details.splitlines()
+        if line.startswith("WARNING:")
+        and "separate from User Scope installation health" not in line
+    ]
+    findings = []
+    finding_prefixes = (
+        "  Orphan legacy manifest record:",
+        "  Legacy ",
+        "  Unified package: present or recorded; state differs",
+        "  Unified duplicate contents:",
+        "  Unified duplicate discovery allowance missing:",
+        "WARNING: same-name User/Project Skill:",
+        "  Interrupted transaction:",
+        "  Stale legacy duplicate allowance:",
+        "WARNING:",
+    )
+    for line in details.splitlines():
+        if (
+            line.startswith("WARNING:")
+            and "separate from User Scope installation health" in line
+        ):
+            continue
+        if line.startswith(finding_prefixes) and line not in findings:
+            findings.append(line.strip())
+    findings.sort(
+        key=lambda item: (
+            0 if "recovery required" in item.lower() or "interrupted transaction" in item.lower()
+            else 1 if "orphan" in item.lower() or "local changes" in item.lower() or "unsafe" in item.lower()
+            else 2 if "same-name user/project" in item.lower() or "state differs" in item.lower()
+            else 3
+        )
+    )
+    if error_details:
+        findings.insert(0, error_details.strip().splitlines()[0])
+    if result != 0 and not findings:
+        findings.append("Skill environment diagnosis did not complete")
+    if result != 0 or error_details or any(
+        status in {"BLOCKED", "RECOVERY REQUIRED"} for status in statuses
+    ) or relevant_warnings:
+        health = "NEEDS ATTENTION"
+    elif any(status == "PARTIAL" for status in statuses) or findings:
+        health = "REVIEW NEEDED"
+    elif "No User Scope DevConcord Skill manifest is installed." in details:
+        health = "NOT INSTALLED"
+    else:
+        health = "HEALTHY"
+    recommendations = [
+        line.strip().removeprefix("Next action:").strip()
+        for line in details.splitlines()
+        if "Next action:" in line
+        and "no migration action required" not in line.lower()
+    ]
+    if result != 0 or error_details:
+        recommendation = "Resolve the diagnosis error shown below before relying on this status."
+    elif any("same-name User/Project Skill:" in item for item in findings):
+        recommendation = (
+            "Compare both Skill definitions; do not assume host-specific precedence."
+        )
+    elif any("Unified duplicate contents:" in item for item in findings):
+        recommendation = (
+            "Confirm host-specific Skill selection behavior; identical copies do not prove precedence."
+        )
+    elif recommendations:
+        recommendation = recommendations[0]
+    elif health == "NOT INSTALLED":
+        recommendation = "Install DevConcord only if you intend to use its Agent Skill."
+    else:
+        recommendation = "No action required."
+
+    print("DevConcord Skill Health")
+    print(f"Status: {health}")
+    if statuses:
+        print("Scope status: " + "; ".join(statuses))
+    print("Issues:")
+    if findings:
+        print(f"- Most important issue: {findings[0]}")
+        for finding in findings[1:3]:
+            print(f"- Also: {finding}")
+        if len(findings) > 3:
+            print(f"- and {len(findings) - 3} more; see detailed diagnostics")
+    else:
+        print("- None detected")
+    print(f"Recommended next action: {recommendation}")
+    if details:
+        print("\nDetailed diagnostics:")
+        print(details, end="" if details.endswith("\n") else "\n")
+    if error_details:
+        print("\nDiagnostic errors:", file=sys.stderr)
+        print(error_details, end="" if error_details.endswith("\n") else "\n", file=sys.stderr)
+    return result
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -2,12 +2,37 @@
 
 日常の変更で使う最小手順です。各項目の詳しい背景や例は[AI支援開発ガイド](ai-assisted-development.md)の該当節を参照してください。すべての手法・成果物を全プロジェクトに強制するものではありません。
 
+日常の依頼では内部workflow名を覚える必要はありません。目的、対象、委任範囲、変更してはいけない条件を指定します。AIは対象リポジトリの指示と現状から必要なworkflow・資料・検証を選び、権限や重要な判断が変わる場合にだけ確認します。
+
+```text
+課題表から次の重要課題を一つ選んで進めてください。
+承認済みの範囲で実装・検証し、必要な正本だけを更新してください。
+失敗・未実施の検証、ブロッカー、承認が必要な判断を優先して報告してください。
+```
+
 ## 開発の流れ
 
 ```text
-目的・要求 → ドメインと制約 → 受け入れ条件 → 設計判断 → 小さな変更
-           → 独立した検証 → レビュー → 課題・資料を更新
+人間: 目的・対象・委任範囲・制約を指定
+           ↓
+AI: 対象の指示・正本・現状から必要なworkflowと検証を選択
+           ↓
+実装・検証 → 関係する正本だけを更新 → 結果と例外を報告
 ```
+
+## 検証選択
+
+変更した面とリスクから必要な既存検証を選びます。すべての変更で全コマンドを実行する必要はありません。CIの回帰検査はローカルの選択実行にかかわらず維持します。
+
+| 変更面 | 検証の入口 |
+|---|---|
+| Markdown・リンク・テンプレート | `python3 scripts/validate_docs.py` と `npx --yes markdownlint-cli2@0.23.3 "**/*.md"` |
+| Skillのfrontmatter・内部ルーティング・参照 | `python3 scripts/manage_skills.py validate` と `python3 -B -m unittest discover -s tests -p 'test_agent_skills.py' -v` |
+| Skill管理CLI・manifest・移行・復旧 | `python3 -B -m unittest discover -s tests -p 'test_manage_skills.py' -v` と操作別の失敗・復旧テスト |
+| Issue・DEC・ADR・Risk・HANDOFF規約 | `python3 -B -m unittest discover -s tests -p 'test_agent_skills.py' -v` と該当する統合fixture |
+| 複数領域にまたがる変更、または回帰範囲が不明 | `python3 -B -m unittest discover -s tests -v` と必要な追加検証 |
+
+コマンドはリポジトリの依存関係・CI・既存手順に合わせます。未実施の検証は成功として扱わず、ホスト実機・リモートCI・実エージェントの証拠とローカル静的検査を区別します。
 
 ## 作業開始前
 

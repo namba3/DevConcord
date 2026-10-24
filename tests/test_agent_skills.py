@@ -62,6 +62,47 @@ def module(category: str, name: str) -> Path:
 
 
 class UnifiedSkillArchitectureTests(unittest.TestCase):
+    def test_natural_language_intents_route_without_expanding_authority(self) -> None:
+        routing = (PACKAGE / "references" / "routing.md").read_text(encoding="utf-8")
+        shared = (PACKAGE / "references" / "shared-contracts.md").read_text(encoding="utf-8")
+        for phrase in (
+            "next important issue in the existing tracker",
+            "next few issues",
+            "what is preventing this work",
+            "open decision and recommend a choice",
+            "Resume the interrupted work",
+            "Stabilize quality without adding features",
+        ):
+            with self.subTest(intent=phrase):
+                self.assertIn(phrase, routing)
+        self.assertIn("select the smallest procedure", routing)
+        self.assertIn("never grants broader edit", routing)
+        self.assertIn("Inspect repository evidence before asking", shared)
+        self.assertIn("routine workflow choice internally", shared)
+
+    def test_shared_contracts_cover_canonical_updates_reporting_and_verification(self) -> None:
+        shared = (PACKAGE / "references" / "shared-contracts.md").read_text(encoding="utf-8")
+        for contract in (
+            "update only canonical records",
+            "report it as incomplete",
+            "Omit empty sections",
+            "Select local checks from the changed surfaces",
+            "Keep broad CI regression coverage intact",
+        ):
+            with self.subTest(contract=contract):
+                self.assertIn(contract, shared)
+        decision = (MODULES / "development" / "devconcord-decision-resolution" / "references" / "workflow.md").read_text(encoding="utf-8")
+        self.assertIn("Before escalating, finish safe, decision-changing inspection", decision)
+
+    def test_quick_start_and_verification_guide_start_from_human_intent(self) -> None:
+        quick = (ROOT / "docs/common/ai-development-quick-reference.md").read_text(encoding="utf-8")
+        getting_started = (ROOT / "docs/getting-started.md").read_text(encoding="utf-8")
+        self.assertIn("内部workflow名を覚える必要はありません", quick)
+        self.assertIn("## 検証選択", quick)
+        self.assertIn("CIの回帰検査", quick)
+        self.assertIn("ふだんの開発を依頼する", getting_started)
+        self.assertIn("承認済みの範囲で実装・検証", getting_started)
+
     def test_only_one_public_official_skill_is_discoverable(self) -> None:
         public = sorted(path.name for path in SKILLS_ROOT.iterdir() if (path / "SKILL.md").is_file())
         self.assertEqual(public, ["devconcord"])
@@ -213,7 +254,8 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         fixture = ROOT / "tests" / "integration" / "fixtures" / "decision-resolution"
         for relative in (
             "README.md", "docs/requirements.md", "docs/adr.md", "docs/issues.md",
-            "docs/risks.md", "docs/handoff.md", "src/exporter.py", "tests/test_exporter.py",
+            "docs/risks.md", "docs/handoff.md", "docs/parser.md", "src/exporter.py",
+            "src/parser.py", "tests/test_exporter.py", "tests/test_parser.py",
         ):
             with self.subTest(fixture_file=relative):
                 self.assertTrue((fixture / relative).is_file())
@@ -221,6 +263,23 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertIn("DEC-1001", issues)
         self.assertIn("ISS-1003", issues)
         self.assertIn("Product owner", issues)
+
+    def test_agent_evaluation_separates_routing_and_specialist_use_effects(self) -> None:
+        evaluation = (ROOT / "tests/integration/README.md").read_text(encoding="utf-8")
+        self.assertIn("Natural-language routing before/after evaluation", evaluation)
+        self.assertIn("Decision Resolution workflow-use evaluation", evaluation)
+        self.assertIn("not evidence that natural-language routing improved", evaluation)
+        self.assertIn("Developer effort and cognitive-load observations", evaluation)
+        self.assertIn("report cognitive-load improvement as unmeasured", evaluation)
+        self.assertIn("Explicit workflow selection and clarification", evaluation)
+        behavior_module = " ".join(
+            (MODULES / "evaluation" / "devconcord-agent-behavior-evaluation" / "module.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        self.assertIn("separate same-prompt revision comparisons", behavior_module)
+        self.assertIn("effort proxies", behavior_module)
+        self.assertIn("cognitive-load effects as unmeasured", behavior_module)
 
     def test_development_handoff_is_optional_evidence_context_not_a_parallel_ledger(self) -> None:
         template = ROOT / "docs" / "work-management" / "templates" / "handoff.md"

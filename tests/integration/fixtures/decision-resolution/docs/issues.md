@@ -8,7 +8,7 @@ All records below are synthetic evaluation data and do not belong to the DevConc
 |---|---|---|---|---|
 | ISS-1001 | Blocked | Add an optional provenance field to the public export | Preserve REQ-1001/1002; tests must cover compatibility and path privacy | DEC-1001; requires product-owner approval |
 | ISS-1002 | Blocked | Add a CLI option exposing export provenance | Preserve the existing CLI/output contract; do not reveal local paths | DEC-1001; requires product-owner approval |
-| ISS-1003 | Ready | Clarify internal parser error messages and documentation | No public response, stored data, or configuration changes | No known blocker; recheck current code and tests |
+| ISS-1003 | Ready | Clarify internal parser error messages and their documentation | Distinguish invalid input shape from missing `id` / `value`; keep exceptions free of raw input and filesystem paths; tests cover each failure; no public response, stored data, or configuration changes | No known blocker; recheck current code and tests |
 
 ## Open decisions
 

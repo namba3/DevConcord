@@ -82,6 +82,16 @@ uncertainty/evidence limits, authority required, consequences/work, and
 resolution conditions. For simple matters this may be a concise issue-register
 entry; a Decision Packet is optional and is not a second canonical record.
 
+Before escalating, finish safe, decision-changing inspection and comparison
+within the investigation budget. Lead a material escalation with a concise
+decision-ready summary: recommendation (if evidence supports one), strongest
+alternative, decisive reasons, unresolved evidence, the exact approval or
+preference needed, and safe work that can continue. Do not ask the human to
+repeat technical research the agent can perform safely. Escalate user
+preference or authority choices that repository evidence cannot settle; do
+not turn local implementation choices into approval requests when they
+preserve approved contracts.
+
 If clearly within delegated authority and consistent with approved contracts,
 record the decision in the canonical source. For material design decisions,
 create/update the ADR as authorized and link the DEC; do not copy ADR rationale

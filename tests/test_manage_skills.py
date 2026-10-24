@@ -1389,6 +1389,10 @@ Version: {version}
 
         self.assertEqual((result, stderr.getvalue()), (0, ""))
         self.assertIn("same-name User/Project Skill", stdout.getvalue())
+        self.assertIn("DevConcord Skill Health", stdout.getvalue())
+        self.assertIn("Status: NEEDS ATTENTION", stdout.getvalue())
+        self.assertIn("Most important issue: WARNING: same-name User/Project Skill", stdout.getvalue())
+        self.assertIn("Recommended next action: Compare both Skill definitions", stdout.getvalue())
         self.assertIn("precedence are not normalized", stdout.getvalue())
         self.assertEqual(
             (self.user_home / ".agents" / "skills" / "sample-skill" / "SKILL.md").read_bytes(),
@@ -1421,6 +1425,7 @@ Version: {version}
 
         result, output, error = self.run_user_operation("doctor")
         self.assertEqual((result, error), (0, ""))
+        self.assertIn("Status: HEALTHY", output)
         self.assertIn("Validated 1 DevConcord-managed Skill package", output)
         self.assertIn("separate from User Scope installation health", output)
 
@@ -2621,6 +2626,10 @@ Version: {version}
         self.assertIn("remove: .agents/skills/devconcord-repository-review", output)
         self.assertIn("install: .agents/skills/devconcord", output)
         self.assertIn("Migration status (planned): COMPLETE", output)
+        self.assertIn("Operation: DRY RUN", output)
+        self.assertIn("Expected outcome if applied: COMPLETE", output)
+        self.assertIn("Changes applied: NO", output)
+        self.assertIn("rerun with --apply", output)
         self.assertIn("Migration operation: PLANNED", output)
         self.assertIn("Dry run only", output)
         self.assertTrue(legacy.is_dir())
@@ -2643,6 +2652,12 @@ Version: {version}
         self.assertEqual(manage_skills._transaction_directories(self.target), [])
         self.assertEqual(self.run_operation("validate")[0], 0)
         applied_manifest = manifest_path.read_bytes()
+        result, dry_run_output, error = self.run_migration()
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Operation: DRY RUN", dry_run_output)
+        self.assertIn("Changes applied: NO", dry_run_output)
+        self.assertIn("no migration changes are required", dry_run_output)
+        self.assertIn("--apply is unnecessary", dry_run_output)
         result, second_output, error = self.run_migration(apply=True)
         self.assertEqual((result, error), (0, ""))
         self.assertIn("Migration status (applied): COMPLETE", second_output)
@@ -2724,6 +2739,10 @@ Version: {version}
                 result = manage_skills._run(args)
 
         self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertTrue(stdout.getvalue().startswith("DevConcord Skill Health\n"))
+        self.assertIn("Status: NEEDS ATTENTION", stdout.getvalue())
+        self.assertIn("Most important issue: Orphan legacy manifest record:", stdout.getvalue())
+        self.assertIn("Recommended next action:", stdout.getvalue())
         self.assertIn("Orphan legacy manifest record:", stdout.getvalue())
         self.assertIn("Migration status: BLOCKED", stdout.getvalue())
         self.assertFalse((self.target / ".agents/skills/devconcord-repository-review").exists())

@@ -26,7 +26,7 @@
 
 ### 旧Skillインストールの移行
 
-統合前の公式24名だけを旧Skill候補として認識します。名前の接頭辞だけでは削除対象とせず、管理記録、現在の導入先ハッシュ、DevConcord source identity、完全なsource commit、記録されたsource tree hashを照合します。確認できない管理済み記録は削除せず、診断として残します。未管理の似た名前、別source、ローカル変更は削除しません。旧Skill群が導入されている環境は、対象Scopeごとにまずdry-runします。Project Scopeでは `--target` を指定します。出力は操作段階（`PLANNED` / `APPLIED` / `BLOCKED` / `RECOVERY REQUIRED`）と移行内容の状態（`COMPLETE` / `PARTIAL` / `BLOCKED`）を区別します。dry-runで削除予定を削除済みと表示せず、`APPLIED` はtransaction完了後に導入先とmanifestを再検証してから報告します。`PARTIAL` は移行操作が成功していても、保護・保留された旧Skillが残る状態です。前提競合は`BLOCKED`、未解決journalは`RECOVERY REQUIRED` として扱い、同じScope/targetの `recover` を先に実行します。既存CLIとの互換性を保ち、部分移行だけを理由に終了コードは変更しません。
+統合前の公式24名だけを旧Skill候補として認識します。名前の接頭辞だけでは削除対象とせず、管理記録、現在の導入先ハッシュ、DevConcord source identity、完全なsource commit、記録されたsource tree hashを照合します。確認できない管理済み記録は削除せず、診断として残します。未管理の似た名前、別source、ローカル変更は削除しません。旧Skill群が導入されている環境は、対象Scopeごとにまずdry-runします。Project Scopeでは `--target` を指定します。出力は操作段階（`PLANNED` / `APPLIED` / `BLOCKED` / `RECOVERY REQUIRED`）と移行内容の状態（`COMPLETE` / `PARTIAL` / `BLOCKED`）を区別します。dry-runは `Operation: DRY RUN`、適用時の予測、`Changes applied: NO` を示します。安全な変更がある場合は `--apply` 付きで再実行し、変更がなければ適用不要と表示します。dry-runで削除予定を削除済みと表示せず、`APPLIED` はtransaction完了後に導入先とmanifestを再検証してから報告します。`PARTIAL` は移行操作が成功していても、保護・保留された旧Skillが残る状態です。前提競合は`BLOCKED`、未解決journalは`RECOVERY REQUIRED` として扱い、同じScope/targetの `recover` を先に実行します。既存CLIとの互換性を保ち、部分移行だけを理由に終了コードは変更しません。
 
 ```sh
 python3 scripts/manage_skills.py migrate --scope user
@@ -41,7 +41,7 @@ python3 scripts/manage_skills.py migrate --scope user --allow-duplicate-discover
 python3 scripts/manage_skills.py migrate --scope user --allow-duplicate-discovery --apply
 ```
 
-導入先ハッシュが旧manifestと一致し、source identity・commit・記録済みsource hashも検証できる管理済みSkillだけが削除対象です。ローカル編集、manifestのみの記録、未管理ディレクトリ、既存トランザクションは保護され、競合時は停止します。結果には対象scope/agent、削除予定・削除済み、保護理由、次の安全な操作を表示します。完全に削除され、全探索先とmanifestに記録が残らない旧公式Skillのduplicate-discovery許可だけを、Skill削除と同じjournal付きmanifest更新で整理します。管理外コピー・残存記録・別名の許可は保持します。`doctor` はUser Scopeの残存状態を常に診断し、`--target` 指定時はProject Scopeも読み取り専用で診断します。適用後の失敗は `recover` でjournalを検査し、rollbackまたは完了状態を確認してください。`install`/`sync` は統合パッケージ全体を扱い、旧 `--skills` 引数は `migrate` の案内付きで拒否されます。
+導入先ハッシュが旧manifestと一致し、source identity・commit・記録済みsource hashも検証できる管理済みSkillだけが削除対象です。ローカル編集、manifestのみの記録、未管理ディレクトリ、既存トランザクションは保護され、競合時は停止します。結果には対象scope/agent、削除予定・削除済み、保護理由、次の安全な操作を表示します。完全に削除され、全探索先とmanifestに記録が残らない旧公式Skillのduplicate-discovery許可だけを、Skill削除と同じjournal付きmanifest更新で整理します。管理外コピー・残存記録・別名の許可は保持します。`doctor` は全体状態・重要な問題・次の安全な操作を先頭に表示した後、詳細診断を続けます。User Scopeの残存状態を常に診断し、`--target` 指定時はProject Scopeも読み取り専用で診断します。適用後の失敗は `recover` でjournalを検査し、rollbackまたは完了状態を確認してください。`install`/`sync` は統合パッケージ全体を扱い、旧 `--skills` 引数は `migrate` の案内付きで拒否されます。
 
 ## User Scope
 

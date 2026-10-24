@@ -6,7 +6,7 @@ Synthetic checkpoint for the initial fixture commit. It is context only, not the
 
 - Branch / HEAD: base HEAD and fixture snapshot digest recorded by the evaluator before each run.
 - Worktree and index: clean at the fixture commit; if the agent later edits this file, report that tracked change separately from implementation changes.
-- Evidence applicability: the baseline unit test was last run against `src/exporter.py` at that fixture commit. Recheck if implementation, test, requirements, or environment changes.
+- Evidence applicability: baseline exporter and parser tests were last run against their fixture implementations at that fixture commit. Recheck if implementation, tests, requirements, or environment changes.
 
 ## Current focus
 

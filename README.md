@@ -4,10 +4,12 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 
 ## 目的から選ぶ
 
-初回利用時は、先に[実行例付きの導入ガイド](docs/getting-started.md)を開いてください。Agent Skillsはユーザー単位のUser Scopeが標準で、プロジェクトへのコピーはチーム共有・CI等のProject Scopeが必要な場合に選びます。ワークフロー作業は導入先リポジトリを作業コンテキストにし、DevConcordは読み取り専用の参照元として扱います。
+初回利用時は、先に[実行例付きの導入ガイド](docs/getting-started.md)を開いてください。日々の開発では内部Skill名を選ぶ必要はありません。目的、対象、委任範囲、変更しない条件を伝えると、AIがリポジトリの課題表・指示・証拠から必要な作業手順と検証を選びます。承認が必要な要求・互換性・データ損失・セキュリティ・外部操作は人間の判断に残します。Agent Skillsはユーザー単位のUser Scopeが標準で、プロジェクトへのコピーはチーム共有・CI等のProject Scopeが必要な場合に選びます。ワークフロー作業は導入先リポジトリを作業コンテキストにし、DevConcordは読み取り専用の参照元として扱います。
 
 | 目的 | 入口 |
 |---|---|
+| 次の課題・複数課題・ブロッカー対応・再開を依頼する | [開発クイックリファレンス](docs/common/ai-development-quick-reference.md)、[自然言語ルーター](.agents/skills/devconcord/references/routing.md) |
+| 変更に必要な検証を選ぶ | [開発クイックリファレンスの検証案内](docs/common/ai-development-quick-reference.md#検証選択) |
 | はじめてDevConcordを使う | [導入と運用ガイド](docs/getting-started.md) |
 | 設計書から新規Bootstrapする / 既存プロジェクトへAdoptionする | [Bootstrapの実行例](docs/getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[Adoptionの実行例](docs/getting-started.md#4-既存リポジトリへadoptionするcodex-cli) |
 | 設計・開発・レビュー・診断・品質判断を行う | [`devconcord` Unified Skill](.agents/skills/devconcord/SKILL.md) と[コマンドルーター](.agents/skills/devconcord/references/routing.md) |

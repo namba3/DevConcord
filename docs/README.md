@@ -6,6 +6,8 @@
 
 公開Agent Skillはリポジトリルートの [`.agents/skills/devconcord/`](../.agents/skills/devconcord/) にある `devconcord` 一つです。内部モジュールは `references/modules/` に整理し、個別Skillとして公開しません。`manage_skills.py reference` は出典・版・パスを検証して内容を返す決定的なCLIです。作業別のルーティングと導入/移行手順は[Agent Skills運用ガイド](agent-skills.md)を参照してください。Skill非対応環境では、`SKILL.md` と必要な内部モジュールの全文を対象エージェントへ渡します。
 
+日々の開発では、内部モジュール名ではなく目的・対象・委任範囲・制約を伝えます。最初の依頼例と検証選択は[AI開発クイックリファレンス](common/ai-development-quick-reference.md)、初回セットアップと利用例は[はじめての導入と運用](getting-started.md)にあります。以下の資料一覧は必要な詳細を探すときに使い、全項目を毎回読む必要はありません。
+
 ## 共通
 
 | 資料 | 用途 |

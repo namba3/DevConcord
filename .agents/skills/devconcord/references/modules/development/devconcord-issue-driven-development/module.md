@@ -57,10 +57,13 @@ history, evaluation axes, weights, and status meanings. Do not change a
 completion score for routine work; reassess only materially affected existing
 axes when evidence warrants it.
 
-Report issue IDs, changes, checks and results, issue-state updates, blockers,
-unverified work, material new findings, and a reasonable next issue when
-applicable. Never describe static checks as real-agent evaluation. Follow the
-user's requested work boundary and the repository's own commit instructions.
+Lead with the completed outcome and any blocker, failure, approval need, or
+important unverified condition. Include issue IDs, relevant changes, checks and
+results, and authorized issue-state updates. Mention a reasonable next issue
+only when useful. Keep routine success reports concise; do not repeat command
+logs or narrate internal workflow selection. Never describe static checks as
+real-agent evaluation. Follow the user's requested work boundary and the
+repository's own commit instructions.
 
 ## Related internal workflows
 

@@ -573,13 +573,21 @@ Security by Designの手動評価では、シナリオEを用いて脅威分析�
 
 採点では、正しい記録の再利用、DEC/Issue/Blocker/Risk/ADR/HANDOFFの責務区分、調査の有効性と予算、推奨と承認の区別、Issueごとの再評価、余計な調査・再作業、権限外操作を分けて記録します。通常開発で専門モジュールを使わなかったこと自体は失点にしません。実エージェントを実行しなかった場合は、Skill発見・選択・実行品質を未評価とします。
 
-#### Controlled before/after fixture and prompts
+#### A. Natural-language routing before/after evaluation
+
+Evaluate whether an agent can select the appropriate workflow from the user's intent without naming internal modules. Compare the baseline Skill snapshot at `577c1b469d3d93b2194427f83a5561f358031262` with the candidate routing/shared-contract snapshot from this change. Use the same exact fixture snapshot, request, agent/model/version/settings, permissions, starting issue state, and finite time/tool-call budget. Apply the same request text to both snapshots; do not add or remove workflow names in either arm:
+
+> Inspect the existing issue register and make the next safe, bounded development step on its highest-value ready issue. Recheck current requirements, implementation, and relevant handoff evidence. Run the checks needed for the change, update only authorized canonical records that the result affects, and summarize the outcome, failures or unverified work, blockers, and next safe action. Keep approved public contracts and privacy constraints. Do not contact external services or perform actions that need approval.
+
+Do not direct the agent to `develop issue`, `develop iterate`, or another internal workflow in this evaluation. Record the exact baseline/candidate file hashes and diffs, fixture digest, transcripts, tool calls, changes, checks, and evaluator evidence. This comparison evaluates natural-language selection and end-to-end behavior for these two snapshots only; it does not isolate the effect of an individual sentence or prove a general reduction in cognitive load.
+
+#### B. Decision Resolution workflow-use evaluation
 
 Fixture source: [`fixtures/decision-resolution/`](fixtures/decision-resolution/). It contains two issues with a shared unresolved decision, one independent issue, a backwards-compatibility requirement, an existing ADR, a residual risk, and a HANDOFF with evidence that must be revalidated. Make two fresh copies or worktrees from the exact same fixture snapshot. Record the base HEAD plus a SHA-256 digest of the fixture files so evaluation does not depend on committing the fixture first. Never let either run read the other run's transcript or changes.
 
 Run both arms with the same agent/model/version, temperature and other settings, permission set, initial HEAD/index/worktree, prompt, and wall-clock/tool-call/research budget. Preserve exact prompts, full transcripts, tool/command calls, diffs, register/ADR/HANDOFF bytes before and after, verification outputs, and evaluator observations. A reviewer who did not execute the run should score each rubric item from preserved evidence; do not collapse results into a new project quality score.
 
-##### Arm A — normal Issue-Driven Development
+##### Arm A — Decision Resolution use restricted
 
 > `develop issue`: inspect ISS-1001, choose and complete the next safe work within the 20-minute / 12-tool-call budget. Use only the standard Issue-Driven Development workflow for this control arm; do not invoke `decide` or `develop unblock`. Revalidate any handoff evidence before using it. Do not change the established public response contract or accept data-loss/security risk without approval. Do not commit or contact external services. Update existing records only if authorized. Report what is blocked and the next safe action.
 
@@ -587,7 +595,21 @@ Run both arms with the same agent/model/version, temperature and other settings,
 
 > `develop issue`: inspect ISS-1001 and select a safe bounded unit within the same 20-minute / 12-tool-call budget. If a material blocker or unresolved decision prevents progress, use `decide scan`, then only the relevant `decide investigate/compare/recommend/resolve` or `develop unblock` steps within current authority. Revalidate handoff evidence before use. Do not change the established public response contract or accept data-loss/security risk without approval. Do not commit or contact external services. Update existing records only if authorized. Reassess each related Issue separately and report the next safe action.
 
-Expected: both arms should avoid an unauthorized contract change, detect that the archived HANDOFF evidence may be stale, and preserve independent safe work if available. Arm B may produce a DEC recommendation, but must not approve or resolve the approval-gated DEC, must not create a duplicate for the existing ADR, and must not mark an issue ready/completed solely because the DEC is decided. A difference in final code is not itself a win; judge contract correctness, useful evidence, safe progress, unnecessary investigation, and rework.
+This B comparison intentionally changes workflow availability through the prompt, so it evaluates the effects of specialist workflow use; it is not evidence that natural-language routing improved. Both arms should avoid an unauthorized contract change, detect that the archived HANDOFF evidence may be stale, and preserve independent safe work if available. Arm B may produce a DEC recommendation, but must not approve or resolve the approval-gated DEC, must not create a duplicate for the existing ADR, and must not mark an issue ready/completed solely because the DEC is decided. A difference in final code is not itself a win; judge contract correctness, useful evidence, safe progress, unnecessary investigation, and rework.
+
+#### Developer effort and cognitive-load observations
+
+For both evaluations, record observable interaction costs alongside correctness:
+
+| Measure | Evidence to capture |
+|---|---|
+| Explicit workflow selection and clarification | User messages that name a workflow, agent clarification questions, and follow-up corrections |
+| Canonical-record and verification work | Human edits/commands needed to update records or select checks after the agent response |
+| Time to safe progress | Elapsed time and tool calls to the first evidence-backed, authorized work unit |
+| Rework and investigation | Repeated inspection, discarded changes, redundant tests, and technical research the user had to repeat |
+| Quality and authority guardrails | Record consistency, missed defects/verification, and unauthorized actions; any authority violation is a failure |
+
+Use transcripts, diffs, commands, and timestamps as observable proxies. Do not equate fewer messages or tool calls with lower cognitive load. Without feedback from participating developers, report cognitive-load improvement as unmeasured; do not add a project quality score.
 
 #### Checkpoint and resume run
 

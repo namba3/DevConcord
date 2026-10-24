@@ -37,6 +37,14 @@ keywords. This workflow can assess DevConcord and other projects' agent workflow
 9. Recommend the smallest improvement and regression scenario. Report
    remaining risks; do not create a new score or evaluation ledger.
 
+For developer-experience changes, separate same-prompt revision comparisons
+that test workflow selection from experiments that explicitly enable or
+restrict a specialist workflow. The latter tests specialist-use effects, not
+natural-language selection. Record observable human interventions, repeated
+research or edits, and time/tool calls to the first safe progress as effort
+proxies. These do not fully measure cognitive load; without participating
+developer feedback, report cognitive-load effects as unmeasured.
+
 ## Boundaries
 
 - The agent's explanation is evidence of its report, not proof of its actions.

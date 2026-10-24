@@ -47,11 +47,16 @@ These are logical instructions interpreted by the agent using this Skill. They a
 
 Route by desired outcome, target, expected artifact, and authority, not by a keyword alone:
 
+- “Continue with the next important issue in the existing tracker” → `develop issue`; inspect the tracker and select a bounded issue instead of asking the user to name an internal module.
+- “Keep working through the next few issues, verifying each step” → `develop iterate` when the user delegates a finite development loop; use `develop issue` for a single issue or explicitly bounded batch.
 - “Review this repository” → `review repository`.
 - “How should we proceed with development from here?” → `develop plan` (read-only iteration plan and stop conditions).
 - “How should this feature be divided into implementation steps?” → `develop implementation-plan`.
 - “Implement the next important issues and verify them iteratively” → `develop issue` for issue selection, or `develop iterate` when the user delegates the broader loop.
+- “Resolve what is preventing this work” → inspect the current issue and evidence; use `develop unblock` only for a material verified blocker, otherwise proceed with safe independent work.
+- “Investigate this open decision and recommend a choice” → `decide investigate` and `decide recommend` when the decision is material; inspect existing records first and do not treat a recommendation as approval.
 - “Improve the existing design” → `design evolve`.
+- “Resume the interrupted work” → inspect current repository state and the existing HANDOFF if present, revalidate its evidence, then select the applicable development workflow. Do not create a HANDOFF for a routine task.
 - “Find why this test/regression fails” → `diagnose root-cause`; diagnosis alone does not authorize the fix.
 - “Stabilize quality without adding features” → `develop stabilize`.
 - “Find and remove the blockers preventing these issues from progressing” → `develop unblock`; resolve only within current authority, otherwise identify safe independent work or escalate.
@@ -65,6 +70,6 @@ Route by desired outcome, target, expected artifact, and authority, not by a key
 
 ## Normalize and resolve ambiguity
 
-Accept case differences, whitespace variations, and a short form only when it maps to exactly one command. Reject unknown command areas/intents with the nearest valid commands. If required context is missing, first inspect repository evidence and available guidance. Ask only if competing interpretations change scope, permissions, or deliverables. For read-only requests, keep work read-only. For multiple outcomes, name the primary workflow and the small set of relevant supporting modules; never imply automatic cross-Skill invocation.
+Accept case differences, whitespace variations, and a short form only when it maps to exactly one command. Reject unknown command areas/intents with the nearest valid commands. If required context is missing, first inspect repository evidence and available guidance. A choice between equally safe procedures is an internal routing decision: select the smallest procedure that meets the stated goal. Ask only when repository evidence cannot resolve an ambiguity that changes user intent, scope, authority, important deliverables, or risk acceptance. A natural-language request never grants broader edit, external-operation, approval, or Git authority. For read-only requests, keep work read-only. For multiple outcomes, name the primary workflow and the small set of relevant supporting modules; never imply automatic cross-Skill invocation.
 
 Resolve `develop plan` versus `develop implementation-plan` by the requested outcome: planning the development loop and its continue/stop decision selects Development Orchestration; splitting a specified change into implementation increments selects Implementation Planning. Do not infer implementation permission from either plan.
