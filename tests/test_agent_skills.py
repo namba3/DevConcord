@@ -95,6 +95,20 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertIn("公式公開Skillは `devconcord` の一つ", guidance)
         self.assertIn("Development Orchestrationの標準品質ゲートに追加せず", guidance)
 
+    def test_reference_cli_uses_public_package_identity_for_all_internal_workflows(self) -> None:
+        package_docs = list((PACKAGE / "references" / "modules").rglob("*.md"))
+        security = module("quality", "devconcord-design-security").read_text(encoding="utf-8")
+        self.assertIn("requesting workflow context", security)
+        self.assertIn("--skill devconcord", security)
+        self.assertNotIn("this workflow's name as `--skill`", security)
+        for path in package_docs:
+            text = path.read_text(encoding="utf-8").lower()
+            self.assertNotRegex(
+                text,
+                r"(?:workflow|module)\s+name\s+as\s+`?--skill|`--skill`\s+(?:is|should be)\s+the\s+(?:workflow|module)",
+                msg=str(path.relative_to(PACKAGE)),
+            )
+
     def test_every_legacy_workflow_is_an_internal_module_without_skill_frontmatter(self) -> None:
         discovered = {
             category: {path.name for path in (MODULES / category).iterdir() if path.is_dir()}
@@ -173,10 +187,40 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
             with self.subTest(contract=contract):
                 self.assertIn(contract.lower(), (module_text + workflow_text).lower())
         self.assertIn("DEC-0001", issue_template)
+        self.assertIn("書式例", issue_template)
+        self.assertIn("実在の未決事項として登録しない", issue_template)
         self.assertIn("Related DEC ID", (ROOT / "docs" / "work-management" / "templates" / "handoff.md").read_text(
             encoding="utf-8"
         ))
         self.assertIn("Decision Resolution & Unblocking", issue_guide)
+
+    def test_issue_record_updates_do_not_force_quality_rescoring_and_fixture_is_present(self) -> None:
+        issue_guide = (ROOT / "docs" / "work-management" / "issue-tracking.md").read_text(
+            encoding="utf-8"
+        )
+        update_section = issue_guide.split("## 5. 課題表の更新手順", maxsplit=1)[1].split(
+            "## 6. ", maxsplit=1
+        )[0]
+        issue_module = module("development", "devconcord-issue-driven-development").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("通常のIssue/DEC状態", update_section)
+        self.assertIn("全10軸を再採点しない", update_section)
+        self.assertIn("明示的な完成度監査・リリース判定", update_section)
+        normalized_issue_module = " ".join(issue_module.lower().split())
+        self.assertIn("do not change a completion score for routine work", normalized_issue_module)
+
+        fixture = ROOT / "tests" / "integration" / "fixtures" / "decision-resolution"
+        for relative in (
+            "README.md", "docs/requirements.md", "docs/adr.md", "docs/issues.md",
+            "docs/risks.md", "docs/handoff.md", "src/exporter.py", "tests/test_exporter.py",
+        ):
+            with self.subTest(fixture_file=relative):
+                self.assertTrue((fixture / relative).is_file())
+        issues = (fixture / "docs" / "issues.md").read_text(encoding="utf-8")
+        self.assertIn("DEC-1001", issues)
+        self.assertIn("ISS-1003", issues)
+        self.assertIn("Product owner", issues)
 
     def test_development_handoff_is_optional_evidence_context_not_a_parallel_ledger(self) -> None:
         template = ROOT / "docs" / "work-management" / "templates" / "handoff.md"

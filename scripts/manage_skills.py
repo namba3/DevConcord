@@ -2164,6 +2164,9 @@ def _apply(
                     f"post-commit error ({type(error).__name__})."
                 )
                 return
+            raise SkillManagementError(
+                f"{error}; transaction rollback was verified"
+            ) from error
         else:
             shutil.rmtree(transaction_root, ignore_errors=True)
         raise
@@ -2241,6 +2244,9 @@ def _run(args: argparse.Namespace) -> int:
 
     if args.command == "migrate":
         lock_path: Path | None = None
+        source_root = DEFAULT_SOURCE.resolve()
+        discovery_paths = GLOBAL_DISCOVERY_PATHS if scope == "user" else DISCOVERY_PATHS
+        apply_completed = False
         try:
             explicit_source = getattr(args, "source", None)
             configured_source = (
@@ -2282,7 +2288,6 @@ def _run(args: argparse.Namespace) -> int:
                     + ", ".join(path.name for path in pending)
                 )
             expected_manifest = _read_expected_manifest(target_root)
-            discovery_paths = GLOBAL_DISCOVERY_PATHS if scope == "user" else DISCOVERY_PATHS
             result = _migration_plan(
                 target_root, source_root, requested_agents, scope=scope,
                 discovery_paths=discovery_paths,
@@ -2290,7 +2295,7 @@ def _run(args: argparse.Namespace) -> int:
             )
             actions, manifest, manifest_path, _migrated, _duplicate, dirty, revision, repository, details = result
             for (action, _src, name, _hash, _old, _exec), relative in actions:
-                print(f"{action}: {relative}/{name}")
+                print(f"Planned action: {action}: {relative}/{name}")
             print(f"Source: {repository} @ {revision}")
             print(f"Scope: {scope} ({target_root})")
             print(f"Agents: {', '.join(details['agents'])}")
@@ -2308,18 +2313,18 @@ def _run(args: argparse.Namespace) -> int:
                 ),
                 None,
             )
-            phase = "planned" if not args.apply else "applied"
-            print(f"Migration status ({phase}): {'PARTIAL' if partial else 'COMPLETE'}")
+            planned_status = "PARTIAL" if partial else "COMPLETE"
+            print(f"Migration status (planned): {planned_status}")
             print(
                 "Unified package: "
                 + (f"devconcord will be {'installed' if unified_operation == 'install' else 'updated'}" if unified_operation else
                    "devconcord: installed (unchanged)" if not args.apply and planned_unified else
                    "devconcord: installed" if planned_unified else "devconcord: not installed")
             )
-            print("Removed legacy Skills:")
+            print("Planned legacy removals:")
             for item in details["removed"]:
-                print(f"  {item}" if args.apply else f"  planned: {item}")
-            print("Preserved:")
+                print(f"  {item}")
+            print("Planned preservation:")
             for item in details["preserved"]:
                 print(f"  {item}")
             for item in details["unmanaged"]:
@@ -2334,20 +2339,110 @@ def _run(args: argparse.Namespace) -> int:
                     "resolution is host-dependent and has not been verified."
                 )
             if not args.apply:
+                print("Migration operation: PLANNED (no files or manifest changed)")
                 print("Dry run only; pass --apply to migrate files and manifest.")
                 return 0
             _apply(actions, target_root, manifest, manifest_path, dirty, revision, repository,
                    expected_manifest, discovery_paths)
+            apply_completed = True
             print(f"Migration transaction applied; manifest: {manifest_path}")
+            verified_result = _migration_plan(
+                target_root,
+                source_root,
+                requested_agents,
+                scope=scope,
+                discovery_paths=discovery_paths,
+                allow_duplicate_discovery=getattr(args, "allow_duplicate_discovery", False),
+            )
+            (
+                _verified_actions,
+                verified_manifest,
+                _verified_manifest_path,
+                _verified_migrated,
+                _verified_duplicate,
+                _verified_dirty,
+                _verified_revision,
+                _verified_repository,
+                verified_details,
+            ) = verified_result
+            expected_package_paths = set(_package_paths(requested_agents))
+            verified_package_paths = {
+                relative
+                for relative, package in verified_manifest["packages"].items()
+                if "devconcord" in package.get("skills", {})
+            }
+            remaining_removals = [
+                item
+                for item in details["removed"]
+                if (target_root / item).exists() or (target_root / item).is_symlink()
+            ]
+            if not expected_package_paths.issubset(verified_package_paths) or remaining_removals:
+                raise SkillManagementError(
+                    "post-apply verification did not confirm all unified packages and legacy removals"
+                )
+            applied_partial = bool(
+                verified_details["preserved_legacy"] or verified_details["unmanaged_legacy"]
+            )
+            print("Migration operation: APPLIED; resulting state verified")
+            print(
+                f"Migration status (applied): {'PARTIAL' if applied_partial else 'COMPLETE'}"
+            )
+            print("Removed legacy Skills (verified):")
+            for item in details["removed"]:
+                print(f"  {item}")
+            print("Preserved after apply:")
+            for item in verified_details["preserved"]:
+                print(f"  {item}")
+            for item in verified_details["unmanaged"]:
+                print(f"  {item} (unmanaged; preserved)")
+            if applied_partial:
+                print("Next action: inspect preserved Skill contents and provenance, then rerun migrate after resolution.")
+            else:
+                print("Next action: no migration follow-up required.")
             return 0
         except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
-            recovery = "recovery required" if "interrupted" in str(error).lower() else "BLOCKED"
-            print(f"Migration status: {recovery.upper()}", file=sys.stderr)
-            if recovery == "recovery required":
-                print("Next action: run scripts/manage_skills.py recover with the same scope/target (dry-run first).", file=sys.stderr)
+            try:
+                pending_transactions = _transaction_directories(target_root)
+            except (OSError, SkillManagementError, ValueError):
+                pending_transactions = [target_root]
+            recovery_required = bool(pending_transactions)
+            operation_status = (
+                "RECOVERY REQUIRED"
+                if recovery_required
+                else "VERIFICATION FAILED"
+                if apply_completed
+                else "BLOCKED"
+            )
+            print(f"Migration operation: {operation_status}", file=sys.stderr)
+            if recovery_required:
+                print("Migration content status: UNKNOWN until transaction recovery is assessed.", file=sys.stderr)
+                print("Rollback status: NOT CONFIRMED; inspect the transaction journal and recover safely.", file=sys.stderr)
+                print("Next action: inspect and run scripts/manage_skills.py recover with the same scope/target (dry-run first).", file=sys.stderr)
+            elif apply_completed:
+                print("Migration content status: CHANGED; post-apply verification did not complete.", file=sys.stderr)
+                print("Rollback status: NOT ATTEMPTED after the committed transaction; inspect actual state below.", file=sys.stderr)
+                print("Next action: inspect the actual state and repair or rerun verification before relying on this migration.", file=sys.stderr)
             else:
+                print("Migration content status: inspect the actual-state report below; no applied result is claimed.", file=sys.stderr)
+                print(
+                    "Rollback status: VERIFIED (returned to pre-migration state)."
+                    if "transaction rollback was verified" in str(error).lower()
+                    else "Rollback status: no pending transaction; inspect the actual-state report below.",
+                    file=sys.stderr,
+                )
                 print("Next action: resolve the reported precondition safely, then rerun migrate.", file=sys.stderr)
             print(f"ERROR: migration stopped safely: {error}", file=sys.stderr)
+            if not recovery_required and target_root.is_dir():
+                try:
+                    print("Actual state after failure:", file=sys.stderr)
+                    _diagnose_legacy_state(
+                        target_root,
+                        scope="User Scope" if scope == "user" else "Project Scope",
+                        discovery_paths=discovery_paths,
+                        source_root=source_root,
+                    )
+                except (SkillManagementError, OSError, ValueError, UnicodeError) as diagnosis_error:
+                    print(f"Actual-state diagnosis unavailable: {diagnosis_error}", file=sys.stderr)
             return 2
         finally:
             if lock_path is not None:
@@ -2610,7 +2705,9 @@ def _config_command(args: argparse.Namespace) -> int:
         return 2
 
 
-def _validate_user_installation(home: Path) -> list[str]:
+def _validate_user_installation(
+    home: Path, *, defer_legacy_diagnosis: bool = False
+) -> list[str]:
     manifest_path = home / MANIFEST_PATH
     if manifest_path.is_symlink():
         return ["user Skill manifest must not be a symlink"]
@@ -2631,6 +2728,8 @@ def _validate_user_installation(home: Path) -> list[str]:
             root = home / relative
             _check_destination_path(home, root)
             for name, record in package["skills"].items():
+                if defer_legacy_diagnosis and name.casefold() in LEGACY_DEVCONCORD_SKILLS:
+                    continue
                 names.add(name)
                 managed.setdefault(name, set()).update(package["agents"])
                 skill_dir = root / name
@@ -2656,9 +2755,15 @@ def _validate_user_installation(home: Path) -> list[str]:
                 state, manifest, allow_duplicates=False
             )
             errors.extend(conflicts)
-        count = sum(len(package["skills"]) for package in manifest["packages"].values())
+        count = sum(
+            1
+            for package in manifest["packages"].values()
+            for name in package["skills"]
+            if not defer_legacy_diagnosis or name.casefold() not in LEGACY_DEVCONCORD_SKILLS
+        )
         if not errors:
-            print(f"Validated {count} DevConcord-managed Skill package(s) in User Scope")
+            suffix = "; legacy Skills reported separately" if defer_legacy_diagnosis else ""
+            print(f"Validated {count} DevConcord-managed Skill package(s) in User Scope{suffix}")
         return errors
     except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
         return [f"cannot validate User Scope Skills safely ({type(error).__name__}: {error})"]
@@ -2962,6 +3067,7 @@ def _diagnose_legacy_state(
     }
     candidates: dict[str, list[tuple[str, Path]]] = {}
     unified_present_paths: set[str] = set()
+    observed_legacy_records: set[tuple[str, str]] = set()
     for relative in discovery_paths:
         root = target_root / relative
         _check_destination_path(target_root, root)
@@ -2973,10 +3079,25 @@ def _diagnose_legacy_state(
             name = entry.name.casefold()
             if name in LEGACY_DEVCONCORD_SKILLS:
                 candidates.setdefault(name, []).append((relative, entry))
+                observed_legacy_records.add((relative, entry.name))
             elif name == "devconcord":
                 unified_present_paths.add(relative)
 
     blockers: list[str] = []
+    for relative, package in package_records.items():
+        for name in package.get("skills", {}):
+            if name.casefold() not in LEGACY_DEVCONCORD_SKILLS:
+                continue
+            if (relative, name) in observed_legacy_records:
+                continue
+            installed_path = target_root / relative / name
+            if installed_path.exists() or installed_path.is_symlink():
+                continue
+            print(
+                f"  Orphan legacy manifest record: {relative}/{name} "
+                "(installed directory missing; record preserved)"
+            )
+            blockers.append(f"orphan manifest record {relative}/{name}")
     unified_hashes_valid = True
     for relative in unified_record_paths:
         package_path = target_root / relative / "devconcord"
@@ -3144,7 +3265,9 @@ def _doctor_command(args: argparse.Namespace) -> int:
         if manifest_path.exists():
             manifest, _migrated = _read_manifest(manifest_path)
             if not _transaction_directories(home):
-                errors = _validate_user_installation(home)
+                errors = _validate_user_installation(
+                    home, defer_legacy_diagnosis=True
+                )
                 if errors:
                     raise SkillManagementError("; ".join(errors))
             for package_path, package in manifest["packages"].items():
@@ -3164,7 +3287,7 @@ def _doctor_command(args: argparse.Namespace) -> int:
 
         target = getattr(args, "target", None)
         if target is None:
-            print(f"User Scope Skills validated: {len(managed)}")
+            print(f"User Scope manifest records inspected: {len(managed)}")
             return 0
         project = target.expanduser().resolve()
         if not project.is_dir():

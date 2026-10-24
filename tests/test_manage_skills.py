@@ -2621,6 +2621,7 @@ Version: {version}
         self.assertIn("remove: .agents/skills/devconcord-repository-review", output)
         self.assertIn("install: .agents/skills/devconcord", output)
         self.assertIn("Migration status (planned): COMPLETE", output)
+        self.assertIn("Migration operation: PLANNED", output)
         self.assertIn("Dry run only", output)
         self.assertTrue(legacy.is_dir())
         self.assertFalse((self.target / ".agents/skills/devconcord").exists())
@@ -2629,6 +2630,11 @@ Version: {version}
         result, output, error = self.run_migration(apply=True)
 
         self.assertEqual((result, error), (0, ""))
+        self.assertLess(
+            output.index("Migration transaction applied"),
+            output.index("Migration status (applied): COMPLETE"),
+        )
+        self.assertIn("Removed legacy Skills (verified):", output)
         self.assertIn("Migration status (applied): COMPLETE", output)
         self.assertFalse(legacy.exists())
         self.assertTrue((self.target / ".agents/skills/devconcord/SKILL.md").is_file())
@@ -2652,6 +2658,126 @@ Version: {version}
         )
         self.assertEqual((result, error), (0, ""))
         self.assertIn("Initial committed guidance.", output)
+
+    def test_migration_failure_does_not_report_applied_and_reports_rollback_state(self) -> None:
+        legacy = self.prepare_migration_source()
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        manifest_before = manifest_path.read_bytes()
+        real_write = manage_skills._write_atomically
+
+        def fail_manifest(path: Path, content: str) -> None:
+            if paths_equal(path, manifest_path):
+                raise OSError("injected manifest write failure")
+            real_write(path, content)
+
+        with patch.object(manage_skills, "_write_atomically", side_effect=fail_manifest):
+            result, output, error = self.run_migration(apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertNotIn("Migration status (applied):", output + error)
+        self.assertIn("Migration operation: BLOCKED", error)
+        self.assertIn("Rollback status: VERIFIED", error)
+        self.assertIn("injected manifest write failure", error)
+        self.assertIn("Actual state after failure:", error)
+        self.assertTrue(legacy.is_dir())
+        self.assertFalse((self.target / ".agents/skills/devconcord").exists())
+        self.assertEqual(manifest_path.read_bytes(), manifest_before)
+
+    def test_migration_post_apply_verification_failure_is_not_reported_as_rollback(self) -> None:
+        legacy = self.prepare_migration_source()
+        real_plan = manage_skills._migration_plan
+        calls = 0
+
+        def fail_verification(*args: object, **kwargs: object) -> tuple[object, ...]:
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise manage_skills.SkillManagementError("injected verification failure")
+            return real_plan(*args, **kwargs)
+
+        with patch.object(manage_skills, "_migration_plan", side_effect=fail_verification):
+            result, output, error = self.run_migration(apply=True)
+
+        self.assertEqual(result, 2)
+        self.assertIn("Migration operation: VERIFICATION FAILED", error)
+        self.assertIn("Migration content status: CHANGED", error)
+        self.assertIn("Rollback status: NOT ATTEMPTED", error)
+        self.assertNotIn("Rollback status: VERIFIED", error)
+        self.assertNotIn("Migration status (applied):", output + error)
+        self.assertFalse(legacy.exists())
+        self.assertTrue((self.target / ".agents/skills/devconcord/SKILL.md").is_file())
+
+    def test_doctor_detects_orphan_legacy_manifest_record_without_mutating_it(self) -> None:
+        legacy = self.prepare_migration_source()
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        shutil.rmtree(legacy)
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        before_manifest = manifest_path.read_bytes()
+        unified = self.target / ".agents/skills/devconcord"
+        before_unified = manage_skills._portable_tree_digest(unified, ())
+
+        args = SimpleNamespace(command="doctor", target=self.target)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+
+        self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertIn("Orphan legacy manifest record:", stdout.getvalue())
+        self.assertIn("Migration status: BLOCKED", stdout.getvalue())
+        self.assertFalse((self.target / ".agents/skills/devconcord-repository-review").exists())
+        self.assertEqual(manifest_path.read_bytes(), before_manifest)
+        self.assertEqual(manage_skills._portable_tree_digest(unified, ()), before_unified)
+
+    def test_user_doctor_detects_orphan_legacy_manifest_record(self) -> None:
+        legacy = self.prepare_user_migration_source()
+        self.assertEqual(
+            self.run_user_operation("install", agents=["codex"], apply=True, source=self.source)[0],
+            0,
+        )
+        shutil.rmtree(legacy)
+        manifest_path = self.user_home / ".devconcord/skills-manifest.json"
+        before_manifest = manifest_path.read_bytes()
+
+        args = SimpleNamespace(command="doctor", target=None)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+
+        self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertIn("User Scope migration diagnosis", stdout.getvalue())
+        self.assertIn("Orphan legacy manifest record:", stdout.getvalue())
+        self.assertIn("Migration status: BLOCKED", stdout.getvalue())
+        self.assertEqual(manifest_path.read_bytes(), before_manifest)
+
+    def test_user_doctor_reports_legacy_hash_mismatch_read_only(self) -> None:
+        legacy = self.prepare_user_migration_source()
+        self.assertEqual(
+            self.run_user_operation("install", agents=["codex"], apply=True, source=self.source)[0],
+            0,
+        )
+        legacy_file = legacy / "SKILL.md"
+        legacy_file.write_text("local modification\n", encoding="utf-8")
+        manifest_path = self.user_home / ".devconcord/skills-manifest.json"
+        before_manifest = manifest_path.read_bytes()
+        before_legacy = legacy_file.read_bytes()
+
+        args = SimpleNamespace(command="doctor", target=None)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+
+        self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertIn("User Scope migration diagnosis:", stdout.getvalue())
+        self.assertIn("local changes or manifest hash mismatch; preserved", stdout.getvalue())
+        self.assertIn("Migration status: BLOCKED", stdout.getvalue())
+        self.assertEqual(manifest_path.read_bytes(), before_manifest)
+        self.assertEqual(legacy_file.read_bytes(), before_legacy)
 
     def test_migration_refuses_local_legacy_edits(self) -> None:
         legacy = self.prepare_migration_source()
@@ -2682,6 +2808,11 @@ Version: {version}
         self.assertFalse(legacy.exists())
         self.assertTrue((self.target / ".agents/skills/devconcord").exists())
         self.assertEqual(len(manage_skills._transaction_directories(self.target)), 1)
+        migrate_result, migrate_output, migrate_error = self.run_migration(apply=True)
+        self.assertEqual(migrate_result, 2)
+        self.assertIn("Migration operation: RECOVERY REQUIRED", migrate_error)
+        self.assertNotIn("Migration status (applied):", migrate_output + migrate_error)
+        self.assertIn("recover", migrate_error)
         doctor_args = SimpleNamespace(command="doctor", target=self.target)
         doctor_stdout = io.StringIO()
         doctor_stderr = io.StringIO()

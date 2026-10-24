@@ -53,7 +53,7 @@ Use `devconcord manage reference` when available. Identify this workflow as the 
 - `docs/work-management/risk-management.md`
 - `docs/work-management/issue-tracking.md`
 
-If the Reference workflow cannot be selected, run the configured source checkout's reference CLI directly, using this workflow's name as `--skill`. The CLI accepts one reference path per invocation, so run it separately for each needed path:
+If the Reference workflow cannot be selected, run the configured source checkout's reference CLI directly. Pass the public package ID `devconcord` to `--skill`; this security module is the requesting workflow context, not an installed package ID. The CLI accepts one reference path per invocation, so run it separately for each needed path:
 
 ```sh
 python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \

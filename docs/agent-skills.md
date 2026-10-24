@@ -26,7 +26,7 @@
 
 ### 旧Skillインストールの移行
 
-統合前の公式24名だけを旧Skill候補として認識します。名前の接頭辞だけでは削除対象とせず、管理記録、現在の導入先ハッシュ、DevConcord source identity、完全なsource commit、記録されたsource tree hashを照合します。確認できない管理済み記録は削除せず、診断として残します。未管理の似た名前、別source、ローカル変更は削除しません。旧Skill群が導入されている環境は、対象Scopeごとにまずdry-runします。Project Scopeでは `--target` を指定します。結果は `COMPLETE`、`PARTIAL`、`BLOCKED` として表示されます。`PARTIAL` は統合パッケージの導入が成功していても、保護・保留された旧Skillが残る状態です。`BLOCKED` は前提競合で適用できなかった状態です。中断済みjournalは `RECOVERY REQUIRED` として扱い、同じScope/targetの `recover` を先に実行します。既存CLIとの互換性を保ち、部分移行だけを理由に終了コードは変更しません。
+統合前の公式24名だけを旧Skill候補として認識します。名前の接頭辞だけでは削除対象とせず、管理記録、現在の導入先ハッシュ、DevConcord source identity、完全なsource commit、記録されたsource tree hashを照合します。確認できない管理済み記録は削除せず、診断として残します。未管理の似た名前、別source、ローカル変更は削除しません。旧Skill群が導入されている環境は、対象Scopeごとにまずdry-runします。Project Scopeでは `--target` を指定します。出力は操作段階（`PLANNED` / `APPLIED` / `BLOCKED` / `RECOVERY REQUIRED`）と移行内容の状態（`COMPLETE` / `PARTIAL` / `BLOCKED`）を区別します。dry-runで削除予定を削除済みと表示せず、`APPLIED` はtransaction完了後に導入先とmanifestを再検証してから報告します。`PARTIAL` は移行操作が成功していても、保護・保留された旧Skillが残る状態です。前提競合は`BLOCKED`、未解決journalは`RECOVERY REQUIRED` として扱い、同じScope/targetの `recover` を先に実行します。既存CLIとの互換性を保ち、部分移行だけを理由に終了コードは変更しません。
 
 ```sh
 python3 scripts/manage_skills.py migrate --scope user

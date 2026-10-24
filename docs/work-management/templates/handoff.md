@@ -7,7 +7,7 @@
 ## Baseline
 
 - Branch / HEAD:
-- Worktree and index: clean / changed (relevant paths and summary)
+- Worktree and index: clean / changed (implementation paths and summary; record a HANDOFF edit separately)
 - Last updated:
 - Last checked:
 - Active workflow and scope:
