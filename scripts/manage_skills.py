@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+from dataclasses import dataclass
 import hashlib
 import io
 import json
@@ -88,6 +89,30 @@ AGENT_ROOTS = {
 
 class SkillManagementError(ValueError):
     """An unsafe or inconsistent skill operation was requested."""
+
+
+@dataclass(frozen=True)
+class DoctorFinding:
+    code: str
+    message: str
+    priority: int
+    next_action: str | None = None
+
+
+@dataclass(frozen=True)
+class LegacyDiagnosis:
+    status: str
+    findings: tuple[DoctorFinding, ...] = ()
+
+
+@dataclass(frozen=True)
+class ScopeDiagnosis:
+    scope: str
+    target: Path
+    status: str
+    findings: tuple[DoctorFinding, ...]
+    details: str
+    exit_code: int
 
 
 SkillAction = tuple[str, Path, str, str, str | None, tuple[str, ...]]
@@ -2248,6 +2273,7 @@ def _run(args: argparse.Namespace) -> int:
         lock_path: Path | None = None
         source_root = DEFAULT_SOURCE.resolve()
         discovery_paths = GLOBAL_DISCOVERY_PATHS if scope == "user" else DISCOVERY_PATHS
+        apply_started = False
         apply_completed = False
         try:
             explicit_source = getattr(args, "source", None)
@@ -2345,7 +2371,10 @@ def _run(args: argparse.Namespace) -> int:
                 )
             if not args.apply:
                 print("Operation: DRY RUN")
-                print(f"Expected outcome if applied: {planned_status}")
+                if planned_changes:
+                    print(f"Expected outcome if applied: {planned_status}")
+                else:
+                    print("Planned changes: NONE")
                 print("Changes applied: NO")
                 if planned_changes:
                     if partial:
@@ -2363,8 +2392,12 @@ def _run(args: argparse.Namespace) -> int:
                 else:
                     print("Next action: no migration changes are required; --apply is unnecessary.")
                 print("Migration operation: PLANNED (no files or manifest changed)")
-                print("Dry run only; pass --apply to migrate files and manifest.")
+                if planned_changes:
+                    print("Dry run only; no files or manifest were changed.")
+                else:
+                    print("No migration operation was needed; no files or manifest were changed.")
                 return 0
+            apply_started = True
             _apply(actions, target_root, manifest, manifest_path, dirty, revision, repository,
                    expected_manifest, discovery_paths)
             apply_completed = True
@@ -2429,31 +2462,45 @@ def _run(args: argparse.Namespace) -> int:
             except (OSError, SkillManagementError, ValueError):
                 pending_transactions = [target_root]
             recovery_required = bool(pending_transactions)
+            rollback_verified = "transaction rollback was verified" in str(error).lower()
             operation_status = (
-                "RECOVERY REQUIRED"
-                if recovery_required
-                else "VERIFICATION FAILED"
-                if apply_completed
-                else "BLOCKED"
+                "RECOVERY REQUIRED" if recovery_required
+                else "VERIFICATION FAILED" if apply_completed
+                else "APPLY FAILED; ROLLBACK VERIFIED" if apply_started and rollback_verified
+                else "APPLY FAILED; STATE INSPECTION REQUIRED" if apply_started
+                else "BLOCKED; NOT APPLIED"
             )
             print(f"Migration operation: {operation_status}", file=sys.stderr)
+            recovery_command = (
+                f"recover --scope {scope}"
+                + (" --target <same-project>" if scope == "project" else "")
+            )
             if recovery_required:
                 print("Migration content status: UNKNOWN until transaction recovery is assessed.", file=sys.stderr)
                 print("Rollback status: NOT CONFIRMED; inspect the transaction journal and recover safely.", file=sys.stderr)
-                print("Next action: inspect and run scripts/manage_skills.py recover with the same scope/target (dry-run first).", file=sys.stderr)
+                print(f"Next action: review the recovery dry-run, then run {recovery_command} (add --apply only after review).", file=sys.stderr)
             elif apply_completed:
                 print("Migration content status: CHANGED; post-apply verification did not complete.", file=sys.stderr)
                 print("Rollback status: NOT ATTEMPTED after the committed transaction; inspect actual state below.", file=sys.stderr)
                 print("Next action: inspect the actual state and repair or rerun verification before relying on this migration.", file=sys.stderr)
             else:
-                print("Migration content status: inspect the actual-state report below; no applied result is claimed.", file=sys.stderr)
                 print(
-                    "Rollback status: VERIFIED (returned to pre-migration state)."
-                    if "transaction rollback was verified" in str(error).lower()
-                    else "Rollback status: no pending transaction; inspect the actual-state report below.",
+                    "Migration content status: NOT APPLIED; preflight completed before mutation."
+                    if not apply_started
+                    else "Migration content status: restored to the pre-migration state."
+                    if rollback_verified
+                    else "Migration content status: inspect the actual-state report below; no completed apply is claimed.",
                     file=sys.stderr,
                 )
-                print("Next action: resolve the reported precondition safely, then rerun migrate.", file=sys.stderr)
+                print(
+                    "Rollback status: NOT STARTED."
+                    if not apply_started
+                    else "Rollback status: VERIFIED."
+                    if rollback_verified
+                    else "Rollback status: NOT CONFIRMED; inspect the actual-state report below.",
+                    file=sys.stderr,
+                )
+                print("Next action: resolve the reported precondition safely, then rerun the same migration dry-run.", file=sys.stderr)
             print(f"ERROR: migration stopped safely: {error}", file=sys.stderr)
             if not recovery_required and target_root.is_dir():
                 try:
@@ -3070,7 +3117,7 @@ def _diagnose_legacy_state(
     scope: str,
     discovery_paths: tuple[str, ...],
     source_root: Path | None,
-) -> None:
+) -> LegacyDiagnosis:
     """Report the observed unified/legacy state without changing files."""
     transactions = _transaction_directories(target_root)
     if transactions:
@@ -3079,7 +3126,15 @@ def _diagnose_legacy_state(
         for transaction in transactions:
             print(f"  Interrupted transaction: {transaction.name}")
         print("  Next action: inspect and run scripts/manage_skills.py recover for this scope/target.")
-        return
+        return LegacyDiagnosis(
+            "RECOVERY REQUIRED",
+            (DoctorFinding(
+                "interrupted_transaction",
+                f"{len(transactions)} interrupted Skill transaction(s) require recovery",
+                100,
+                "Run recover --scope with this target after reviewing its dry-run.",
+            ),),
+        )
     manifest_path = target_root / MANIFEST_PATH
     manifest, _migrated = _read_manifest(manifest_path)
     package_records = manifest["packages"]
@@ -3193,7 +3248,14 @@ def _diagnose_legacy_state(
                     source_ok = False
                     if source_root is not None:
                         try:
-                            _source_commit, _source_dirty, identity = _user_source_revision(source_root / ".agents" / "skills")
+                            source_identity = (
+                                _user_source_revision
+                                if scope == "User Scope"
+                                else source_revision
+                            )
+                            _source_commit, _source_dirty, identity = source_identity(
+                                source_root / ".agents" / "skills"
+                            )
                             recorded_commit = record.get("source_commit")
                             source_ok = (
                                 not record.get("source_dirty")
@@ -3264,6 +3326,48 @@ def _diagnose_legacy_state(
     else:
         status = "NOT MIGRATED / NO LEGACY SKILLS FOUND"
     print(f"  Migration status: {status}")
+    findings: list[DoctorFinding] = []
+    if any("orphan manifest record" in blocker for blocker in blockers):
+        orphan_records = [
+            blocker.removeprefix("orphan manifest record ")
+            for blocker in blockers
+            if "orphan manifest record" in blocker
+        ]
+        findings.append(DoctorFinding(
+            "orphan_legacy_record",
+            "Orphan legacy manifest record: " + ", ".join(orphan_records)
+            + " (installed directory missing; record preserved)",
+            100,
+            "Inspect the manifest and preserved state before any migration or repair.",
+        ))
+    if any("unified package" in blocker for blocker in blockers):
+        findings.append(DoctorFinding(
+            "unified_package_mismatch",
+            "The unified Skill package does not match its manifest or discovery paths",
+            90,
+            "Inspect package contents and manifest provenance before syncing.",
+        ))
+    if any("unsafe" in blocker or "local" in blocker for blocker in blockers):
+        findings.append(DoctorFinding(
+            "legacy_package_conflict",
+            "A legacy Skill path is unsafe or differs from its recorded hash",
+            90,
+            "Preserve local data and resolve the path or hash conflict manually.",
+        ))
+    if partial:
+        findings.append(DoctorFinding(
+            "legacy_entries_preserved",
+            f"{len(partial)} legacy or unmanaged Skill entr(y/ies) remain preserved",
+            55,
+            "Review preserved entries and provenance; migrate only verified entries.",
+        ))
+    if stale:
+        findings.append(DoctorFinding(
+            "stale_duplicate_allowance",
+            f"{len(stale)} legacy duplicate-discovery allowance(s) may be stale",
+            35,
+            "Review stale allowance records; doctor is read-only.",
+        ))
     if stale:
         print("  Next action: review stale allowance records; doctor is read-only.")
     elif blockers:
@@ -3272,191 +3376,442 @@ def _diagnose_legacy_state(
         print("  Next action: review preserved legacy Skills and provenance; rerun migrate after resolution.")
     elif status == "COMPLETE":
         print("  Next action: no migration action required.")
+    return LegacyDiagnosis(status, tuple(findings))
 
 
-def _doctor_command_details(args: argparse.Namespace) -> int:
+def _scope_installation_findings(
+    target_root: Path,
+    *,
+    scope: str,
+    discovery_paths: tuple[str, ...],
+    source_root: Path | None,
+) -> tuple[bool, list[DoctorFinding]]:
+    """Validate scope state without changing it; keep provenance failures visible."""
+    manifest_path = target_root / MANIFEST_PATH
+    findings: list[DoctorFinding] = []
+    if manifest_path.is_symlink():
+        return False, [DoctorFinding(
+            "unsafe_manifest", f"{scope} manifest is a symlink", 100,
+            "Inspect the manifest path manually; doctor will not repair it.",
+        )]
+    if not manifest_path.exists():
+        found = False
+        try:
+            for relative in discovery_paths:
+                root = target_root / relative
+                _check_destination_path(target_root, root)
+                if not root.exists():
+                    continue
+                if root.is_symlink() or not root.is_dir():
+                    return False, [DoctorFinding(
+                        "unsafe_discovery_path", f"{scope} discovery path is unsafe: {relative}", 100,
+                        "Inspect the path and preserve its contents before changing it.",
+                    )]
+                if any(entry.name.casefold() == "devconcord" for entry in root.iterdir()):
+                    found = True
+        except (SkillManagementError, OSError) as error:
+            return False, [DoctorFinding(
+                "scope_inspection_failed", f"{scope} could not be inspected safely: {error}", 100,
+                "Resolve the reported filesystem issue before installing or syncing.",
+            )]
+        if found:
+            return False, [DoctorFinding(
+                "unmanaged_unified_package",
+                f"{scope} has a unified Skill directory without a manifest record",
+                95,
+                "Preserve the directory and inspect its ownership and provenance.",
+            )]
+        return False, []
+
+    if _transaction_directories(target_root):
+        return True, [DoctorFinding(
+            "interrupted_transaction",
+            f"{scope} has an interrupted Skill transaction requiring recovery",
+            100,
+            "Review the transaction and run recover for this scope and target.",
+        )]
+    try:
+        manifest, _migrated = _read_manifest(manifest_path)
+        names: set[str] = set()
+        for relative, package in manifest["packages"].items():
+            root = target_root / relative
+            _check_destination_path(target_root, root)
+            for name, record in package["skills"].items():
+                if name.casefold() in LEGACY_DEVCONCORD_SKILLS:
+                    continue
+                names.add(name)
+                skill_dir = root / name
+                if skill_dir.is_symlink() or not skill_dir.is_dir():
+                    findings.append(DoctorFinding(
+                        "missing_or_unsafe_skill",
+                        f"{scope} managed Skill is missing or unsafe: {relative}/{name}",
+                        100,
+                        "Inspect the path and manifest; do not replace local contents automatically.",
+                    ))
+                    continue
+                validation = validate_skill_directory(skill_dir)
+                if validation:
+                    findings.append(DoctorFinding(
+                        "invalid_skill_package",
+                        f"{scope} Skill package validation failed: {relative}/{name}",
+                        90,
+                        "Review package files and metadata before syncing.",
+                    ))
+                try:
+                    digest = _recorded_package_digest(skill_dir, record)
+                except (SkillManagementError, OSError, ValueError, KeyError, TypeError) as error:
+                    findings.append(DoctorFinding(
+                        "unverifiable_skill_hash",
+                        f"{scope} Skill hash cannot be verified: {relative}/{name} ({error})",
+                        95,
+                        "Preserve local files and inspect the manifest and package contents.",
+                    ))
+                    continue
+                if digest != record.get("installed_tree_sha256"):
+                    findings.append(DoctorFinding(
+                        "skill_hash_mismatch",
+                        f"{scope} installed Skill differs from its manifest: {relative}/{name}",
+                        95,
+                        "Preserve local changes; review them before any sync or migration.",
+                    ))
+                if name.casefold() != "devconcord":
+                    continue
+                provenance_error: str | None = None
+                if source_root is None:
+                    provenance_error = "configured source checkout is unavailable"
+                else:
+                    try:
+                        source_skills = source_root / ".agents" / "skills"
+                        source_identity = (
+                            _user_source_revision if scope == "User Scope" else source_revision
+                        )
+                        _revision, _dirty, identity = source_identity(source_skills)
+                        commit = record.get("source_commit")
+                        if record.get("source_dirty"):
+                            provenance_error = "installed package was sourced from a dirty checkout"
+                        elif not _source_identities_match(record.get("source_repository"), identity):
+                            provenance_error = "configured source identity differs from manifest provenance"
+                        elif not isinstance(commit, str) or not _full_commit_id(commit):
+                            provenance_error = "manifest source commit is missing or invalid"
+                        elif _git(source_root, "cat-file", "-e", f"{commit}^{{commit}}", check=False).returncode:
+                            provenance_error = "manifest source commit is unavailable in the configured checkout"
+                        elif _git_skill_digest(
+                            source_skills,
+                            commit,
+                            "devconcord",
+                            legacy=record.get("hash_version", 1) == 1,
+                        ) != record.get("source_tree_sha256"):
+                            provenance_error = "manifest source tree hash does not match the recorded commit"
+                    except (SkillManagementError, OSError, ValueError, KeyError, TypeError) as error:
+                        provenance_error = f"source provenance could not be verified ({error})"
+                if provenance_error:
+                    findings.append(DoctorFinding(
+                        "source_provenance_unverified",
+                        f"{scope} devconcord source provenance is not verified: {provenance_error}",
+                        95,
+                        "Review the configured source and manifest; use rebind-source only for an intentional source change.",
+                    ))
+        if names:
+            try:
+                state = _discovery_state(
+                    target_root, names, manifest=manifest, discovery_paths=discovery_paths
+                )
+            except (SkillManagementError, OSError, ValueError, KeyError, TypeError) as error:
+                findings.append(DoctorFinding(
+                    "discovery_state_unverifiable",
+                    f"{scope} discovery state could not be verified: {error}",
+                    90,
+                    "Resolve the managed path or hash conflict before relying on discovery checks.",
+                ))
+            else:
+                _duplicates, conflicts = _check_duplicate_discovery(
+                    state, manifest, allow_duplicates=False
+                )
+                for conflict in conflicts:
+                    findings.append(DoctorFinding(
+                        "duplicate_discovery", f"{scope}: {conflict}", 65,
+                    "Review actual host discovery paths and definitions before changing either copy.",
+                    ))
+        return True, findings
+    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+        findings.append(DoctorFinding(
+            "manifest_or_scope_invalid",
+            f"{scope} diagnosis could not validate its manifest or paths safely: {error}",
+            100,
+            "Inspect the reported manifest or path; doctor will not modify it.",
+        ))
+        return False, findings
+
+
+def _diagnose_scope(
+    target_root: Path,
+    *,
+    scope: str,
+    discovery_paths: tuple[str, ...],
+    source_root: Path | None,
+) -> ScopeDiagnosis:
+    details = io.StringIO()
+    findings: list[DoctorFinding] = []
+    with contextlib.redirect_stdout(details):
+        try:
+            installed, installation_findings = _scope_installation_findings(
+                target_root,
+                scope=scope,
+                discovery_paths=discovery_paths,
+                source_root=source_root,
+            )
+        except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+            installed = False
+            installation_findings = [DoctorFinding(
+                "scope_inspection_failed",
+                f"{scope} could not be inspected safely: {error}",
+                100,
+                "Resolve the filesystem or manifest issue before relying on this diagnosis.",
+            )]
+        findings.extend(installation_findings)
+        if installation_findings:
+            print("Scope installation findings:", file=details)
+            for finding in installation_findings:
+                print(f"  {finding.message}", file=details)
+        legacy: LegacyDiagnosis | None = None
+        legacy_failed = False
+        try:
+            legacy = _diagnose_legacy_state(
+                target_root,
+                scope=scope,
+                discovery_paths=discovery_paths,
+                source_root=source_root,
+            )
+            findings.extend(legacy.findings)
+        except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+            legacy_failed = True
+            findings.append(DoctorFinding(
+                "legacy_diagnosis_failed",
+                f"{scope} migration state could not be inspected safely: {error}",
+                100,
+                "Inspect the reported manifest or paths before attempting a migration.",
+            ))
+            print(f"Migration diagnosis stopped safely: {error}", file=details)
+        if installed and not any(
+            finding.code in {
+                "missing_or_unsafe_skill", "invalid_skill_package", "unverifiable_skill_hash",
+                "skill_hash_mismatch", "manifest_or_scope_invalid", "unsafe_manifest",
+            }
+            for finding in installation_findings
+        ):
+            manifest, _migrated = _read_manifest(target_root / MANIFEST_PATH)
+            count = sum(
+                1
+                for package in manifest["packages"].values()
+                for name in package["skills"]
+                if name.casefold() not in LEGACY_DEVCONCORD_SKILLS
+            )
+            print(
+                f"Validated {count} DevConcord-managed Skill package(s) in {scope}; "
+                "legacy Skills reported separately",
+                file=details,
+            )
+    unique_findings: dict[tuple[str, str], DoctorFinding] = {}
+    for finding in findings:
+        # Collapse only duplicate reports of the same issue on the same target.
+        # Different Skills can share a finding code and must remain visible in summary mode.
+        unique_findings.setdefault((finding.code, finding.message), finding)
+    findings = sorted(unique_findings.values(), key=lambda finding: -finding.priority)
+    if any(finding.priority >= 90 for finding in findings):
+        status = "NEEDS ATTENTION"
+    elif findings:
+        status = "REVIEW NEEDED"
+    elif legacy is not None and legacy.status == "PARTIAL":
+        status = "REVIEW NEEDED"
+    elif not installed:
+        status = "NOT INSTALLED"
+    else:
+        status = "HEALTHY"
+    fatal_installation_codes = {
+        "unsafe_manifest", "unsafe_discovery_path", "scope_inspection_failed",
+        "manifest_or_scope_invalid",
+    }
+    if scope == "User Scope":
+        fatal_installation_codes.update({
+            "missing_or_unsafe_skill", "invalid_skill_package", "unverifiable_skill_hash",
+            "skill_hash_mismatch", "duplicate_discovery", "discovery_state_unverifiable",
+            "interrupted_transaction",
+        })
+    exit_code = 2 if legacy_failed or any(
+        finding.code in fatal_installation_codes for finding in installation_findings
+    ) else 0
+    return ScopeDiagnosis(scope, target_root, status, tuple(findings), details.getvalue(), exit_code)
+
+
+def _doctor_command_details(args: argparse.Namespace) -> tuple[list[ScopeDiagnosis], list[DoctorFinding], str, int]:
+    """Collect independent scope results and separate them from rendered details."""
+    findings: list[DoctorFinding] = []
+    extra = io.StringIO()
+    result = 0
     try:
         config, config_path = _read_user_config(validate_skills=False)
+    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+        config = None
+        findings.append(DoctorFinding(
+            "source_configuration_invalid",
+            f"Local DevConcord source configuration cannot be read: {error}",
+            95,
+            "Inspect the source configuration manually; doctor will not repair it.",
+        ))
+        print(f"ERROR: source configuration could not be read: {error}", file=extra)
+    else:
         if config is None:
             print(
                 f"Local DevConcord source is not configured ({config_path}); "
-                "run config set-source when local reference access is needed."
+                "run config set-source when local reference access is needed.",
+                file=extra,
             )
+        with contextlib.redirect_stdout(extra):
+            _report_configured_source_validation(config)
+    try:
         home = _user_home()
-        manifest_path = home / MANIFEST_PATH
-        managed: dict[str, list[tuple[str, dict[str, Any]]]] = {}
-        if manifest_path.exists():
-            manifest, _migrated = _read_manifest(manifest_path)
-            if not _transaction_directories(home):
-                errors = _validate_user_installation(
-                    home, defer_legacy_diagnosis=True
-                )
-                if errors:
-                    raise SkillManagementError("; ".join(errors))
-            for package_path, package in manifest["packages"].items():
-                for name, record in package["skills"].items():
-                    managed.setdefault(name.casefold(), []).append((package_path, record))
-        else:
-            print("No User Scope DevConcord Skill manifest is installed.")
-        _report_configured_source_validation(config)
+    except (SkillManagementError, OSError) as error:
+        home = None
+        findings.append(DoctorFinding(
+            "user_home_unavailable", f"User Scope cannot be inspected: {error}", 100,
+            "Resolve the user-home access issue before relying on User Scope diagnostics.",
+        ))
+    source_root = Path(config["source_root"]) if config else None
+    scopes: list[ScopeDiagnosis] = []
+    if home is not None:
+        scopes.append(_diagnose_scope(
+            home, scope="User Scope", discovery_paths=GLOBAL_DISCOVERY_PATHS,
+            source_root=source_root,
+        ))
+    target = getattr(args, "target", None)
+    if target is not None:
+        try:
+            project = target.expanduser().resolve(strict=True)
+            if not project.is_dir():
+                raise SkillManagementError(f"project directory does not exist: {project}")
+            scopes.append(_diagnose_scope(
+                project, scope="Project Scope", discovery_paths=DISCOVERY_PATHS,
+                source_root=source_root,
+            ))
+        except (SkillManagementError, OSError, ValueError) as error:
+            findings.append(DoctorFinding(
+                "project_target_invalid", f"Project Scope target cannot be inspected: {error}", 100,
+                "Check the target path and rerun doctor; User Scope results remain valid.",
+            ))
 
-        user_source = Path(config["source_root"]) if config else None
-        _diagnose_legacy_state(
-            home,
-            scope="User Scope",
-            discovery_paths=GLOBAL_DISCOVERY_PATHS,
-            source_root=user_source,
-        )
+    if home is not None and target is not None:
+        user_manifest = home / MANIFEST_PATH
+        project = next((scope.target for scope in scopes if scope.scope == "Project Scope"), None)
+        if project is not None and user_manifest.exists() and not user_manifest.is_symlink():
+            try:
+                manifest, _migrated = _read_manifest(user_manifest)
+                managed = {
+                    name.casefold(): (name, record)
+                    for package in manifest["packages"].values()
+                    for name, record in package["skills"].items()
+                }
+                collisions: list[str] = []
+                for relative in DISCOVERY_PATHS:
+                    root = project / relative
+                    if not root.exists():
+                        continue
+                    _check_destination_path(project, root)
+                    if root.is_symlink() or not root.is_dir():
+                        continue
+                    for entry in sorted(root.iterdir()):
+                        if entry.name.casefold() in managed:
+                            installed_name, record = managed[entry.name.casefold()]
+                            collisions.append(
+                                f"{entry.name}: User Scope {installed_name} @ "
+                                f"{record.get('source_commit', 'unknown')} and Project Scope "
+                                f"{relative}/{entry.name}"
+                            )
+                if collisions:
+                    for collision in collisions:
+                        findings.append(DoctorFinding(
+                            "user_project_name_collision",
+                            "WARNING: same-name User/Project Skill: " + collision
+                            + " (host-specific precedence is not normalized)",
+                            90,
+                            "Compare both Skill definitions; do not assume host-specific precedence.",
+                        ))
+                    print("User/Project same-name Skill diagnostics:", file=extra)
+                    for collision in collisions:
+                        print(f"WARNING: same-name User/Project Skill: {collision}", file=extra)
+                        print(
+                            "  Host-specific selection and precedence are not normalized by "
+                            "DevConcord; compare both definitions before relying on either.",
+                            file=extra,
+                        )
+                else:
+                    print("No same-name User Scope and Project Scope Skills found.", file=extra)
+            except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
+                findings.append(DoctorFinding(
+                    "cross_scope_comparison_incomplete",
+                    f"User/Project name comparison was incomplete: {error}", 70,
+                    "Resolve the path or manifest issue before relying on cross-scope collision results.",
+                ))
 
-        target = getattr(args, "target", None)
-        if target is None:
-            print(f"User Scope manifest records inspected: {len(managed)}")
-            return 0
-        project = target.expanduser().resolve()
-        if not project.is_dir():
-            raise SkillManagementError(f"project directory does not exist: {project}")
-        _diagnose_legacy_state(
-            project,
-            scope="Project Scope",
-            discovery_paths=DISCOVERY_PATHS,
-            source_root=DEFAULT_SOURCE.parents[1],
-        )
-        found = False
-        for relative in DISCOVERY_PATHS:
-            root = project / relative
-            if not root.exists():
-                continue
-            if root.is_symlink() or not root.is_dir():
-                raise SkillManagementError(f"project Skill discovery path is unsafe: {relative}")
-            for local in sorted(root.iterdir()):
-                key = local.name.casefold()
-                if key not in managed:
-                    continue
-                found = True
-                global_records = ", ".join(
-                    f"{package_path} @ {record['source_commit']}"
-                    for package_path, record in managed[key]
-                )
-                print(
-                    f"WARNING: same-name User/Project Skill: {local.name} "
-                    f"(global {global_records}; project {relative}/{local.name})"
-                )
-                print(
-                    "  Host-specific selection and precedence are not normalized by "
-                    "DevConcord; compare both definitions before relying on either."
-                )
-        if not found:
-            print("No same-name User Scope and Project Scope Skills found.")
-        return 0
-    except (SkillManagementError, OSError, ValueError, UnicodeError) as error:
-        print(f"ERROR: Skill environment diagnosis stopped safely: {error}", file=sys.stderr)
-        return 2
+    result = max((scope.exit_code for scope in scopes), default=0)
+    if any(finding.code in {"source_configuration_invalid", "user_home_unavailable", "project_target_invalid"}
+           for finding in findings):
+        result = 2
+    return scopes, findings, extra.getvalue(), result
 
 
 def _doctor_command(args: argparse.Namespace) -> int:
-    """Print a concise health summary before preserving the detailed diagnosis."""
-    output = io.StringIO()
-    errors = io.StringIO()
-    with contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
-        result = _doctor_command_details(args)
-
-    details = output.getvalue()
-    error_details = errors.getvalue()
-    statuses = [
-        line.strip().removeprefix("Migration status:").strip()
-        for line in details.splitlines()
-        if "Migration status:" in line
-    ]
-    relevant_warnings = [
-        line for line in details.splitlines()
-        if line.startswith("WARNING:")
-        and "separate from User Scope installation health" not in line
-    ]
-    findings = []
-    finding_prefixes = (
-        "  Orphan legacy manifest record:",
-        "  Legacy ",
-        "  Unified package: present or recorded; state differs",
-        "  Unified duplicate contents:",
-        "  Unified duplicate discovery allowance missing:",
-        "WARNING: same-name User/Project Skill:",
-        "  Interrupted transaction:",
-        "  Stale legacy duplicate allowance:",
-        "WARNING:",
-    )
-    for line in details.splitlines():
-        if (
-            line.startswith("WARNING:")
-            and "separate from User Scope installation health" in line
-        ):
-            continue
-        if line.startswith(finding_prefixes) and line not in findings:
-            findings.append(line.strip())
-    findings.sort(
-        key=lambda item: (
-            0 if "recovery required" in item.lower() or "interrupted transaction" in item.lower()
-            else 1 if "orphan" in item.lower() or "local changes" in item.lower() or "unsafe" in item.lower()
-            else 2 if "same-name user/project" in item.lower() or "state differs" in item.lower()
-            else 3
-        )
-    )
-    if error_details:
-        findings.insert(0, error_details.strip().splitlines()[0])
-    if result != 0 and not findings:
-        findings.append("Skill environment diagnosis did not complete")
-    if result != 0 or error_details or any(
-        status in {"BLOCKED", "RECOVERY REQUIRED"} for status in statuses
-    ) or relevant_warnings:
-        health = "NEEDS ATTENTION"
-    elif any(status == "PARTIAL" for status in statuses) or findings:
-        health = "REVIEW NEEDED"
-    elif "No User Scope DevConcord Skill manifest is installed." in details:
-        health = "NOT INSTALLED"
+    scopes, findings, extra, result = _doctor_command_details(args)
+    all_findings = [finding for scope in scopes for finding in scope.findings] + findings
+    all_findings.sort(key=lambda finding: -finding.priority)
+    requested_scope = "Project Scope" if getattr(args, "target", None) is not None else "User Scope"
+    requested = next((scope for scope in scopes if scope.scope == requested_scope), None)
+    if any(finding.priority >= 90 for finding in all_findings):
+        overall = "NEEDS ATTENTION"
+    elif all_findings or any(scope.status == "REVIEW NEEDED" for scope in scopes):
+        overall = "REVIEW NEEDED"
+    elif requested is not None and requested.status == "NOT INSTALLED":
+        overall = "NOT INSTALLED"
+    elif requested is not None:
+        overall = requested.status
     else:
-        health = "HEALTHY"
-    recommendations = [
-        line.strip().removeprefix("Next action:").strip()
-        for line in details.splitlines()
-        if "Next action:" in line
-        and "no migration action required" not in line.lower()
-    ]
-    if result != 0 or error_details:
-        recommendation = "Resolve the diagnosis error shown below before relying on this status."
-    elif any("same-name User/Project Skill:" in item for item in findings):
-        recommendation = (
-            "Compare both Skill definitions; do not assume host-specific precedence."
-        )
-    elif any("Unified duplicate contents:" in item for item in findings):
-        recommendation = (
-            "Confirm host-specific Skill selection behavior; identical copies do not prove precedence."
-        )
-    elif recommendations:
-        recommendation = recommendations[0]
-    elif health == "NOT INSTALLED":
-        recommendation = "Install DevConcord only if you intend to use its Agent Skill."
-    else:
-        recommendation = "No action required."
+        overall = "NEEDS ATTENTION"
 
     print("DevConcord Skill Health")
-    print(f"Status: {health}")
-    if statuses:
-        print("Scope status: " + "; ".join(statuses))
+    print(f"Status: {overall}")
+    for scope in scopes:
+        print(f"{scope.scope}:")
+        if scope.scope == "Project Scope":
+            print(f"  Target: {scope.target}")
+        print(f"  Status: {scope.status}")
+    if requested is not None and requested.status == "HEALTHY":
+        print(f"Overall: Requested {requested.scope} is healthy.")
     print("Issues:")
-    if findings:
-        print(f"- Most important issue: {findings[0]}")
-        for finding in findings[1:3]:
-            print(f"- Also: {finding}")
-        if len(findings) > 3:
-            print(f"- and {len(findings) - 3} more; see detailed diagnostics")
+    if all_findings:
+        print(f"- Most important issue: {all_findings[0].message}")
+        for finding in all_findings[1:3]:
+            print(f"- Also: {finding.message}")
+        if len(all_findings) > 3:
+            print(f"- and {len(all_findings) - 3} more; see detailed diagnostics")
     else:
-        print("- None detected")
-    print(f"Recommended next action: {recommendation}")
-    if details:
-        print("\nDetailed diagnostics:")
-        print(details, end="" if details.endswith("\n") else "\n")
-    if error_details:
-        print("\nDiagnostic errors:", file=sys.stderr)
-        print(error_details, end="" if error_details.endswith("\n") else "\n", file=sys.stderr)
+        print("- None detected in the requested scope")
+    next_action = next(
+        (finding.next_action for finding in all_findings if finding.next_action),
+        "No action required for the requested scope." if requested and requested.status == "HEALTHY"
+        else "Install DevConcord only if you intend to use it in this scope."
+        if requested and requested.status == "NOT INSTALLED"
+        else "Review the scope-specific findings before acting.",
+    )
+    print(f"Recommended next action: {next_action}")
+    if not getattr(args, "summary", False):
+        for scope in scopes:
+            print(f"\nDetailed diagnostics — {scope.scope}:")
+            if scope.details:
+                print(scope.details, end="" if scope.details.endswith("\n") else "\n")
+            else:
+                print("No legacy migration details.")
+        if extra:
+            print("\nShared and cross-scope diagnostics:")
+            print(extra, end="" if extra.endswith("\n") else "\n")
     return result
 
 
@@ -3560,7 +3915,10 @@ def build_parser() -> argparse.ArgumentParser:
         "reference",
         help="print a local DevConcord document for the installed Skill version",
     )
-    reference.add_argument("--skill", required=True, help="installed User Scope Skill name")
+    reference.add_argument(
+        "--skill", required=True,
+        help="installed package name, normally the public package devconcord",
+    )
     reference.add_argument(
         "--path",
         required=True,
@@ -3584,12 +3942,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     doctor = commands.add_parser(
         "doctor",
-        help="validate User Scope management state and optionally report project name collisions",
+        help="diagnose User Scope and optional Project Scope independently",
     )
     doctor.add_argument(
         "--target",
         type=Path,
-        help="project repository to inspect for same-name local Skills",
+        help="project repository to diagnose independently from User Scope",
+    )
+    doctor.add_argument(
+        "--summary",
+        action="store_true",
+        help="show scope statuses and recommended actions without detailed diagnostics",
     )
     return parser
 

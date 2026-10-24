@@ -28,10 +28,10 @@ A workflow recommendation or explicit command does not itself authorize edits, e
 When installed-version documentation is needed and the CLI/source is available, use the package identity `devconcord`:
 
 ```sh
-python3 scripts/manage_skills.py reference \
+python3 /configured/source_root/scripts/manage_skills.py reference \
   --skill devconcord \
   --path docs/common/ai-assisted-development.md \
   --revision installed
 ```
 
-Use the documented source configuration and scope options for the actual environment. Do not silently substitute HEAD, the working tree, or online content when installed-reference validation fails. The [management module](references/modules/management/devconcord-reference/module.md) describes the reference contract.
+Run the CLI from the registered local DevConcord source checkout, using its absolute path; the placeholder above is explanatory. The current project working directory does not need to contain DevConcord. For Project Scope, also pass `--scope project --target <target-repository>`. Use the documented source configuration and scope options for the actual environment. If the source checkout is unavailable or not configured, stop the dependent reference task and report how to register or restore it. Do not silently substitute HEAD, the working tree, another package revision, or online content when installed-reference validation fails. The [management module](references/modules/management/devconcord-reference/module.md) describes the reference contract.

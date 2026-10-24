@@ -575,7 +575,7 @@ Security by Designの手動評価では、シナリオEを用いて脅威分析�
 
 #### A. Natural-language routing before/after evaluation
 
-Evaluate whether an agent can select the appropriate workflow from the user's intent without naming internal modules. Compare the baseline Skill snapshot at `577c1b469d3d93b2194427f83a5561f358031262` with the candidate routing/shared-contract snapshot from this change. Use the same exact fixture snapshot, request, agent/model/version/settings, permissions, starting issue state, and finite time/tool-call budget. Apply the same request text to both snapshots; do not add or remove workflow names in either arm:
+Evaluate whether an agent can select the appropriate workflow from the user's intent without naming internal modules. Compare the prior Skill snapshot at `d83c436335572957f4e64f4be346cfcaf3cae4a4` with the candidate snapshot from this change. Use the same exact fixture snapshot, request, agent/model/version/settings, permissions, starting issue state, and finite time/tool-call budget. Apply the same request text to both snapshots; do not add or remove workflow names in either arm:
 
 > Inspect the existing issue register and make the next safe, bounded development step on its highest-value ready issue. Recheck current requirements, implementation, and relevant handoff evidence. Run the checks needed for the change, update only authorized canonical records that the result affects, and summarize the outcome, failures or unverified work, blockers, and next safe action. Keep approved public contracts and privacy constraints. Do not contact external services or perform actions that need approval.
 
@@ -632,6 +632,18 @@ For each item, capture `met`, `not met`, or `not observed` with transcript/file/
 11. Escalated or stopped when authority, evidence, environment, or safe continuation was unavailable.
 
 These are manual evaluation expectations, not product tests or evidence of agent capability. If a supported real-agent runtime is unavailable, retain this fixture and protocol as preparation and report real-agent evaluation as not run.
+
+#### C. HANDOFF resume after intervening changes
+
+Use the existing checkpoint-and-resume run above with fresh copies of the same fixture. For one copy, introduce a change that invalidates a previously passing check; for the other, change only an unrelated file. Ask the agent to resume using the ordinary task intent, without naming HANDOFF or internal modules. Evaluate current HEAD/index/worktree inspection, revalidation of affected evidence, reuse of still-valid evidence, scope integrity, and whether it avoids repeating unrelated research. HANDOFF remains optional context and is not evidence or authority by itself.
+
+#### D. Scope-aware Skill diagnosis
+
+Use temporary homes and projects created by `tests/test_manage_skills.py`; never use the developer's real User Scope. Run `doctor --target <project>` for these combinations: User Scope absent / Project Scope healthy; User Scope healthy / Project Scope absent; both healthy; one manifest malformed; one legacy record orphaned; and one discovery path symlinked. Keep a before/after snapshot of both manifests and every Skill path. The agent should identify each Scope separately, continue the other diagnosis after an isolated failure, avoid recommending install for the healthy requested Project Scope, and give a safe scope-specific next action. Run `doctor --summary` and default `doctor` on the same fixture and verify equal scope states and exit codes while the default retains detailed evidence. This CLI test is deterministic; it does not show how a real agent interprets the result.
+
+#### E. Installed Reference from an unrelated working directory
+
+Install the package in a disposable User Scope and Project Scope, configure a local DevConcord source, and invoke the absolute-path `scripts/manage_skills.py` from the target project's directory. Use `--revision installed`; for Project Scope also pass `--scope project --target <target-repository>`. Record the requested path, source identity, installed commit, package hash, stdout/stderr and exit code. Repeat with an invalid source identity, missing installed revision, path traversal, and symlinked working-tree reference. Expected behavior is a safe error with no content or success metadata and no silent fallback. Check that required references stop dependent work and optional references are reported while independent self-contained work can continue. Do not infer E2E behavior from the existing in-process CLI test alone.
 
 ## Unified Skill architecture evaluation
 

@@ -7,6 +7,7 @@ import os
 import stat
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -256,6 +257,30 @@ Version: {version}
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 result = manage_skills._run(args)
         return result, stdout.getvalue(), stderr.getvalue()
+
+    def run_doctor(
+        self, *, target: Path | None = None, summary: bool = False
+    ) -> tuple[int, str, str]:
+        args = SimpleNamespace(command="doctor", target=target, summary=summary)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(Path, "home", return_value=self.user_home):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = manage_skills._run(args)
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def run_cli(self, *arguments: str) -> subprocess.CompletedProcess[str]:
+        environment = os.environ.copy()
+        environment["HOME"] = str(self.user_home)
+        environment["USERPROFILE"] = str(self.user_home)
+        return subprocess.run(
+            [sys.executable, str(Path(manage_skills.__file__).resolve()), *arguments],
+            cwd=self.target,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
 
     def run_user_recovery(self, *, apply: bool = False, force: bool = False) -> tuple[int, str, str]:
         args = SimpleNamespace(
@@ -711,6 +736,107 @@ Version: {version}
         installed_file = self.user_home / ".agents" / "skills" / "sample-skill" / "SKILL.md"
         self.assertIn("Version: v1", installed_file.read_text(encoding="utf-8"))
         self.assertEqual(self.run_user_operation("validate")[0], 0)
+
+    def test_reference_cli_runs_from_a_different_project_working_directory(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        self.assertEqual(
+            self.run_config("set-source", source_root=self.source.parents[1], replace=False)[0],
+            0,
+        )
+        environment = os.environ.copy()
+        environment["HOME"] = str(self.user_home)
+        environment["USERPROFILE"] = str(self.user_home)
+        script = Path(manage_skills.__file__).resolve()
+
+        user_result = subprocess.run(
+            [sys.executable, str(script), "reference", "--skill", "sample-skill",
+             "--path", "docs/reference.md", "--revision", "installed"],
+            cwd=self.target,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        project_result = subprocess.run(
+            [sys.executable, str(script), "reference", "--skill", "sample-skill",
+             "--path", "docs/reference.md", "--revision", "installed",
+             "--scope", "project", "--target", str(self.target)],
+            cwd=self.target,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual((user_result.returncode, user_result.stderr), (0, ""))
+        self.assertIn("Initial committed guidance.", user_result.stdout)
+        self.assertEqual((project_result.returncode, project_result.stderr), (0, ""))
+        self.assertIn("Initial committed guidance.", project_result.stdout)
+
+    def test_cli_install_validate_doctor_and_reference_from_project_directory(self) -> None:
+        install = self.run_cli(
+            "install", "--scope", "project", "--target", str(self.target),
+            "--source", str(self.source), "--agent", "codex", "--apply",
+        )
+        self.assertEqual((install.returncode, install.stderr), (0, ""))
+        self.assertIn("Scope: project", install.stdout)
+        config = self.run_cli(
+            "config", "set-source", "--source-root", str(self.source.parents[1]),
+        )
+        self.assertEqual((config.returncode, config.stderr), (0, ""))
+        validate = self.run_cli("validate", "--scope", "project", "--target", str(self.target))
+        self.assertEqual((validate.returncode, validate.stderr), (0, ""))
+        doctor = self.run_cli("doctor", "--target", str(self.target), "--summary")
+        self.assertEqual((doctor.returncode, doctor.stderr), (0, ""))
+        self.assertIn("Project Scope:\n  Target:", doctor.stdout)
+        self.assertIn("Status: HEALTHY", doctor.stdout)
+        user_doctor = self.run_cli("doctor", "--summary")
+        self.assertEqual((user_doctor.returncode, user_doctor.stderr), (0, ""))
+        self.assertIn("User Scope:\n  Status: NOT INSTALLED", user_doctor.stdout)
+        reference = self.run_cli(
+            "reference", "--skill", "sample-skill", "--path", "docs/reference.md",
+            "--revision", "installed", "--scope", "project", "--target", str(self.target),
+        )
+        self.assertEqual((reference.returncode, reference.stderr), (0, ""))
+        self.assertIn("Initial committed guidance.", reference.stdout)
+
+    def test_cli_migrate_recover_doctor_sequence_uses_safe_project_scope_state(self) -> None:
+        legacy = self.prepare_migration_source()
+        source_repo = self.source.parents[1]
+        self.assertEqual(
+            self.run_config("set-source", source_root=source_repo, replace=False)[0], 0
+        )
+        common = (
+            "migrate", "--scope", "project", "--target", str(self.target),
+            "--source", str(self.source), "--agents", "codex",
+        )
+        dry_run = self.run_cli(*common)
+        self.assertEqual((dry_run.returncode, dry_run.stderr), (0, ""))
+        self.assertIn("Operation: DRY RUN", dry_run.stdout)
+        self.assertIn("Expected outcome if applied: COMPLETE", dry_run.stdout)
+        self.assertTrue(legacy.is_dir())
+        applied = self.run_cli(*common, "--apply")
+        self.assertEqual((applied.returncode, applied.stderr), (0, ""))
+        self.assertIn("Migration status (applied): COMPLETE", applied.stdout)
+        self.assertFalse(legacy.exists())
+        recovered = self.run_cli("recover", "--scope", "project", "--target", str(self.target))
+        self.assertEqual((recovered.returncode, recovered.stderr), (0, ""))
+        self.assertIn("No interrupted Skill transactions found", recovered.stdout)
+        doctor = self.run_cli("doctor", "--target", str(self.target), "--summary")
+        self.assertEqual((doctor.returncode, doctor.stderr), (0, ""))
+        self.assertIn("Project Scope:\n  Target:", doctor.stdout)
+        self.assertIn("Status: HEALTHY", doctor.stdout)
+        no_change = self.run_cli(*common)
+        self.assertEqual((no_change.returncode, no_change.stderr), (0, ""))
+        self.assertIn("Planned changes: NONE", no_change.stdout)
+        self.assertNotIn("pass --apply to migrate", no_change.stdout)
 
     def test_reference_uses_installed_commit_and_head_or_worktree_are_explicit(self) -> None:
         self.assertEqual(
@@ -1399,6 +1525,180 @@ Version: {version}
             before_global,
         )
         self.assertEqual(project_skill.joinpath("SKILL.md").read_bytes(), before_project)
+
+    def test_doctor_reports_project_health_independently_when_user_scope_is_uninstalled(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        project_manifest = self.target / ".devconcord/skills-manifest.json"
+        before_manifest = project_manifest.read_bytes()
+        before_skill = (self.target / ".agents/skills/sample-skill/SKILL.md").read_bytes()
+
+        result, output, error = self.run_doctor(target=self.target, summary=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("User Scope:\n  Status: NOT INSTALLED", output)
+        self.assertIn("Project Scope:\n  Target:", output)
+        self.assertIn("  Status: HEALTHY", output)
+        self.assertIn("Requested Project Scope is healthy", output)
+        self.assertNotIn("Detailed diagnostics", output)
+        self.assertEqual(project_manifest.read_bytes(), before_manifest)
+        self.assertEqual((self.target / ".agents/skills/sample-skill/SKILL.md").read_bytes(), before_skill)
+
+    def test_doctor_reports_user_health_independently_when_project_scope_is_uninstalled(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
+
+        result, output, error = self.run_doctor(target=self.target, summary=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("User Scope:\n  Status: HEALTHY", output)
+        self.assertIn("Project Scope:\n  Target:", output)
+        self.assertIn("  Status: NOT INSTALLED", output)
+        self.assertIn("Install DevConcord only if you intend to use it in this scope", output)
+
+    def test_doctor_reports_both_valid_scopes_separately(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        self.assertEqual(
+            self.run_config("set-source", source_root=self.source.parents[1], replace=False)[0],
+            0,
+        )
+
+        result, output, error = self.run_doctor(target=self.target, summary=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("User Scope:\n  Status: HEALTHY", output)
+        self.assertIn("Project Scope:\n  Target:", output)
+        self.assertIn("  Status: HEALTHY", output)
+
+    def test_doctor_rejects_unverified_unified_source_provenance(self) -> None:
+        self.write_skill("devconcord", "v1")
+        self.git(self.source.parents[1], "add", ".")
+        self.git(self.source.parents[1], "commit", "-qm", "add unified package")
+        self.assertEqual(
+            self.run_operation("install", skills=["devconcord"], apply=True)[0], 0
+        )
+        self.assertEqual(
+            self.run_config("set-source", source_root=self.source.parents[1], replace=False)[0],
+            0,
+        )
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["packages"][".agents/skills"]["skills"]["devconcord"]["source_repository"] = "https://invalid.example/other.git"
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        before_manifest = manifest_path.read_bytes()
+
+        result, output, error = self.run_doctor(target=self.target, summary=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Project Scope:\n  Target:", output)
+        self.assertIn("Status: NEEDS ATTENTION", output.split("Project Scope:", 1)[1])
+        self.assertIn("source provenance is not verified", output)
+        self.assertEqual(manifest_path.read_bytes(), before_manifest)
+
+    def test_doctor_reports_project_hash_mismatch_without_changing_legacy_exit_code(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        installed = self.target / ".agents/skills/sample-skill/SKILL.md"
+        installed.write_text("local edit\n", encoding="utf-8")
+
+        result, output, error = self.run_doctor(target=self.target, summary=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Project Scope:\n  Target:", output)
+        self.assertIn("Status: NEEDS ATTENTION", output.split("Project Scope:", 1)[1])
+        self.assertIn("differs from its manifest", output)
+        self.assertEqual(installed.read_text(encoding="utf-8"), "local edit\n")
+
+    def test_doctor_continues_project_diagnosis_after_user_manifest_corruption_read_only(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        manifest = self.user_home / ".devconcord/skills-manifest.json"
+        manifest.write_text("{broken\n", encoding="utf-8")
+        before_manifest = manifest.read_bytes()
+        project_manifest = (self.target / ".devconcord/skills-manifest.json").read_bytes()
+
+        result, output, error = self.run_doctor(target=self.target, summary=True)
+
+        self.assertEqual((result, error), (2, ""))
+        self.assertIn("User Scope:\n  Status: NEEDS ATTENTION", output)
+        self.assertIn("Project Scope:\n  Target:", output)
+        self.assertIn("  Status: HEALTHY", output)
+        self.assertEqual(manifest.read_bytes(), before_manifest)
+        self.assertEqual((self.target / ".devconcord/skills-manifest.json").read_bytes(), project_manifest)
+
+    @unittest.skipIf(os.name == "nt", "symlink behavior is platform-specific")
+    def test_doctor_continues_user_diagnosis_after_project_discovery_symlink(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
+        outside = self.root / "outside-skills"
+        outside.mkdir()
+        (self.target / ".agents").mkdir()
+        (self.target / ".agents/skills").symlink_to(outside, target_is_directory=True)
+
+        result, output, error = self.run_doctor(target=self.target, summary=True)
+
+        self.assertEqual((result, error), (2, ""))
+        self.assertIn("User Scope:\n  Status: HEALTHY", output)
+        self.assertIn("Project Scope:\n  Target:", output)
+        self.assertIn("  Status: NEEDS ATTENTION", output)
+        self.assertIn("symlinked destination path", output)
+
+    def test_doctor_summary_suppresses_detail_without_changing_diagnostic_state(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+        summary_result, summary, summary_error = self.run_doctor(target=self.target, summary=True)
+        detail_result, detailed, detail_error = self.run_doctor(target=self.target)
+
+        self.assertEqual((summary_result, detail_result), (0, 0))
+        self.assertEqual((summary_error, detail_error), ("", ""))
+        self.assertEqual(
+            [line for line in summary.splitlines() if "Status:" in line],
+            [line for line in detailed.splitlines() if "Status:" in line],
+        )
+        self.assertIn("Detailed diagnostics", detailed)
+        self.assertNotIn("Detailed diagnostics", summary)
+
+    def test_doctor_summary_keeps_same_kind_findings_for_distinct_skills(self) -> None:
+        self.write_skill("second-skill", "v1")
+        source_repo = self.source.parents[1]
+        self.git(source_repo, "add", ".")
+        self.git(source_repo, "commit", "-qm", "add second Skill")
+        self.assertEqual(
+            self.run_operation(
+                "install", skills=["sample-skill", "second-skill"], apply=True
+            )[0],
+            0,
+        )
+        for name in ("sample-skill", "second-skill"):
+            (self.target / ".agents/skills" / name / "SKILL.md").write_text(
+                "local change\n", encoding="utf-8"
+            )
+
+        result, output, error = self.run_doctor(target=self.target, summary=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("differs from its manifest: .agents/skills/sample-skill", output)
+        self.assertIn("differs from its manifest: .agents/skills/second-skill", output)
 
     def test_user_scope_health_is_separate_from_unrelated_source_validation(self) -> None:
         repository = self.source.parents[1]
@@ -2656,8 +2956,10 @@ Version: {version}
         self.assertEqual((result, error), (0, ""))
         self.assertIn("Operation: DRY RUN", dry_run_output)
         self.assertIn("Changes applied: NO", dry_run_output)
+        self.assertIn("Planned changes: NONE", dry_run_output)
         self.assertIn("no migration changes are required", dry_run_output)
         self.assertIn("--apply is unnecessary", dry_run_output)
+        self.assertNotIn("pass --apply to migrate", dry_run_output)
         result, second_output, error = self.run_migration(apply=True)
         self.assertEqual((result, error), (0, ""))
         self.assertIn("Migration status (applied): COMPLETE", second_output)
@@ -2690,7 +2992,8 @@ Version: {version}
 
         self.assertEqual(result, 2)
         self.assertNotIn("Migration status (applied):", output + error)
-        self.assertIn("Migration operation: BLOCKED", error)
+        self.assertIn("Migration operation: APPLY FAILED; ROLLBACK VERIFIED", error)
+        self.assertIn("Migration content status: restored to the pre-migration state", error)
         self.assertIn("Rollback status: VERIFIED", error)
         self.assertIn("injected manifest write failure", error)
         self.assertIn("Actual state after failure:", error)

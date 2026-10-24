@@ -272,6 +272,16 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertIn("Developer effort and cognitive-load observations", evaluation)
         self.assertIn("report cognitive-load improvement as unmeasured", evaluation)
         self.assertIn("Explicit workflow selection and clarification", evaluation)
+        for scenario in (
+            "A. Natural-language routing before/after evaluation",
+            "B. Decision Resolution workflow-use evaluation",
+            "Checkpoint and resume run",
+            "C. HANDOFF",
+            "D. Scope",
+            "E. Installed Reference",
+        ):
+            with self.subTest(scenario=scenario):
+                self.assertIn(scenario, evaluation)
         behavior_module = " ".join(
             (MODULES / "evaluation" / "devconcord-agent-behavior-evaluation" / "module.md")
             .read_text(encoding="utf-8")
@@ -496,6 +506,13 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         source_index = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
         cli = (ROOT / "scripts" / "manage_skills.py").read_text(encoding="utf-8")
         self.assertIn("--skill devconcord", guide)
+        public_skill = (PACKAGE / "SKILL.md").read_text(encoding="utf-8")
+        reference_module = module("management", "devconcord-reference").read_text(encoding="utf-8")
+        self.assertIn("/configured/source_root/scripts/manage_skills.py", public_skill)
+        self.assertIn("current project working directory does not need to contain DevConcord", public_skill)
+        self.assertIn("/configured/source_root/scripts/manage_skills.py", reference_module)
+        self.assertIn("`--summary`", guide)
+        self.assertIn("--summary", cli)
         self.assertIn("migrate --scope user", guide)
         self.assertIn("--apply", guide)
         self.assertNotRegex(guide, r"(?m)^\s+--skills\s+devconcord-")

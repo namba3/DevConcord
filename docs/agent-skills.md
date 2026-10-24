@@ -76,11 +76,11 @@ User ScopeのSkillsと管理情報は次のように分離されています。�
 
 Copilot CLIが公式にサポートする`~/.copilot/skills/`は別の個人探索先です。DevConcordはそこへSkillsを導入・同期・削除しませんが、同名のSkillがある場合はUser Scopeの導入・検証を停止して、既存内容を保護します。CopilotではプロジェクトSkillsが個人Skillsより優先されるため、同名時は`doctor --target <project>`でも診断してください。
 
-`doctor --target <project>` はユーザー状態とProject Scope双方の旧Skill移行状態を診断し、さらにUser/Project間の同名Skillを報告します。旧Skillの管理状態、導入先hash、source provenance、重複発見リスク、不要な旧名allowance候補を表示します。読み取り専用であり、保護されたSkillの削除やallowance整理は行いません。これは静的な名前・配置・manifest診断であり、エージェントの実際の選択順位を示しません。
+`doctor --target <project>` はUser Scopeと指定Project Scopeを独立して診断し、片方の失敗で他方の結果を隠しません。既定ではScopeごとの概要の後に詳細を表示します。`--summary` は同じ検査を実施したまま詳細表示だけを省略します。旧Skillの管理状態、導入先hash、source provenance、重複発見リスク、不要な旧名allowance候補を表示します。読み取り専用であり、保護されたSkillの削除やallowance整理は行いません。これは静的な名前・配置・manifest診断であり、エージェントの実際の選択順位を示しません。
 
 ### ローカルDevConcord資料の参照
 
-`devconcord`のReference moduleはAIエージェント向けの共通参照インターフェースです。各内部ワークフローは必要な資料パスと、その資料が必須か任意かを決めます。別Skillの自動選択・呼び出しはエージェント間で保証されないため、統合パッケージ名 `devconcord` を渡します。
+`devconcord`のReference moduleはAIエージェント向けの共通参照インターフェースです。各内部ワークフローは必要な資料パスと、その資料が必須か任意かを決めます。別Skillの自動選択・呼び出しはエージェント間で保証されないため、統合パッケージ名 `devconcord` を渡します。コマンドは登録済みDevConcordソースcheckout内のスクリプトを絶対パスで起動します。作業中の導入先リポジトリにDevConcord checkoutがあるとは仮定しません。以下の`/absolute/path/to/DevConcord`は実環境のcheckoutに置き換えてください。
 
 ```sh
 python3 /absolute/path/to/DevConcord/scripts/manage_skills.py reference \
