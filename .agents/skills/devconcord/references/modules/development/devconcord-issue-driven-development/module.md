@@ -39,6 +39,14 @@ verification and Skill choices when implementation or test results expose a
 materially different risk. Follow `docs/common/ai-assisted-development.md`
 §17.5 without adding a risk score or parallel issue ledger.
 
+Before implementing a blocked or decision-dependent issue, verify its blocker
+and any related DEC against the current issue register, requirements, ADRs,
+implementation, and evidence. Plan may identify a decision or suggest
+`develop unblock`, but remains read-only. Single/Batch may use
+`develop unblock` when relevant and authorized; do not make Decision
+Resolution a required phase for ordinary issues. A resolved DEC does not
+complete or automatically unblock an issue.
+
 ## Completion contract
 
 Implementation alone does not complete an issue. Distinguish implementation,

@@ -21,6 +21,9 @@ serious impact, while keeping repair authority separate. See
 
 None grants permission to edit product code. Implement through the user's
 existing Issue-Driven Development or Development Orchestration authority.
+Finding a cause does not necessarily decide which repair to choose. Keep cause
+analysis and any remaining repair/design decision distinct; route the latter
+to Decision Resolution only when a material judgment remains.
 
 ## Workflow
 

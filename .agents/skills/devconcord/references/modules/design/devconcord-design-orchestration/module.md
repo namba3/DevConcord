@@ -24,6 +24,11 @@ do not optimize document volume or number of changes.
   `devconcord-bootstrap-from-design` is the requested workflow, or to replace
   a focused design, review, planning, or implementation task.
 
+Decision Resolution may frame and investigate an unresolved judgment that
+blocks design or implementation. Design Orchestration remains responsible for
+creating or evolving authorized design artifacts; neither workflow approves
+user requirements or replaces the canonical ADR.
+
 ## Modes
 
 - **Explore:** read-only analysis and proposals. Do not edit project files,

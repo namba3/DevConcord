@@ -60,6 +60,13 @@ issue register as the work source of truth, existing completion axes and
 weights, issue IDs and history, and separate risk records. Add no parallel
 progress ledger or quality score.
 
+When current evidence reveals a material blocker or unresolved judgment,
+consider `develop unblock` or the matching `decide` command before selecting
+dependent implementation. This is conditional, not a standard loop step or
+quality gate. Keep the existing finite iteration/investigation budget; route
+approval-dependent choices to the authorized decision maker and continue only
+safe independent work.
+
 ## Related internal workflows and completion
 
 Do not duplicate specialist workflows or assume automatic Skill handoffs:

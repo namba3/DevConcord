@@ -15,6 +15,12 @@ These are logical instructions interpreted by the agent using this Skill. They a
 | `develop batch` | `development/devconcord-issue-driven-development` | Bounded issue batch with dependency and evidence controls |
 | `develop iterate` | `development/devconcord-development-orchestration` | Finite implementation, verification, review, and continue/stop cycle |
 | `develop stabilize` | `development/devconcord-development-orchestration` | Authorized stabilization without feature expansion |
+| `develop unblock` | `development/devconcord-decision-resolution` | Bounded blocker discovery, decision support, safe resolution/bypass, or escalation |
+| `decide scan` | `development/devconcord-decision-resolution` | Read-only classification of blockers/open decisions and canonical record checks |
+| `decide investigate` | `development/devconcord-decision-resolution` | Decision-changing evidence gathering; experiments need separate authorization |
+| `decide compare` | `development/devconcord-decision-resolution` | Evidence-based alternative comparison and counterarguments |
+| `decide recommend` | `development/devconcord-decision-resolution` | Decision Packet or concise recommendation; not approval |
+| `decide resolve` | `development/devconcord-decision-resolution` | Authorized canonical decision update; does not authorize implementation |
 | `review repository` | `verification/devconcord-repository-review` | Evidence-based read-only findings |
 | `review impact` | `verification/devconcord-repository-review` | Proposed-change impact assessment |
 | `review gap` | `verification/devconcord-gap-analysis` | Read-only cross-cutting assessment and priorities |
@@ -48,6 +54,9 @@ Route by desired outcome, target, expected artifact, and authority, not by a key
 - “Improve the existing design” → `design evolve`.
 - “Find why this test/regression fails” → `diagnose root-cause`; diagnosis alone does not authorize the fix.
 - “Stabilize quality without adding features” → `develop stabilize`.
+- “Find and remove the blockers preventing these issues from progressing” → `develop unblock`; resolve only within current authority, otherwise identify safe independent work or escalate.
+- “Find unresolved decisions” → `decide scan` (read-only).
+- “Investigate/compare/recommend/resolve this decision” → the matching `decide` workflow; investigation defaults to read-only, recommendations are not approvals, and `resolve` requires current authority.
 - “Resume this long-running task from its handoff” → the applicable `develop issue` or `develop iterate` workflow; inspect and revalidate the existing handoff before continuing. Do not create a handoff for routine work or treat it as authority.
 - “Synchronize adopted DevConcord guidance” → `manage sync`.
 - “Migrate safely from an old persisted format” → `lifecycle compatibility`.

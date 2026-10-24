@@ -1253,6 +1253,16 @@ Design / Development Orchestration、Issue-Driven Development、Implementation P
 
 Planは読み取り専用を保ち、HANDOFFを参照しても変更しません。Single/Batchでは課題状態を課題表で更新し、Batch一覧を複製しません。Development Orchestrationは既存のPlan / Iterate / Stabilize、品質ゲート、有限予算、停止判断を維持し、handoffがないことを理由に停止しません。HANDOFF内の次作業は権限付与ではなく、commit/push/release/移行/完了処理は現在の指示で再確認します。引継ぎ更新の要否と詳しさは影響、不確実性、波及範囲、可逆性、証拠信頼度、継続性に応じて判断し、数値スコアや必須チェックリストを作りません。
 
+### 17.7 Decision Resolution & Unblocking
+
+具体的な開発阻害要因や実質的な未決判断が確認された場合に限り、[`Decision Resolution & Unblocking` internal workflow](../../.agents/skills/devconcord/references/modules/development/devconcord-decision-resolution/module.md)を検討できます。すべての課題・反復へ必須化せず、既存のIssue-Driven DevelopmentとDevelopment Orchestrationの有限予算・品質ゲート・停止条件を維持します。
+
+作業（実装・調査・修正・検証）は既存課題表の`ISS-####`、判断すべき問いは必要な場合に`DEC-####`、重要な設計理由の正本は`ADR-####`、将来起きる可能性と影響は`RISK-####`、再開時コンテキストは既存HANDOFFに属します。標準は課題表内の未決事項節であり、規模上必要な場合だけ認可済みの専用文書を単一正本として使います。IssueとDEC、DECとADRの状態・詳細を二重管理しません。Blockerは作業を実際に妨げる条件で、常にDecisionとは限りません。
+
+判断過程は、重複確認と分類、回答可能な問いへの定式化、判断を変え得る根拠の調査、現実的な案の比較と反証、推奨、権限内の確定または承認者へのエスカレーション、正本への反映、Issueごとの準備状態再評価で構成します。Decision Packetは必要時の提示資料であり正本ではありません。調査・比較・推奨は既定で読み取り専用、試作・実験・外部操作・記録更新は現在の権限を確認します。推奨は承認ではなく、DECの解決は関連Issueの完了や自動ブロック解除ではありません。
+
+Blocker対応の結果は**Resolved**（原因を証拠で解消）、**Bypassed Safely**（原因は残るが独立作業のみ安全に継続）、**Escalated**（判断権限または証拠不足で判断者へ提示）としてIssue/DEC状態と分けます。複数Issueの共通原因を見つけてもIssue数だけで優先順位を決めず、依存・影響・緊急性・可逆性・残余リスク・調査費用を比較します。詳しい状態定義、Decision Packet、再評価条件は[課題追跡規約 §4.12](../work-management/issue-tracking.md)を参照してください。
+
 ## 18. 結論
 
 AIコーディングでは、コードの生成速度が上がる一方、誤った要求解釈・設計不整合・不十分な検証が高速に拡大する危険がある。

@@ -24,6 +24,7 @@
 - Markdown検証器がCommonMarkのコード/リンク構文、HTMLリンク・アンカー、重複見出し、相対パスを扱い、バイナリや不正UTF-8で未処理例外を出さず、誤った文書を見逃したり正しい文書を拒否したりしないか。追加・変更した判定には、現実的な正常系と負例のテストがあるか。
 - 検証ヘルパーが既存指示・課題行・ファイルモード・Git状態・provenance・リンク・差分範囲・再実行性を検査し、実AIの判断評価と決定的ユニットテストの証拠を混同していないか。
 - `devconcord-issue-driven-development` が既存課題表を正本として使い、Planの読み取り専用性、Single/Batchの範囲・依存・ブロッカー制御、検証証拠に基づく状態更新を維持しているか。実装のみで完了扱いにせず、ID・履歴・既存10評価軸を保護し、commit/pushや履歴変更を依頼なしに前提としていないか。静的仕様テストと実エージェントの意味判断を区別しているか。
+- Decision Resolution & Unblockingが、ISS（作業）、DEC（判断）、Blocker（現在の阻害条件）、Risk（将来事象）、ADR（判断理由）、HANDOFF（再開文脈）の正本を分け、重複したDEC登録や二重管理を避けているか。解決根拠・保留条件・承認権限が明確で、DEC解決をIssue完了/自動解除と誤認せず、Blocker解消結果のResolved / Bypassed Safely / EscalatedをIssue/DEC状態と区別しているか。
 - `devconcord-development-orchestration` が課題単位のBatchを複製せず、有限の反復・変更・修復予算、Planの読み取り専用性、課題表を正本とする運用、最終差分に対応する検証証拠、品質ゲートと収束/停止判断を維持しているか。承認が必要な設計変更、ユーザー変更との競合、予算到達時に安全に停止し、実エージェントの意味判断を静的契約テストから推定していないか。
 - Skillと検証の深さが意味的変更・実際の影響・不確実性・波及範囲・可逆性・証拠信頼度に比例し、ファイル数・優先度・Skill数の代理指標に依存していないか。未知を低リスク扱いせず、重大/不可逆な影響を平均スコアに隠さず、リスク変化時に分析と検証を再評価するか。Skill選択と適用・検証・権限を区別し、既存の基本契約やOptional Skillの境界を守っているか。
 - `devconcord-observability-design` が診断上の問いから必要な信号を選び、ログ・メトリクス・トレース・診断レポートを一律に要求していないか。個人情報・秘密・ログインジェクション・保持/アクセス/送信を扱い、観測機構の障害・資源上限・性能負荷・信号欠落の契約と検証を定めているか。診断信号の存在を根本原因特定や実際の診断成功の保証としていないか。
@@ -43,7 +44,7 @@
 
 ## 指摘の基準
 
-公式公開Skillは `devconcord` の一つです。過去の `devconcord-*` 公開名は、現行の配布対象ではなく、内部モジュールIDまたは履歴上の名称です。利用案内では `devconcord review repository`、`devconcord review gap`、`devconcord verify test-design`、`devconcord develop implementation-plan`、`devconcord quality security` などの論理コマンドを使い、必要な内部モジュールは統合Skillのroutingに従って選びます。論理コマンドもSkillの独立導入や権限付与を意味しません。
+公式公開Skillは `devconcord` の一つです。過去の `devconcord-*` 公開名は、現行の配布対象ではなく、内部モジュールIDまたは履歴上の名称です。利用案内では `devconcord review repository`、`devconcord review gap`、`devconcord verify test-design`、`devconcord develop implementation-plan`、`devconcord quality security` などの論理コマンドを使い、必要な内部モジュールは統合Skillのroutingに従って選びます。未決判断や実質的な阻害要因がある場合に限り `devconcord decide scan`、`devconcord decide investigate`、`devconcord decide compare`、`devconcord decide recommend`、`devconcord decide resolve`、`devconcord develop unblock` も候補にします。これらを通常ループの必須工程・品質ゲートにせず、推奨を承認と、DEC解決をIssue完了・自動解除と混同しません。論理コマンドもSkillの独立導入や権限付与を意味しません。
 
 実際の不整合、誤用、データ損失、検証漏れにつながる具体的な影響を示します。好みの文体や規約の追加だけを欠陥として指摘せず、変更の規模とリスクに応じて確認範囲を絞ります。
 

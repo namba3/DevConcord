@@ -1,6 +1,6 @@
 ---
 name: devconcord
-description: Use DevConcord workflows for software design, bounded development, repository review, verification, diagnosis, quality design, lifecycle decisions, guidance management, and agent evaluation. Route explicit devconcord commands or natural-language requests to the smallest relevant internal workflow while preserving user authority and project contracts.
+description: Use DevConcord workflows for software design, bounded development, decision resolution and unblocking, repository review, verification, diagnosis, quality design, lifecycle decisions, guidance management, and agent evaluation. Route explicit devconcord commands or natural-language requests to the smallest relevant internal workflow while preserving user authority and project contracts.
 ---
 
 # DevConcord Unified Skill

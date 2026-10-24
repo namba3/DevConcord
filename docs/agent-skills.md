@@ -12,6 +12,7 @@
 |---|---|
 | 設計の探索・作成・改善 | `devconcord design explore/create/evolve` |
 | 課題実装・反復・安定化 | `devconcord develop issue/iterate/stabilize` |
+| 未決判断・阻害要因の調査/解消 | `devconcord decide scan/investigate/compare/recommend/resolve`; `devconcord develop unblock` |
 | リポジトリレビュー・影響・ギャップ | `devconcord review repository/impact/gap` |
 | テスト設計・原因診断 | `devconcord verify test-design`; `devconcord diagnose root-cause` |
 | 品質専門領域 | `devconcord quality performance/robustness/security/replaceability/observability/ux/documentation` |

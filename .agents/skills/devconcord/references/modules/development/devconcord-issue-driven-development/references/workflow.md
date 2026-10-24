@@ -22,6 +22,10 @@ remain in force when compatible.
    implementation, tests, CI, and operational constraints. Verify issue status
    against current evidence and preserve confirmed facts separately from
    assumptions or missing information.
+5. For a blocked or materially decision-dependent issue, verify the reported
+   blocker and existing DEC/ADR/requirement. If a distinct judgment prevents
+   safe progress, consider the optional Decision Resolution workflow. Do not
+   edit records in Plan or create duplicate DEC entries.
 
 If the required issue register or its rules cannot be found, stop before
 changing issue state. Do not manufacture IDs, statuses, requirements, or a
@@ -47,6 +51,9 @@ An unresolved blocker prevents implementation unless the issue explicitly
 allows a safe independent slice. Recheck whether a reported issue is already
 fixed, duplicated, obsolete, or underspecified before acting; preserve its ID
 and record the evidence rather than silently deleting or rewriting its history.
+If a DEC has been resolved, re-evaluate this issue's remaining blockers,
+prerequisites, approvals, acceptance conditions, and safe readiness. Do not
+infer readiness or completion from the DEC state alone.
 
 Assess actual issue risk separately from priority and change size. Consider
 impact, likelihood, uncertainty, affected scope, reversibility, and whether

@@ -33,6 +33,7 @@ EXPECTED_MODULES = {
         "devconcord-development-orchestration",
         "devconcord-issue-driven-development",
         "devconcord-implementation-planning",
+        "devconcord-decision-resolution",
     },
     "verification": {
         "devconcord-test-design",
@@ -82,6 +83,12 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
             "lifecycle compatibility",
             "lifecycle release",
             "lifecycle dependencies",
+            "decide scan",
+            "decide investigate",
+            "decide compare",
+            "decide recommend",
+            "decide resolve",
+            "develop unblock",
         ):
             self.assertIn(f"`devconcord {command}`", guidance)
             self.assertIn(f"`{command}`", routing)
@@ -102,7 +109,7 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
                     self.assertTrue(text.strip())
                     self.assertFalse(text.startswith("---\n"))
                     self.assertFalse((path.parent / "SKILL.md").exists())
-        self.assertEqual(sum(map(len, discovered.values())), 24)
+        self.assertEqual(sum(map(len, discovered.values())), 25)
 
     def test_router_covers_explicit_commands_and_risk_proportional_selection(self) -> None:
         router = (PACKAGE / "references" / "routing.md").read_text(encoding="utf-8")
@@ -110,6 +117,8 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         for command in (
             "design explore", "design create", "design evolve",
             "develop plan", "develop issue", "develop batch", "develop iterate", "develop stabilize",
+            "decide scan", "decide investigate", "decide compare", "decide recommend",
+            "decide resolve", "develop unblock",
             "review repository", "review impact", "review gap", "verify test-design",
             "diagnose root-cause", "quality performance", "quality robustness",
             "quality security", "quality replaceability", "quality observability",
@@ -142,6 +151,32 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         ):
             self.assertIn(name, unified)
         self.assertIn("workflows are optional", unified.lower())
+
+    def test_decision_resolution_contract_keeps_records_authority_and_issue_state_distinct(self) -> None:
+        decision = module("development", "devconcord-decision-resolution")
+        module_text = decision.read_text(encoding="utf-8")
+        workflow_text = (decision.parent / "references" / "workflow.md").read_text(encoding="utf-8")
+        issue_guide = (ROOT / "docs" / "work-management" / "issue-tracking.md").read_text(
+            encoding="utf-8"
+        )
+        issue_template = (ROOT / "docs" / "work-management" / "templates" / "issue-register.md").read_text(
+            encoding="utf-8"
+        )
+        for state in ("未整理", "調査中", "判断可能", "承認待ち", "解決済み", "保留"):
+            with self.subTest(state=state):
+                self.assertIn(state, module_text + workflow_text + issue_guide)
+        for contract in (
+            "DEC-####", "not another decision record", "recommendation is not approval",
+            "does not complete or automatically unblock", "Resolved", "Bypassed Safely",
+            "Escalated", "reconsideration", "decision-changing evidence",
+        ):
+            with self.subTest(contract=contract):
+                self.assertIn(contract.lower(), (module_text + workflow_text).lower())
+        self.assertIn("DEC-0001", issue_template)
+        self.assertIn("Related DEC ID", (ROOT / "docs" / "work-management" / "templates" / "handoff.md").read_text(
+            encoding="utf-8"
+        ))
+        self.assertIn("Decision Resolution & Unblocking", issue_guide)
 
     def test_development_handoff_is_optional_evidence_context_not_a_parallel_ledger(self) -> None:
         template = ROOT / "docs" / "work-management" / "templates" / "handoff.md"

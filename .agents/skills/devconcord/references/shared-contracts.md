@@ -3,7 +3,9 @@
 ## Request, scope, and authority
 
 - Preserve explicit requirements, existing design decisions, repository rules, user constraints, and issue-register source of truth.
+- Track implementation/investigation work and blocker status in the issue register. A material open judgment may have a distinct DEC ID/state in that register (or one authorized canonical decisions file); ADRs hold durable design rationale, risk records hold possible future events, and handoffs only point to current context. Do not create duplicate sources of truth.
 - Distinguish read-only assessment/planning from authorized modification. A command selects a procedure; it grants no extra permission.
+- A decision recommendation is not approval; resolving a DEC does not complete or automatically unblock dependent issues. Recheck every affected issue and its other prerequisites independently.
 - Protect unrelated working-tree changes. Do not contact external systems, publish, approve, commit, push, or rewrite Git history unless the user authorized that action.
 - Treat important requirement changes, public compatibility breaks, data-loss risk, external side effects, and irreversible actions as approval boundaries.
 

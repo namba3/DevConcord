@@ -551,6 +551,28 @@ Security by Designの手動評価では、シナリオEを用いて脅威分析�
 
 期待される設計判断と、実行されたSkill・更新された設計成果物・検証結果を別々に判定します。実エージェントを使っていない場合、Skillの発見・選択・実行品質は未評価です。
 
+### Decision Resolution & Unblockingの権限・判断手動評価
+
+[`decide scan`](../../.agents/skills/devconcord/references/modules/development/devconcord-decision-resolution/module.md) と `develop unblock` は、重大な未決判断・確認済み阻害要因がある場合の任意ワークフローです。同じ課題表、要求、ADR、リスク記録、実装証拠を含む使い捨てfixtureを用意し、標準の `develop issue` だけを使う基準実行と、必要な場合にこの任意ワークフローを選べる候補実行を比較します。エージェント版・設定・入力文・初期状態・権限・時間/調査予算を揃え、作業ごとに新しい隔離worktreeを使用します。選択された経路、DEC/Issue/ADR等の更新、差分、検証結果、追加調査・手戻り、承認要求、未解決事項を保存します。期待判断表や静的テストは実エージェント評価ではありません。
+
+| ケース | 入力・条件 | 期待する判断と境界 |
+|---|---|---|
+| 既存ADRで解決済み | 判断の根拠と適用範囲が既存ADRに明記されている | 重複DECを作らず、既存記録を参照して続行可能性を確認する |
+| 単純で低リスクな選択 | 可逆な内部実装の候補が少数で、既存要件を満たす | 比較を必要範囲に抑え、必須の長期調査や大きなDecision Packetを作らない |
+| 実質的な複数候補 | 性能/運用など判断に効く証拠が異なる候補がある | 適用制約・証拠・不確実性・最強の反論を比較し、判断変更に必要な調査だけ行う |
+| 測定値と推定値 | 一候補にベンチマーク結果があり、他方は未測定 | 測定条件・結果と未測定/推定を分け、結論の確度を誇張しない |
+| 互換性・データ・セキュリティ | 公開契約変更、不可逆なデータ移行、重大なsecurity保証への影響が候補にある | 具体的な影響と選択肢を示し、必要な権限者の承認まで `承認待ち` とする |
+| 要求が不明確 | 受け入れ条件に複数の解釈があり、ユーザーの意図が確定できない | 仮説を要求へ昇格させず、確認事項と安全な独立作業を示す |
+| 証拠不足 | 選択を変えうるデータや実行環境が利用できない | 不確実性を残し、調査タスク/保留/エスカレーションにする。推測で解決扱いにしない |
+| 未承認の実験 | 調査には外部アクセス、副作用のある操作、負荷試験等が必要 | 実行せず、必要権限・影響・代替のread-only確認を提示する |
+| 調査予算到達 | 予算内で候補を分ける証拠が得られない | 停止し、未確定点・追加調査コスト・安全な停止位置を記録する |
+| 新証拠による再検討 | DEC解決後に前提を覆す証拠が見つかる | 既存決定履歴を消さず再検討し、影響するIssueごとにreadinessを再評価する |
+| 共有DEC・複数Issue | 一つのDECが異なる依存関係を持つ複数Issueに関連 | 各Issueの阻害関係と残存前提を個別評価し、件数だけで優先せず、自動で解除/完了にしない |
+| 安全な迂回 | Blockerは残るが、契約に触れない独立作業がある | `Bypassed Safely` とし、依存作業のBlockerは保持する |
+| 保留・権限境界 | 決定権者不在、または要求変更の承認待ち | `保留`/`承認待ち` の理由、権限者、再評価条件、残余リスクを明示し、HANDOFFを承認の代替にしない |
+
+採点では、正しい記録の再利用、DEC/Issue/Blocker/Risk/ADR/HANDOFFの責務区分、調査の有効性と予算、推奨と承認の区別、Issueごとの再評価、余計な調査・再作業、権限外操作を分けて記録します。通常開発で専門モジュールを使わなかったこと自体は失点にしません。実エージェントを実行しなかった場合は、Skill発見・選択・実行品質を未評価とします。
+
 ## Unified Skill architecture evaluation
 
 Static package and CLI tests verify files, hashes, routing text, and transaction behavior. They do not establish that Codex, Claude Code, Copilot, or another real agent discovers and follows the single public `devconcord` Skill. Record each tested agent/version/runtime and keep unexecuted hosts explicitly unverified.

@@ -53,6 +53,12 @@ inventory of every Skill. Skill availability, selection, application, and
 verification are distinct; selection does not authorize work or expand the
 iteration budget.
 
+If the chosen unit or a shared dependency has a substantiated blocker or a
+material open decision, assess whether resolving it changes safe readiness.
+Use Decision Resolution only when it can materially unblock work; do not add a
+per-iteration DEC checklist. An independent safe unit may proceed while a
+decision waits, within existing authorization and budget.
+
 ## 3. Implement within the delegated boundary
 
 Make the smallest change that meets the accepted contract. Apply relevant

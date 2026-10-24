@@ -34,7 +34,9 @@
 
 ## Blockers / Approval Boundaries
 
-- Blockers or decisions requiring authorization:
+- Blocker reference / reason (canonical detail stays in issue register):
+- Related DEC ID and next decision step (canonical state/details stay in its source):
+- Decisions requiring authorization:
 
 ## Next Safe Actions
 
