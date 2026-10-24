@@ -1243,7 +1243,7 @@ Design / Development Orchestration、Issue-Driven Development、Implementation P
 
 ### 17.6 Evidence-Grounded Development Handoff
 
-長期・複雑な未完了作業、複数セッションにまたがる有限の開発反復、重要な未検証事項、作業者交代やコンテキスト圧縮が見込まれる場合は、任意の`HANDOFF.md`スナップショットを使えます。軽微で完了済みの変更、短い単発作業、読み取り専用分析には通常不要です。既存の引継ぎ文書があればそれを優先し、導入先に複数のhandoffを自動生成しません。標準テンプレートは[`docs/work-management/templates/handoff.md`](../work-management/templates/handoff.md)、課題表との運用契約は[課題追跡規約](../work-management/issue-tracking.md#8-開発引継ぎhandoffmd)を参照してください。
+長期・複雑な未完了作業、複数セッションにまたがる有限の開発反復、重要な未検証事項、作業者交代やコンテキスト圧縮が見込まれる場合は、任意の`HANDOFF.md`スナップショットを使えます。軽微で完了済みの変更、短い単発作業、読み取り専用分析には通常不要です。新規作成または許可された移設では、導入先の課題表と同じディレクトリに配置します。既存の引継ぎ文書が別の場所にある場合は複製せず、移設許可までは既存ファイルを使います。標準テンプレートは[`docs/work-management/templates/handoff.md`](../work-management/templates/handoff.md)、課題表との運用契約は[課題追跡規約](../work-management/issue-tracking.md#8-開発引継ぎhandoffmd)を参照してください。
 
 課題表は課題ID、目的、優先度、状態、依存、ブロッカー、受け入れ・完了条件、課題単位の検証証拠、履歴、既存評価の唯一の正本です。HANDOFFは再開に必要な作業コンテキストを渡し、課題の一覧や状態、TODO、リスク、品質評価を複製しません。状態が必要なら課題表を参照します。実装・検証・判断の根拠そのものは、現在の実装、テスト、CI、ADR、課題表などにあり、HANDOFF自身は証拠ではありません。
 

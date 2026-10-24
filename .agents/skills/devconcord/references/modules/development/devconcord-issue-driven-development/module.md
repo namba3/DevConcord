@@ -78,7 +78,9 @@ read-only and must not edit a handoff. Single/Batch may update an authorized
 handoff when needed, but do not generate one in every target or create multiple
 handoff files. See the shared AI-assisted development guide's Evidence-Grounded
 Development Handoff section for resume freshness, concurrency, and authority
-contracts.
+contracts. Place a newly created handoff beside the target's authoritative
+issue register; do not impose a fixed target path or duplicate an existing
+equivalent handoff elsewhere.
 
 ## DevConcord References
 

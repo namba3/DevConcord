@@ -134,4 +134,6 @@ quality gate, evidence source, or permission grant. Absence does not block
 Plan/Iterate/Stabilize. At meaningful checkpoints, capture the current work
 unit, verified progress and its state, material pending verification, findings,
 blockers, and next safe action without copying quality-gate output or issue
-lists. Keep the existing finite budget and stop conditions.
+lists. Place a newly created handoff beside the target's authoritative issue
+register; do not impose a fixed target path or duplicate an existing equivalent
+handoff elsewhere. Keep the existing finite budget and stop conditions.

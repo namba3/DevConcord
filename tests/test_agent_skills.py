@@ -167,6 +167,11 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         template_text = template.read_text(encoding="utf-8")
         agents_guidance = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        review_guidance = (ROOT / "REVIEW.md").read_text(encoding="utf-8")
+        guidance_generation = (
+            MODULES / "management" / "devconcord-generate-agent-guidance"
+            / "references" / "agents-md.md"
+        ).read_text(encoding="utf-8")
         checklist_heading = issue_guide.index("## 7. 運用チェックリスト")
         handoff_heading = issue_guide.index("## 8. 開発引継ぎ（HANDOFF.md）")
         checklist_item = issue_guide.index("- [ ] 冒頭の完成度評価")
@@ -197,6 +202,12 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertIn("not overwrite", orchestration_workflow)
         self.assertIn("HANDOFF", agents_guidance)
         self.assertIn("検証", agents_guidance)
+        self.assertIn("同じディレクトリ", template_text)
+        self.assertIn("beside the target's authoritative", issue_module.lower())
+        self.assertIn("same directory as the", orchestration_workflow.lower())
+        self.assertIn("課題表と同じディレクトリ", issue_guide)
+        self.assertIn("課題表と同じディレクトリ", guidance_generation)
+        self.assertIn("課題表と同じディレクトリ", review_guidance)
 
     def test_module_contracts_and_supporting_references_are_retained(self) -> None:
         contracts = {

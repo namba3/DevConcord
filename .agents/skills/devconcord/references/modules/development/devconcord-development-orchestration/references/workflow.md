@@ -207,6 +207,9 @@ verification, pending/stale evidence, material findings, blockers, stop reason,
 and next safe action. Keep the snapshot concise and current; no per-edit or
 per-test update is required. Handoff details never extend the current user's
 authority or the finite iteration/repair budget.
+When a new handoff is authorized, place it in the same directory as the
+authoritative issue register. Do not create a second copy if an equivalent
+handoff already exists elsewhere; resolve any relocation only with authority.
 
 Report mode and boundary; selected work units and rationale; changes;
 commands and results; review findings and repairs; authorized record updates;

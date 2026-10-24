@@ -19,7 +19,7 @@
 | Bootstrap・Adopt・Sync・Guidance・Reference | `devconcord manage bootstrap/adopt/sync/guidance/reference` |
 | エージェント評価 | `devconcord evaluate agent` |
 
-長期・複雑な作業の再開では、既存HANDOFFを`develop issue`または`develop iterate`の補助情報として確認し、現在の課題表・実装・検証と照合します。引継ぎは任意であり、作業権限や証拠の正本にはなりません。
+長期・複雑な作業の再開では、既存HANDOFFを`develop issue`または`develop iterate`の補助情報として確認し、現在の課題表・実装・検証と照合します。新規作成または許可された移設では課題表と同じディレクトリに配置し、既存ファイルを複製しません。引継ぎは任意であり、作業権限や証拠の正本にはなりません。
 
 これらはSkill内の論理指示であり、シェルコマンドや全エージェント共通のネイティブSlash Commandではありません。明示コマンドと自然言語は同じリスク比例ルーターを通り、モジュール選択は権限を拡大しません。Compatibility Migration、Release Engineering、Dependency Governanceは実際に関係する場合のOptional workflowです。
 
