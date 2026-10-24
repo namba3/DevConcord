@@ -21,9 +21,12 @@
 | [`devconcord-test-design`](../.agents/skills/devconcord-test-design/SKILL.md) | 要求・契約から独立した期待値と検証方法を設計 |
 | [`devconcord-implementation-planning`](../.agents/skills/devconcord-implementation-planning/SKILL.md) | 複雑な変更を依存関係のある検証可能な実装単位へ分割 |
 | [`devconcord-issue-driven-development`](../.agents/skills/devconcord-issue-driven-development/SKILL.md) | 既存課題表を起点に対象を選び、範囲内で実装・検証・状態更新 |
+| [`devconcord-development-orchestration`](../.agents/skills/devconcord-development-orchestration/SKILL.md) | 複数の開発単位にわたる実装・検証・レビュー、品質ゲート、続行・停止判断 |
 | [`devconcord-generate-agent-guidance`](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md) | 実態に基づく `AGENTS.md` と `REVIEW.md` の作成・更新 |
 | [`devconcord-documentation-architecture`](../.agents/skills/devconcord-documentation-architecture/SKILL.md) | 読者タスクを中心にREADME・文書構造・導線・保守性をレビュー・改善 |
 | [`devconcord-design-orchestration`](../.agents/skills/devconcord-design-orchestration/SKILL.md) | 委任範囲内で設計を段階的に具体化・改善し、関連要求・ADR・設計資産・検証条件の整合を進める |
+
+`devconcord-development-orchestration` は複数の作業単位をまたぐ有限の開発反復を制御します。単一課題・限定Batchの実装手順は `devconcord-issue-driven-development`、複雑な変更の順序は `devconcord-implementation-planning`、設計の再検討は `devconcord-design-orchestration` と役割を分けます。Skill間の自動呼び出しは前提にしません。
 
 `devconcord-gap-analysis` は複数領域を横断して適用性、証拠、ギャップ、改善順を読み取り専用で整理します。`devconcord-design-orchestration` はユーザーが委任した設計作業を段階的に具体化・改善し、設計資産の整合を進めますが、gap assessmentを再実行したり専門設計手順を複製したりしません。具体的なコード上の欠陥は `devconcord-repository-review`、文書体系の設計は `devconcord-documentation-architecture`、実装単位の計画は `devconcord-implementation-planning`、課題実装は `devconcord-issue-driven-development` がそれぞれ担います。必要に応じて別作業として選び、エージェント間の自動Skill呼び出しは前提にしません。
 

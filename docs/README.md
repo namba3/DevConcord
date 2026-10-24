@@ -15,6 +15,7 @@
 | [Agent Skills運用ガイド](agent-skills.md) | 導入先へのSkillsの選択導入、共用、更新、manifest、復旧、検証 |
 | [`devconcord-reference` Skill](../.agents/skills/devconcord-reference/SKILL.md) | ローカル共通資料を要求元Skillの版に合わせて参照する |
 | [`devconcord-design-orchestration` Skill](../.agents/skills/devconcord-design-orchestration/SKILL.md) | 委任された範囲で、要求・設計・判断・検証を段階的に具体化・改善し、整合させる |
+| [`devconcord-development-orchestration` Skill](../.agents/skills/devconcord-development-orchestration/SKILL.md) | 既存設計と課題表に基づく複数の開発反復を、検証・レビュー・品質ゲートで制御する |
 
 ## アプリ設計
 
@@ -52,6 +53,7 @@
 | 要求・契約から独立したテストを設計する | [`devconcord-test-design` Skill](../.agents/skills/devconcord-test-design/SKILL.md) |
 | 複雑な変更を検証可能な実装単位へ計画する | [`devconcord-implementation-planning` Skill](../.agents/skills/devconcord-implementation-planning/SKILL.md) |
 | 既存課題表から実装対象を選び、検証・状態更新する | [`devconcord-issue-driven-development` Skill](../.agents/skills/devconcord-issue-driven-development/SKILL.md) |
+| 複数の実装単位を反復し、品質を再評価して続行・停止する | [`devconcord-development-orchestration` Skill](../.agents/skills/devconcord-development-orchestration/SKILL.md) |
 | 課題・リスク・完成度を管理する | [課題管理・完成度評価規約](work-management/issue-tracking.md)、[リスク管理規約](work-management/risk-management.md) |
 | レビュー基準を作る・調べる | [`devconcord-generate-agent-guidance` Skill](../.agents/skills/devconcord-generate-agent-guidance/SKILL.md)、[レビュー指針](../REVIEW.md) |
 | 設計書から新規リポジトリを始める | [Bootstrapの実行例](getting-started.md#3-設計書から新規bootstrapするcodex-cli)、[`devconcord-bootstrap-from-design` Skill](../.agents/skills/devconcord-bootstrap-from-design/SKILL.md) |

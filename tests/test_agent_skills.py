@@ -204,7 +204,7 @@ description: Use this Skill for a focused task.
         skills_root = repository_root / ".agents" / "skills"
         skill_dirs = sorted(path for path in skills_root.iterdir() if path.is_dir())
 
-        self.assertEqual(len(skill_dirs), 18)
+        self.assertEqual(len(skill_dirs), 19)
         self.assertTrue(all(path.name.startswith("devconcord-") for path in skill_dirs))
         self.assertTrue(all(not path.name.startswith("devconcord-devconcord-") for path in skill_dirs))
         self.assertEqual(validate_official_skill_names(skills_root), [])
@@ -638,6 +638,89 @@ description: Use this Skill for a focused task.
             "Explore候補",
             "Design/Evolve候補",
             "実エージェントを使っていない場合",
+        ):
+            with self.subTest(manual_case=expected_case):
+                self.assertIn(expected_case, scenarios)
+
+    def test_development_orchestration_skill_is_bounded_and_integrated(self) -> None:
+        repository_root = Path(__file__).resolve().parents[1]
+        skill_dir = (
+            repository_root
+            / ".agents"
+            / "skills"
+            / "devconcord-development-orchestration"
+        )
+        skill = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        workflow = (skill_dir / "references" / "workflow.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual(validate_skill_directory(skill_dir), [])
+        self.assertEqual(validate_repository_skills(repository_root), [])
+
+        for expected in (
+            "name: devconcord-development-orchestration",
+            "Iterative & Evidence-Driven Development",
+            "**Plan:** Read-only",
+            "**Iterate:**",
+            "**Stabilize:**",
+            "at most three work units",
+            "at most one focused repair",
+            "do not expand those limits",
+            "do not duplicate specialist workflows",
+            "do not infer permission",
+            "--skill devconcord-development-orchestration",
+            "--revision installed",
+        ):
+            with self.subTest(skill_contract=expected):
+                self.assertIn(expected.lower(), skill.lower())
+        for expected in (
+            "use the target's issue register as the work authority",
+            "formal priority distinct from implementation order",
+            "Do not silently change requirements",
+            "covers the final relevant diff",
+            "Scope integrity",
+            "Contract integrity",
+            "Verification evidence",
+            "Regression control",
+            "Progress validity",
+            "Progressing",
+            "Stabilizing",
+            "Regressing",
+            "Blocked",
+            "Converged",
+            "do not add a loop ledger",
+        ):
+            with self.subTest(workflow_contract=expected):
+                self.assertIn(expected.lower(), workflow.lower())
+
+        for relative_path in (
+            "README.md",
+            "docs/README.md",
+            "docs/agent-skills.md",
+            "docs/getting-started.md",
+            "docs/common/ai-assisted-development.md",
+            "docs/common/ai-development-quick-reference.md",
+            ".agents/skills/devconcord-generate-agent-guidance/references/agents-md.md",
+        ):
+            with self.subTest(discoverability=relative_path):
+                content = (repository_root / relative_path).read_text(encoding="utf-8")
+                self.assertIn("devconcord-development-orchestration", content)
+
+        scenarios = (repository_root / "tests" / "integration" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        for expected_case in (
+            "A. 正常な開発反復",
+            "B. テスト失敗",
+            "C. 設計不備",
+            "D. Stabilize",
+            "E. 収束",
+            "F. 予算超過",
+            "G. ユーザー変更との競合",
+            "H. セッション再開",
+            "I. 依存関係の問題",
+            "実エージェント",
+            "静的契約テストはSkill発見・選択",
         ):
             with self.subTest(manual_case=expected_case):
                 self.assertIn(expected_case, scenarios)

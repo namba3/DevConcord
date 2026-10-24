@@ -10,6 +10,8 @@ DevConcord公式Skill名には `devconcord-` が付きます。旧名Skillを導
 
 導入先に既存の課題表があり、その課題から次の作業を選ぶ・指定課題を実装する・範囲を区切って複数課題を進める依頼では、[`devconcord-issue-driven-development`](../.agents/skills/devconcord-issue-driven-development/SKILL.md)を検討できます。調査だけなら読み取り専用のPlan、実装依頼ならSingleまたはユーザーが指定した範囲のBatchを選びます。Skillの選択だけで実装・課題表更新が許可されるわけではなく、課題表と導入先の完了条件が正本です。
 
+既存設計と課題表に沿って複数の開発単位を実装・検証・レビューし、品質を再評価しながら続行・停止を判断する場合は、[`devconcord-development-orchestration`](../.agents/skills/devconcord-development-orchestration/SKILL.md)を検討できます。読み取り専用のPlan、許可範囲で反復するIterate、新機能を追加しないStabilizeを依頼から選びます。単一課題や限定BatchにはIssue-Driven Developmentを使い、開発反復Skillも無期限の実装・自動コミットを許可しません。
+
 重要な処理や障害の原因を利用者・開発者・運用者が安全に調査する必要がある場合は、[`devconcord-observability-design`](../.agents/skills/devconcord-observability-design/SKILL.md)で診断の問いと必要な信号を設計できます。小規模なCLIのエラー出力で十分なこともあり、監視基盤・分散トレース・リモートテレメトリを一律に導入しません。
 
 Bootstrap / Adoption / 資料Synchronizationは、導入先リポジトリを作業コンテキストとして実行します。DevConcordは読み取り専用の参照元です。Agent Skills管理CLIは別操作で、User Scopeではユーザー環境、Project Scopeでは `--target` に指定したリポジトリを変更します。

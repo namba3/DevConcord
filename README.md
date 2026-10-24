@@ -18,6 +18,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 | 要求・契約から独立したテスト戦略を設計する | [`devconcord-test-design` Skill](.agents/skills/devconcord-test-design/SKILL.md) |
 | 複雑な変更を検証可能な実装単位へ分ける | [`devconcord-implementation-planning` Skill](.agents/skills/devconcord-implementation-planning/SKILL.md) |
 | 既存課題表から対象を選び、範囲内で実装・検証・状態更新する | [`devconcord-issue-driven-development` Skill](.agents/skills/devconcord-issue-driven-development/SKILL.md) |
+| 複数の開発単位で実装・検証・レビューを反復し、続行・停止を判断する | [`devconcord-development-orchestration` Skill](.agents/skills/devconcord-development-orchestration/SKILL.md) |
 | 状態・処理・障害を安全で必要十分な情報から診断する | [`devconcord-observability-design` Skill](.agents/skills/devconcord-observability-design/SKILL.md) |
 | 利用者タスクからUIを設計し、必要なモックアップを検証する | [UI/UX設計ガイド](docs/application-design/ui-ux-guide.md)、[`devconcord-ux-functional-design` Skill](.agents/skills/devconcord-ux-functional-design/SKILL.md) |
 | DevConcord原則との品質ギャップを全体/差分診断する | [`devconcord-gap-analysis` Skill](.agents/skills/devconcord-gap-analysis/SKILL.md) |
@@ -36,7 +37,7 @@ DevConcordは、設計・開発・レビューの共通資料、テンプレー�
 - DDD、Self-documenting Code、SDD、DbC、TDD、Performance / Robustness / Replaceability / Security / Observability by Design等の開発・設計ガイド
 - 要求仕様、ADR、課題管理、リスク管理、完成度評価の規約とテンプレート
 - READMEを含む文書設計、導入、更新、検証のための共通指針
-- `AGENTS.md`・`REVIEW.md`生成、Bootstrap、Adoption、設計オーケストレーション、影響評価、テスト設計、実装計画、課題駆動開発、Observability設計、Synchronization、品質ギャップ分析用Agent Skills
+- `AGENTS.md`・`REVIEW.md`生成、Bootstrap、Adoption、設計・開発オーケストレーション、影響評価、テスト設計、実装計画、課題駆動開発、Observability設計、Synchronization、品質ギャップ分析用Agent Skills
 - 複数エージェントで再利用するAgent Skillsと、安全な配布・同期スクリプト
 
 ## 適用方針
