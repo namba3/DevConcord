@@ -1248,7 +1248,11 @@ def _plan(
                 elif operation in {"sync", "rebind-source"}:
                     action = "update"
                 else:
-                    conflicts.append(f"{name}: source has changed; run sync to review update")
+                    conflicts.append(
+                        f"{name}: an installed Skill differs from the source; install will "
+                        "not update it. Run sync to review/update existing Skills, or use "
+                        "--skills NAME [NAME ...] to install only the selected Skills"
+                    )
                     continue
                 actions.append(
                     (
