@@ -62,6 +62,34 @@ def module(category: str, name: str) -> Path:
 
 
 class UnifiedSkillArchitectureTests(unittest.TestCase):
+    def test_agent_guidance_subagent_default_is_optional_and_preserves_project_policy(self) -> None:
+        management = module("management", "devconcord-generate-agent-guidance")
+        module_text = management.read_text(encoding="utf-8").lower()
+        agents_reference = (management.parent / "references" / "agents-md.md").read_text(
+            encoding="utf-8"
+        )
+        normalized = " ".join(agents_reference.lower().split())
+        for phrase in (
+            "agents` / `both`モード", "既存`agents.md`", "明示指示", "プロジェクト規約", "意味から確認",
+            "利用禁止", "条件付き利用", "並列数", "実行環境", "承認条件",
+            "デフォルトを追加せず", "意味が曖昧", "編集後の内容を保ち",
+            "追加metadataを作りません", "`reviews`単独", "独自のサブエージェント生成規則",
+            "独立作業の並列化", "専門調査・独立レビュー", "追加トークン",
+            "結果統合", "編集競合", "小規模な作業", "単独実行", "最終的な品質検証",
+            "権限・承認境界",
+        ):
+            with self.subTest(guidance_contract=phrase):
+                self.assertIn(phrase.lower(), normalized)
+        self.assertIn("existing subagent policy", module_text)
+        self.assertIn("user-edited generated text", module_text)
+        self.assertIn("`reviews` mode never adds", module_text)
+
+        bootstrap = module("management", "devconcord-bootstrap-from-design").parent / "references" / "workflow.md"
+        adoption = module("management", "devconcord-adopt-guidance").parent / "references" / "workflow.md"
+        for path in (bootstrap, adoption):
+            with self.subTest(reusing_common_generation=path.parent.parent.name):
+                self.assertIn("manage guidance", path.read_text(encoding="utf-8"))
+
     def test_natural_language_intents_route_without_expanding_authority(self) -> None:
         routing = (PACKAGE / "references" / "routing.md").read_text(encoding="utf-8")
         shared = (PACKAGE / "references" / "shared-contracts.md").read_text(encoding="utf-8")

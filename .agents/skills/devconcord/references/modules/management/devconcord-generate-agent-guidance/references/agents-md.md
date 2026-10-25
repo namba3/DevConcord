@@ -24,6 +24,13 @@ This distributable reference contains the detailed procedure for its selected ou
 - 原則の説明には、DDD、SDD、TDD、DbC、Self-documenting Code、UX-Driven Functional Design、Performance / Robustness / Replaceability、Security by Design、Observability & Diagnosability by Design、Documentation by Designを短く含めます。詳細な説明は導入済みの共通ガイド等へ委ね、対象に関係しない分析を強制しません。
 - AGENTS.mdの案内は単一公開Skill `devconcord` を示し、作業目的に対応する論理コマンド（例: `devconcord quality security`、`devconcord verify test-design`、`devconcord review repository`）を必要な場合だけ例示します。コマンドはエージェントが解釈する論理的指示であり、シェルコマンドや全ホスト共通のslash commandとして説明しません。内部module IDを独立Skillや導入対象として案内しません。
 - `devconcord` の可用性は対象のProject Scopeと確認可能なUser Scopeの配置先・登録状態に基づいて説明し、Skillファイルの存在からホストによる発見や選択を断定しません。原則適用、ワークフローの推奨、実際の選択・実行を区別し、他の提供元の有用なSkillsも排除しません。
+- サブエージェントの利用方針は対象プロジェクトまたはチームの判断として扱います。新規生成・更新の前に既存`AGENTS.md`と今回の明示指示、および作業に適用されるプロジェクト規約にある関連記述を意味から確認し、利用禁止、条件付き利用、対象範囲、並列数、実行環境、承認条件、判断理由を維持してください。キーワードが見つからないことだけで方針なしと判断しません。既存方針がある場合は今回のデフォルトを追加せず、無条件化・範囲拡大・理由の削除・重複追加をしません。意味が曖昧なら既存文を保護し、解釈できない点を報告してください。
+- 既存のサブエージェント方針がないと確認できた場合に限り、`agents` / `both`モードで次の趣旨を短く記載してください。これはDevConcord自体の共通開発原則ではなく、生成先向けの任意のデフォルトです。
+
+  > 利用可能な環境では、独立作業の並列化や専門調査・独立レビューの効果が、追加トークン、調整・結果統合の負荷、編集競合などのコストを上回る場合、サブエージェントの利用を推奨します。小規模な作業や依存関係の強い作業は単独実行を優先し、利用できない場合は通常どおり進めます。最終的な品質検証と既存の権限・承認境界は維持します。
+
+- 再実行時は既存の関連方針を優先します。特に、前回生成した推奨を利用者が編集していたら編集後の内容を保ち、既定文へ戻したり重ねて追加したりしません。採用状態を記録するmanifest・marker・追加metadataを作りません。
+- この規則は`agents` / `both`のAGENTS.md生成・更新だけに適用します。`reviews`単独ではAGENTS.mdのサブエージェント案内を追加・更新しません。BootstrapとAdoptionはこの共通生成workflowを再利用し、独自のサブエージェント生成規則を作りません。
 - 原因不明の実質的な障害、実在する互換性/移行リスク、明示的なリリース/配布作業、依存の変更や重大リスク、エージェントSkillの実効性評価は、それぞれ `devconcord diagnose root-cause`、`devconcord lifecycle compatibility`、`devconcord lifecycle release`、`devconcord lifecycle dependencies`、`devconcord evaluate agent` の任意候補として扱えます。Compatibility、Release、Dependency workflowをDevelopment Orchestrationの標準ゲートにせず、未導入・利用不能で無関係な作業を止めず、非利用を欠陥にしません。リリースの提案は実行・承認を許可しません。実在する互換性・データ損失・セキュリティリスクの通常確認は維持します。
 - 既存の同等記述を再利用して重複を避け、対象プロジェクト固有の規約・テストコマンド・既存Skill指示・レビュー基準への参照を保ちます。
 - `reviews`モードでは、移行に必要な許可済み参照修正を除き、`AGENTS.md`の開発原則やSkill推奨を変更しません。
