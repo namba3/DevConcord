@@ -60,6 +60,16 @@ issue register as the work source of truth, existing completion axes and
 weights, issue IDs and history, and separate risk records. Add no parallel
 progress ledger or quality score.
 
+Include relevant compiler, linter, and static-analysis warnings in verification
+and final review. Try to resolve warnings introduced by the current work within
+that work unit; address related existing warnings when the fix is safe and
+proportionate. Compare warning baselines only under sufficiently equivalent
+tool, configuration, and target conditions. Do not treat warning count alone
+as a gate, broaden work to unrelated warning cleanup, or weaken checks to hide
+warnings. Handle material unresolved warnings through the existing quality
+gates and issue register, within the finite work and repair budget. See
+`docs/common/ai-assisted-development.md` §10.5.
+
 When current evidence reveals a material blocker or unresolved judgment,
 consider `develop unblock` or the matching `decide` command before selecting
 dependent implementation. This is conditional, not a standard loop step or

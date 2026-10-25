@@ -57,6 +57,16 @@ history, evaluation axes, weights, and status meanings. Do not change a
 completion score for routine work; reassess only materially affected existing
 axes when evidence warrants it.
 
+Include relevant warnings in verification and completion evidence. Normally
+resolve warnings introduced by the issue's changes in the same work unit; for
+related pre-existing warnings, use impact and safe fix cost to decide whether
+to address them. Record only important unresolved warnings in an existing
+issue row or a justified new issue after checking for duplicates and confirming
+register edits are authorized. Do not create one issue per warning, broaden the
+issue scope to unrelated cleanup, or mark work complete before required warning
+remediation and verification are satisfied. Follow
+`docs/common/ai-assisted-development.md` §10.5.
+
 Lead with the completed outcome and any blocker, failure, approval need, or
 important unverified condition. Include issue IDs, relevant changes, checks and
 results, and authorized issue-state updates. Mention a reasonable next issue

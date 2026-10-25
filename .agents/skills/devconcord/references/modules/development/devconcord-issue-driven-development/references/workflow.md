@@ -100,10 +100,19 @@ plan in chat is not a register update and is not completed work.
 5. Run proportionate targeted checks and required regressions. Record each
    check as not run, failed, or passed. Investigate failures and distinguish
    existing failures from regressions where evidence allows.
-6. Review the diff against the issue, acceptance conditions, target review
+6. Inspect relevant compiler, linter, and static-analysis warnings. Treat
+   warnings introduced by this issue's changes as same-unit remediation
+   candidates by default. Consider related existing warnings when a safe,
+   proportionate fix fits the issue. Use a comparable baseline before labeling
+   warnings new or pre-existing; otherwise record that classification as
+   unknown. Do not weaken checks or expand the issue into unrelated cleanup.
+   For material unresolved warnings, use the existing issue register only if
+   authorized and warranted, after checking for duplicates; do not create a
+   warning ledger or one issue per warning.
+7. Review the diff against the issue, acceptance conditions, target review
    criteria, and unrelated-change protection. Update only relevant existing
    documentation and the existing issue row/history.
-7. Set the issue to its local lifecycle state that matches the evidence. Use
+8. Set the issue to its local lifecycle state that matches the evidence. Use
    `完了` only when all required acceptance conditions and verification/review
    obligations are met. Otherwise retain or set the accurate state (`進行中`,
    `レビュー待ち`, or `ブロック`, according to local rules) and record why.
@@ -133,9 +142,11 @@ score, or expand the authorized scope.
    Keep unrelated items separate even when they appear next to one another in
    the register.
 4. Keep each issue's implementation and evidence separable where possible.
-   Verify and review each change before expanding the scope. Stop when the
-   user's boundary is reached, a blocker occurs, unrelated concurrent changes
-   appear, or remaining work would exceed the authorized scope.
+   Verify and review each change—including relevant warning output and
+   unresolved-warning disposition under §4's same-unit remediation contract—
+   before expanding the scope. Stop when the user's boundary is reached, a
+   blocker occurs, unrelated concurrent changes appear, or remaining work
+   would exceed the authorized scope.
 5. Evaluate each issue independently. One successful change does not complete
    dependent or neighboring issues. Update the existing register with the
    result and evidence for each addressed issue; preserve other rows and IDs.
@@ -173,6 +184,8 @@ the reason for stopping.
   issue. If the code, configuration, fixture, or environment changed after a
   check, decide whether that evidence still covers the final state and rerun
   affected checks when needed.
+- Keep warning-related issue records proportional to impact and authorization.
+  Avoid duplicates and do not use warning count as an issue or quality score.
 
 ## 7. Scope and safety boundaries
 

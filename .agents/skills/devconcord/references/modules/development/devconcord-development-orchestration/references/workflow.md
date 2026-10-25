@@ -94,6 +94,21 @@ covers the final relevant diff; rerun affected checks after repairs. Static
 validation, fixtures, mocks, browser, native/device behavior, remote CI, and
 real-agent execution are separate evidence categories.
 
+Inspect relevant compiler/linter/static-analysis warnings as part of this
+evidence. Treat warnings introduced by the work as a same-unit remediation
+candidate by default; reduce related existing warnings when the repair is safe
+and proportionate. Compare before/after output only when tool versions,
+configuration, OS, target, features, and build mode are sufficiently alike.
+When no comparable baseline exists, report the classification as unknown.
+Prioritize actual impact over tool severity or count, preserve justified local
+suppression, and do not silence warnings by weakening checks. Do not expand the
+unit to unrelated cleanup. If a material warning cannot be resolved within
+scope or budget, assess it through the existing gates and report its cause or
+uncertainty, impact, residual risk, and appropriate next action. Use the
+existing issue register only when recording it is authorized and warranted;
+do not create a warning ledger. See `docs/common/ai-assisted-development.md`
+§10.5.
+
 For material fixes or optimizations, keep reasoning proportionate: record the
 observed problem, cause hypothesis, supporting or contradicting evidence,
 proposed change, expected effect, failure/reversal condition, and actual

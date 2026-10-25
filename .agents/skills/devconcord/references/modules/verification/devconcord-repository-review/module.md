@@ -26,6 +26,19 @@ visible without an arithmetic score. Match verification claims to the final
 diff and its tested conditions. For the shared decision principles, see
 `docs/common/ai-assisted-development.md` §17.5.
 
+For compiler, linter, and static-analysis warnings, evaluate the indicated
+problem and its actual impact, not warning count or tool severity alone.
+Distinguish new from existing warnings only with a sufficiently comparable
+baseline; otherwise state the uncertainty. Review inappropriate broad
+suppression, disabled rules, weakened CI, and regressions caused by warning
+cleanup. A warning without context does not prove a code defect. A verified
+new warning left unresolved contrary to §10.5 may be reported as a warning-
+policy gap; explain its concrete maintenance or acceptance impact and set
+severity proportionally. Report existing warnings when evidence supports a
+material defect, risk, or verification gap. Preserve justified, localized
+suppressions and avoid requesting unrelated warning cleanup. See
+`docs/common/ai-assisted-development.md` §10.5.
+
 ## Optional specialist workflows
 
 Compatibility Migration, Release Engineering, and Dependency Governance are

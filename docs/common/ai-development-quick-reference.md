@@ -34,6 +34,8 @@ AI: 対象の指示・正本・現状から必要なworkflowと検証を選択
 
 コマンドはリポジトリの依存関係・CI・既存手順に合わせます。未実施の検証は成功として扱わず、ホスト実機・リモートCI・実エージェントの証拠とローカル静的検査を区別します。
 
+検証結果にコンパイラ・linter・静的解析の警告があれば、件数だけでなく影響と変更前の基準を確認します。新規警告は原則同じ変更内で解消し、関連する既存警告は安全性と費用対効果に応じて改善します。安易な抑制やCIの弱体化を避け、詳細は[Warning Hygiene & Progressive Remediation](ai-assisted-development.md#105-warning-hygiene-progressive-remediation)に従います。
+
 ## 作業開始前
 
 - 既存の `AGENTS.md`、仕様、ADR、課題一覧、関連コードとテストを確認する。

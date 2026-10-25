@@ -62,6 +62,55 @@ def module(category: str, name: str) -> Path:
 
 
 class UnifiedSkillArchitectureTests(unittest.TestCase):
+    def test_warning_hygiene_is_risk_proportional_across_existing_guidance(self) -> None:
+        common = (ROOT / "docs/common/ai-assisted-development.md").read_text(encoding="utf-8")
+        quick = (ROOT / "docs/common/ai-development-quick-reference.md").read_text(encoding="utf-8")
+        review_criteria = (ROOT / "REVIEW.md").read_text(encoding="utf-8")
+        generation = module("management", "devconcord-generate-agent-guidance")
+        generation_module = generation.read_text(encoding="utf-8").lower()
+        agents_reference = (generation.parent / "references/agents-md.md").read_text(
+            encoding="utf-8"
+        ).lower()
+        orchestration = module("development", "devconcord-development-orchestration")
+        orchestration_text = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in sorted(orchestration.parent.rglob("*.md"))
+        ).lower()
+        issue = module("development", "devconcord-issue-driven-development")
+        issue_text = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in sorted(issue.parent.rglob("*.md"))
+        ).lower()
+        repository_review = module("verification", "devconcord-repository-review").read_text(
+            encoding="utf-8"
+        ).lower()
+
+        for phrase in (
+            "### 10.5 warning hygiene & progressive remediation",
+            "warning-as-error", "同じツールバージョン", "基準結果がない", "無関係な修正",
+            "資源管理", "性能", "広域抑制", "既存の正当な抑制", "警告専用台帳", "新しい品質評価軸",
+        ):
+            with self.subTest(common_contract=phrase):
+                self.assertIn(phrase.lower(), common.lower())
+        for phrase in (
+            "同じ変更内", "段階的に減らします", "安易な抑制",
+            "利用者が編集", "レビュー専用生成", "プロジェクト規約",
+        ):
+            with self.subTest(generation_contract=phrase):
+                self.assertIn(phrase.lower(), agents_reference)
+        self.assertIn("equivalent warning policy", generation_module)
+        self.assertIn("user edits as authoritative", generation_module)
+        self.assertIn("reviews` mode never adds", generation_module)
+        self.assertIn("same-unit remediation", orchestration_text)
+        self.assertIn("finite work and repair budget", orchestration_text)
+        self.assertIn("one issue per warning", issue_text)
+        self.assertIn("same work unit", issue_text)
+        self.assertIn("a warning without context does not prove a code defect", repository_review)
+        self.assertIn("同じ変更内", quick)
+        self.assertIn("#105-warning-hygiene-progressive-remediation", quick)
+        self.assertIn("severityだけで評価せず", review_criteria.lower())
+        self.assertIn("局所抑制", review_criteria)
+
     def test_agent_guidance_subagent_default_is_optional_and_preserves_project_policy(self) -> None:
         management = module("management", "devconcord-generate-agent-guidance")
         module_text = management.read_text(encoding="utf-8").lower()

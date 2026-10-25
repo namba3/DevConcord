@@ -31,6 +31,11 @@ This distributable reference contains the detailed procedure for its selected ou
 
 - 再実行時は既存の関連方針を優先します。特に、前回生成した推奨を利用者が編集していたら編集後の内容を保ち、既定文へ戻したり重ねて追加したりしません。採用状態を記録するmanifest・marker・追加metadataを作りません。
 - この規則は`agents` / `both`のAGENTS.md生成・更新だけに適用します。`reviews`単独ではAGENTS.mdのサブエージェント案内を追加・更新しません。BootstrapとAdoptionはこの共通生成workflowを再利用し、独自のサブエージェント生成規則を作りません。
+- Warningの扱いは対象プロジェクトとチームの既存方針を優先します。`agents` / `both`モードでは、対象の`AGENTS.md`、適用されるプロジェクト規約、明示的なユーザー指示に同等の方針がない場合に限り、次の趣旨を短く追加してください。キーワードだけで既存方針の有無を判定せず、既存の警告基準、例外、CI設定、判断理由を変更・弱化・重複しません。意味が曖昧なら既存内容を保護して報告します。
+
+  > コンパイラ、linter、静的解析等の警告は影響を確認して解消します。今回の変更で生じた警告は原則として同じ変更内で直し、既存警告は関連性・重要度・修正リスクに応じて段階的に減らします。安易な抑制や検証の弱体化を避け、必要な局所抑制には理由を示します。大規模・無関係な修正は強制せず、重要な未解消事項は必要に応じて既存課題表で扱います。
+
+- 再実行時は既存のWarning方針を優先し、以前生成した文を利用者が編集していれば、その内容を初期文へ戻したり重複追加したりしません。Warning推奨の採用を記録する専用manifest、marker、metadataを作りません。これはAGENTS.md生成時の既定文だけに適用し、DevConcord共通開発原則やレビュー専用生成へ広げません。
 - 原因不明の実質的な障害、実在する互換性/移行リスク、明示的なリリース/配布作業、依存の変更や重大リスク、エージェントSkillの実効性評価は、それぞれ `devconcord diagnose root-cause`、`devconcord lifecycle compatibility`、`devconcord lifecycle release`、`devconcord lifecycle dependencies`、`devconcord evaluate agent` の任意候補として扱えます。Compatibility、Release、Dependency workflowをDevelopment Orchestrationの標準ゲートにせず、未導入・利用不能で無関係な作業を止めず、非利用を欠陥にしません。リリースの提案は実行・承認を許可しません。実在する互換性・データ損失・セキュリティリスクの通常確認は維持します。
 - 既存の同等記述を再利用して重複を避け、対象プロジェクト固有の規約・テストコマンド・既存Skill指示・レビュー基準への参照を保ちます。
 - `reviews`モードでは、移行に必要な許可済み参照修正を除き、`AGENTS.md`の開発原則やSkill推奨を変更しません。
