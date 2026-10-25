@@ -8,7 +8,8 @@ do not expand authority.
 ## 1. Establish the current record set
 
 Inspect instructions, branch/HEAD/index/worktree, the authoritative issue
-register, relevant requirements/design, ADRs, risk record, HANDOFF if present,
+register (starting from the main index when records are federated), relevant
+requirements/design, ADRs, risk record, HANDOFF if present,
 implementation, tests, and environment. Preserve unrelated edits. Treat
 handoff and prior reports as leads and revalidate them.
 

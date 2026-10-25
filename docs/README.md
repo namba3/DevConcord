@@ -32,9 +32,11 @@
 | 資料 | 用途 |
 |---|---|
 | [課題管理・完成度評価規約](work-management/issue-tracking.md) | 課題表の記録、更新、評価と運用チェック |
+| [単一課題表テンプレート](work-management/templates/issue-register.md) | 小規模プロジェクト向けの従来型単一Markdown課題表 |
+| [メイン課題表テンプレート](work-management/templates/issue-register-main.md) | 連合課題表の完成度評価・共通採番・サブ課題表索引 |
+| [サブ課題表テンプレート](work-management/templates/issue-register-subregister.md) | 連合構成で個別課題の正本を保持する表 |
 | [リスク管理規約](work-management/risk-management.md) | 将来の不確実性・残余リスクの記録。対応作業は課題表で管理 |
 | [プロジェクト概要テンプレート](work-management/templates/project-overview.md) | 目的、範囲、関係者、制約、成功条件の共有 |
-| [課題一覧テンプレート](work-management/templates/issue-register.md) | 課題の優先度、状態、完了条件、根拠の管理 |
 | [リリースチェックリスト](work-management/templates/release-checklist.md) | リリース前の検証、配布、周知、ロールバック確認 |
 
 ## 目的から探す
@@ -72,7 +74,7 @@
 
 これらの資料は適用先に合わせて選びます。README、公開サイト、ディレクトリ構造、既存規約を調査し、必要な部分だけを導入してください。Bootstrapは設計書から新規構成を作る手順、Adoptionは既存成果物を保護した初回導入、資料Synchronizationは導入済み共通資料の差分更新です。変更提案の実装前影響評価、テスト設計、実装計画もそれぞれ目的に応じた任意の作業です。Bootstrap / Adoption後の専門module推奨は、確認済みの設計状況や未解決事項に基づき一律実行しません。これらのworkflow moduleと、`manage_skills.py sync` によるAgent Skillsパッケージの同期は別操作です。具体的な作業場所・コマンド・検証は[はじめての導入と運用](getting-started.md)、Skillsの詳細契約は[Agent Skills運用ガイド](agent-skills.md)を参照してください。
 
-要求IDからADR・実装・検証・課題への参照は変更リスクに応じて設けます。設計書の出典と共通資料の `guidance-provenance.md` を区別し、未確認事項を確定仕様にしません。課題表を作業管理の正本とし、リスク対応作業の別台帳は追加しません。完成度は既存10軸で評価し、SDSは独立した補助指標として総合完成度へ加算しません。新しい品質評価軸は追加しません。
+要求IDからADR・実装・検証・課題への参照は変更リスクに応じて設けます。設計書の出典と共通資料の `guidance-provenance.md` を区別し、未確認事項を確定仕様にしません。課題管理は単一課題表を維持でき、規模に応じてメイン索引とサブ課題表による連合構成も選べます。個々の課題は一つの正本で管理し、任意タグは探索補助として使います。リスク対応作業の別台帳は追加しません。完成度は既存10軸で評価し、SDSは独立した補助指標として総合完成度へ加算しません。新しい品質評価軸は追加しません。
 
 文書品質の詳しい原則は[ドキュメント設計ガイド](common/documentation-design.md)、Skillsの安全な配置・重複・出典・復旧は[Agent Skills運用ガイド](agent-skills.md)、個別設計原則はリンク先のガイド・moduleを正本として参照してください。資料やテンプレートを一部だけ導入する場合は、相対リンクを対象リポジトリ内で解決できる配置へ合わせます。
 

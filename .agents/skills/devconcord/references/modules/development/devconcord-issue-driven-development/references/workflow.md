@@ -14,10 +14,14 @@ remain in force when compatible.
    relevant worktree state. Do not overwrite, stage, or attribute unrelated
    changes to this task. If concurrent edits appear, stop before touching the
    affected paths and report them.
-3. Locate the existing issue register and read its lifecycle, priority,
-   evidence, and completion conventions. If multiple candidate registers or
-   conflicting sources of truth exist, do not create another; report the
-   ambiguity and use only an explicitly authoritative source.
+3. Locate the authoritative issue register. For a single register, read it
+   directly. For a federated register, start from its main index, follow the
+   subregister links, and read the relevant canonical issue record and its
+   lifecycle, priority, evidence, and completion conventions. A main index
+   points to task records; it does not duplicate their status or history. If
+   the index is missing, links conflict, or multiple unindexed authorities
+   remain, do not create another register; report the ambiguity and use only
+   an explicitly authoritative source.
 4. Inspect relevant requirements, acceptance criteria, ADRs, architecture,
    implementation, tests, CI, and operational constraints. Verify issue status
    against current evidence and preserve confirmed facts separately from
@@ -63,10 +67,15 @@ not low risk, and a severe or irreversible outcome must not be averaged away.
 Select only specialist expertise and verification that can change the
 decision or detect a material failure.
 
-Use the existing issue register as the only issue/dependency source. Follow
-declared prerequisite links and verify their current state against the
-repository; identify missing references, cycles, and blockers before ordering
-work. Do not infer a dependency from a shared file alone. When a formal
+Use the existing single or federated issue register as the only
+issue/dependency source. Follow declared prerequisite links and verify their
+current state against the repository; identify missing references, cycles,
+and blockers before ordering work. When useful and available, optional tags
+can narrow discovery across the indexed subregisters; multi-tag filtering
+matches records containing every requested tag after case normalization.
+Read the canonical issue row to verify its status and readiness. Tags do not
+replace priority, dependencies, risk, authorization, or acceptance
+conditions. Do not infer a dependency from a shared file alone. When a formal
 high-priority issue depends on a lower-priority prerequisite, implement the
 prerequisite first if needed and actionable without changing either issue's
 priority. Prefer work that clears a real blocker or creates a reviewable,
@@ -164,6 +173,16 @@ the reason for stopping.
 
 - Preserve existing issue IDs, priority conventions, lifecycle states, and
   history. Never recycle an ID or silently remove an issue.
+- Treat `ISS-####` as a project-wide sequential identifier across all
+  subregisters. The main register is the sole allocation counter for a
+  federated setup. Before creating a new issue, check the indexed registers
+  for duplicates and an unused number; if the allocation history or a
+  concurrent allocation is uncertain, stop and reconcile before assigning an
+  ID. Do not change an ID when tags or register location change.
+- Work type, quality classification, register location, optional tags,
+  priority, and state are separate attributes. Existing untagged records stay
+  valid; do not bulk-tag them. Tags do not affect issue state, priority, or
+  the ten-axis completion assessment.
 - Add a newly discovered defect only after checking for duplicates and only
   when the task permits register edits. State observed impact, reproducible
   evidence, and verifiable completion conditions; do not record speculation as

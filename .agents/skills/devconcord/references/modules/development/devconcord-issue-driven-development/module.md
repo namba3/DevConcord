@@ -4,8 +4,11 @@
 Use the target repository's existing issue register to make verified progress
 on requested work. Optimize for validated user value, quality, and
 maintainability, not the number of closed issues. The register's existing
-conventions remain authoritative; this workflow does not create a parallel task,
-risk, or quality ledger.
+conventions remain authoritative. A project may use one Markdown register or
+an indexed federation of subregisters; each issue has one canonical record and
+IDs remain project-wide `ISS-####` values. Optional tags can aid discovery
+without changing priority, status, authorization, or the ten-axis assessment.
+This workflow does not create a parallel task, risk, or quality ledger.
 
 ## Select a mode
 

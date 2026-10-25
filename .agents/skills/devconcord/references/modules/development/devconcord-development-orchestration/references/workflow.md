@@ -25,13 +25,21 @@ remain in Plan or report the missing prerequisite.
 
 ## 2. Select one work unit and plan its evidence
 
-Use the target's issue register as the work authority. Confirm candidate issue
+Use the target's single or federated issue register as the work authority.
+For a federated setup, discover records through the main index and preserve
+each subregister as the sole authority for its issue. Confirm candidate issue
 state, acceptance conditions, dependencies and blockers against current
 evidence. Consider user impact, urgency, formal priority, dependencies, shared
 cause, risk, verification readiness, regression surface, locality and
 downstream value. Keep formal priority distinct from implementation order;
 resolve actual prerequisites first without rewriting priority. Detect missing
 references or dependency cycles rather than guessing an order.
+
+Optional tags may help find related or independently actionable records across
+indexed subregisters; a multi-tag filter selects records carrying all requested
+tags. Tags do not determine readiness, priority, dependencies, risk, authority,
+acceptance, or completion, and their absence is not a quality defect. Never
+change an issue ID, status, priority, or ten-axis score because tags changed.
 
 Choose one semantically coherent unit that can be reviewed and verified on its
 own. Do not copy the issue-selection or Batch procedure from

@@ -256,6 +256,10 @@ applicable principle, impact, proportionate remediation, approximate cost,
 acceptance conditions, and verification method. Relate it to existing REQ,
 ADR, issue, and risk IDs when present. Suggest an existing issue update or a
 new issue candidate; do not edit the target's tracker by default.
+When searching existing work, follow a federated issue register's main index
+to the canonical subregisters. Optional tags may narrow a cross-register
+search, but do not replace evidence-based prioritization or create a separate
+tag/risk/quality ledger; tags do not affect the existing ten-axis assessment.
 
 When a material gap needs a focused design activity, recommend a matching
 internal workflow only when its purpose and expected output follow from the gap's

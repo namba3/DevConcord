@@ -17,6 +17,10 @@ from markdown_it import MarkdownIt
 ROOT = Path(__file__).resolve().parents[1]
 ISSUE_RULES = ROOT / "docs/work-management/issue-tracking.md"
 ISSUE_TEMPLATE = ROOT / "docs/work-management/templates/issue-register.md"
+ISSUE_MAIN_TEMPLATE = ROOT / "docs/work-management/templates/issue-register-main.md"
+ISSUE_SUBREGISTER_TEMPLATE = (
+    ROOT / "docs/work-management/templates/issue-register-subregister.md"
+)
 ADR_GUIDE = ROOT / "docs/common/ai-assisted-development.md"
 ADR_TEMPLATE = ROOT / "docs/application-design/templates/adr.md"
 REQUIREMENTS_TEMPLATE = ROOT / "docs/application-design/templates/requirements.md"
@@ -472,12 +476,29 @@ def check_conventions(files: list[Path]) -> list[str]:
     issues_heading = template.find("## 課題一覧")
     if evaluation_heading < 0 or issues_heading < 0 or evaluation_heading > issues_heading:
         errors.append("issue-register.md: completion evaluation must precede the issue list")
-    required_issue_header = "| ID | 分類 | 優先度 | 状態 | 課題・影響 | 完了条件 | 根拠・検証 | 更新日 |"
+    required_issue_header = "| ID | 分類 | タグ（任意） | 優先度 | 状態 | 課題・影響 | 完了条件 | 根拠・検証 | 更新日 |"
     if required_issue_header not in template:
         errors.append("issue-register.md: required issue columns are missing or out of order")
     for value in ["未確定", "暫定総合完成度", "評価済みカバレッジ", "N/A", "未評価"]:
         if value not in template:
             errors.append(f"issue-register.md: missing completion-evaluation field {value}")
+
+    main_template = (
+        read_utf8(ISSUE_MAIN_TEMPLATE, "main issue-register template", errors) or ""
+    )
+    for required in ("次の未割当番号", "サブ課題表", "タグ定義", "複製しません"):
+        if required not in main_template:
+            errors.append(
+                f"issue-register-main.md: missing federated-register contract {required}"
+            )
+    subregister_template = read_utf8(
+        ISSUE_SUBREGISTER_TEMPLATE, "issue subregister template", errors
+    ) or ""
+    for required in ("唯一の正本", "ISS-####", "タグ（任意）", "作業種別（任意）"):
+        if required not in subregister_template:
+            errors.append(
+                f"issue-register-subregister.md: missing subregister contract {required}"
+            )
 
     status_table_start = rules.find("### 4.4 状態")
     status_table_end = rules.find("### 4.5", status_table_start)

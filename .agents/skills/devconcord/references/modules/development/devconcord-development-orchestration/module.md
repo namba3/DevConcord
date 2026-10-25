@@ -5,6 +5,9 @@ This workflow applies **Iterative & Evidence-Driven Development** to projects
 whose requirements, design decisions, and work tracking are sufficiently
 established. Its goal is verified user value, requirement fulfillment, and
 reduced material risk—not the number of iterations, edits, or closed issues.
+Work tracking may use one Markdown register or a main index with subregisters;
+use the indexed canonical issue records and treat optional tags as discovery
+filters, not readiness or priority decisions.
 
 ## Choose a mode
 

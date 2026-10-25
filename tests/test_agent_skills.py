@@ -347,6 +347,121 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertIn("ISS-1003", issues)
         self.assertIn("Product owner", issues)
 
+    def test_federated_issue_register_and_optional_tags_contract(self) -> None:
+        work_management = ROOT / "docs" / "work-management"
+        guide = (work_management / "issue-tracking.md").read_text(encoding="utf-8")
+        single = (work_management / "templates" / "issue-register.md").read_text(
+            encoding="utf-8"
+        )
+        main = (work_management / "templates" / "issue-register-main.md").read_text(
+            encoding="utf-8"
+        )
+        subregister = (
+            work_management / "templates" / "issue-register-subregister.md"
+        ).read_text(encoding="utf-8")
+        issue_workflow = (
+            MODULES / "development" / "devconcord-issue-driven-development"
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+        orchestration = (
+            MODULES / "development" / "devconcord-development-orchestration"
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+        review = (
+            MODULES / "verification" / "devconcord-repository-review" / "module.md"
+        ).read_text(encoding="utf-8")
+        gap = (
+            MODULES / "verification" / "devconcord-gap-analysis" / "module.md"
+        ).read_text(encoding="utf-8")
+        integration = (ROOT / "tests" / "integration" / "README.md").read_text(
+            encoding="utf-8"
+        )
+
+        for contract in (
+            "単一課題表",
+            "連合課題表",
+            "唯一の正本",
+            "ISS-####",
+            "9999を超えたら5桁以上",
+            "採番状態",
+            "作業種別",
+            "課題数を目標にしない",
+            "要求整理",
+            "ファイル",
+        ):
+            with self.subTest(contract=contract):
+                self.assertIn(contract, guide)
+        for tag in (
+            "ARCH", "CORE", "QA", "OPS", "DOC", "SEC", "PERF", "UX", "REL"
+        ):
+            with self.subTest(tag=tag):
+                self.assertIn(f"| {tag} |", guide)
+        self.assertIn("優先度", guide)
+        self.assertIn("完成度10軸", guide)
+        self.assertIn("priority", issue_workflow.lower())
+        self.assertIn("ten-axis", orchestration.lower())
+        for phrase in (
+            "任意",
+            "タグなし",
+            "大文字小文字",
+            "順序に意味を持たない集合",
+            "完全一致",
+            "すべて含む",
+            "別名",
+        ):
+            with self.subTest(tag_contract=phrase):
+                self.assertIn(phrase, guide)
+        self.assertIn("ISS-####", main)
+        self.assertIn("個々の課題状態・詳細・履歴・検証証拠を複製しません", main)
+        self.assertIn("唯一の正本", subregister)
+        self.assertIn("タグ（任意）", single)
+        self.assertIn("タグ（任意）", subregister)
+        self.assertIn("every requested tag", issue_workflow.lower())
+        self.assertIn("main index", issue_workflow.lower())
+        self.assertIn("optional tags", orchestration.lower())
+        self.assertIn("optional tags can narrow", review.lower())
+        self.assertIn("optional tags may narrow", gap.lower())
+        self.assertIn("Federated Issue Register and Multi-Tag", integration)
+        for phrase in (
+            "大文字小文字を正規化", "両方を持つ", "ISS ID、優先度、状態",
+            "10軸", "実エージェント", "未検証",
+        ):
+            with self.subTest(integration_contract=phrase):
+                self.assertIn(phrase, integration)
+
+        fixture_root = (
+            ROOT / "tests" / "integration" / "fixtures" / "federated-issue-registers"
+        )
+        main_index = (fixture_root / "docs" / "ISSUES.md").read_text(encoding="utf-8")
+        self.assertIn("issues/architecture.md", main_index)
+        self.assertIn("issues/quality.md", main_index)
+        records: dict[str, set[str]] = {}
+        statuses: dict[str, str] = {}
+        for register in (fixture_root / "docs" / "issues").glob("*.md"):
+            for line in register.read_text(encoding="utf-8").splitlines():
+                if not line.startswith("| ISS-"):
+                    continue
+                columns = [column.strip() for column in line.strip("|").split("|")]
+                issue_id, raw_tags = columns[0], columns[1]
+                records[issue_id] = {
+                    tag.strip().upper()
+                    for tag in raw_tags.split(",")
+                    if tag.strip() != "—"
+                }
+                statuses[issue_id] = columns[3]
+        for requested, expected in (
+            ({"ARCH", "REL"}, {"ISS-0125"}),
+            ({"SEC", "QA"}, {"ISS-0129"}),
+            ({"QA", "OPS"}, {"ISS-0127"}),
+            ({tag.upper() for tag in ("rel", "ARCH", "ARCH")}, {"ISS-0125"}),
+        ):
+            matching = {
+                issue_id for issue_id, tags in records.items() if requested <= tags
+            }
+            self.assertEqual(matching, expected)
+        self.assertEqual(records["ISS-0130"], set())
+        self.assertEqual(statuses["ISS-0130"], "Open")
+
     def test_agent_evaluation_separates_routing_and_specialist_use_effects(self) -> None:
         evaluation = (ROOT / "tests/integration/README.md").read_text(encoding="utf-8")
         self.assertIn("Natural-language routing before/after evaluation", evaluation)
