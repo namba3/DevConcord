@@ -64,8 +64,10 @@ def module(category: str, name: str) -> Path:
 class UnifiedSkillArchitectureTests(unittest.TestCase):
     def test_warning_hygiene_is_risk_proportional_across_existing_guidance(self) -> None:
         common = (ROOT / "docs/common/ai-assisted-development.md").read_text(encoding="utf-8")
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         quick = (ROOT / "docs/common/ai-development-quick-reference.md").read_text(encoding="utf-8")
         review_criteria = (ROOT / "REVIEW.md").read_text(encoding="utf-8")
+        integration = (ROOT / "tests/integration/README.md").read_text(encoding="utf-8")
         generation = module("management", "devconcord-generate-agent-guidance")
         generation_module = generation.read_text(encoding="utf-8").lower()
         agents_reference = (generation.parent / "references/agents-md.md").read_text(
@@ -108,6 +110,10 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertIn("a warning without context does not prove a code defect", repository_review)
         self.assertIn("同じ変更内", quick)
         self.assertIn("#105-warning-hygiene-progressive-remediation", quick)
+        self.assertIn("#105-warning-hygiene-progressive-remediation", agents)
+        self.assertIn("devconcord evaluate agent", integration)
+        self.assertIn("実行trace", integration)
+        self.assertIn("実行不能ならその理由", integration)
         self.assertIn("severityだけで評価せず", review_criteria.lower())
         self.assertIn("局所抑制", review_criteria)
 

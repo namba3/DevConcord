@@ -1619,6 +1619,40 @@ Version: {version}
         self.assertIn("differs from its manifest", output)
         self.assertEqual(installed.read_text(encoding="utf-8"), "local edit\n")
 
+    def test_doctor_finding_reports_unified_package_hash_mismatch_read_only(self) -> None:
+        self.write_skill("devconcord", "v1")
+        repository = self.source.parents[1]
+        self.git(repository, "add", ".")
+        self.git(repository, "commit", "-qm", "add unified package")
+        self.assertEqual(
+            self.run_operation("install", skills=["devconcord"], apply=True)[0], 0
+        )
+        self.assertEqual(
+            self.run_config("set-source", source_root=repository, replace=False)[0], 0
+        )
+        installed = self.target / ".agents/skills/devconcord/SKILL.md"
+        installed.write_text("local package edit\n", encoding="utf-8")
+        manifest_path = self.target / ".devconcord/skills-manifest.json"
+        before_manifest = manifest_path.read_bytes()
+
+        diagnosis = manage_skills._diagnose_scope(
+            self.target,
+            scope="Project Scope",
+            discovery_paths=manage_skills.DISCOVERY_PATHS,
+            source_root=repository,
+        )
+        result, output, error = self.run_doctor(target=self.target)
+
+        self.assertEqual((diagnosis.status, diagnosis.exit_code), ("NEEDS ATTENTION", 0))
+        self.assertTrue(
+            any(finding.code == "unified_package_mismatch" for finding in diagnosis.findings)
+        )
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Status: NEEDS ATTENTION", output)
+        self.assertIn("Unified package: present or recorded; state differs", output)
+        self.assertEqual(manifest_path.read_bytes(), before_manifest)
+        self.assertEqual(installed.read_text(encoding="utf-8"), "local package edit\n")
+
     def test_doctor_continues_project_diagnosis_after_user_manifest_corruption_read_only(self) -> None:
         self.assertEqual(
             self.run_user_operation(
@@ -1639,6 +1673,8 @@ Version: {version}
         self.assertIn("User Scope:\n  Status: NEEDS ATTENTION", output)
         self.assertIn("Project Scope:\n  Target:", output)
         self.assertIn("  Status: HEALTHY", output)
+        self.assertIn("Requested Project Scope is healthy.", output)
+        self.assertNotIn("Overall: Requested Project Scope is healthy.", output)
         self.assertEqual(manifest.read_bytes(), before_manifest)
         self.assertEqual((self.target / ".devconcord/skills-manifest.json").read_bytes(), project_manifest)
 
@@ -1677,6 +1713,24 @@ Version: {version}
         )
         self.assertIn("Detailed diagnostics", detailed)
         self.assertNotIn("Detailed diagnostics", summary)
+
+    def test_blocked_legacy_status_cannot_be_downgraded_without_a_finding(self) -> None:
+        self.assertEqual(self.run_operation("install", apply=True)[0], 0)
+
+        with patch.object(
+            manage_skills,
+            "_diagnose_legacy_state",
+            return_value=manage_skills.LegacyDiagnosis("BLOCKED"),
+        ):
+            diagnosis = manage_skills._diagnose_scope(
+                self.target,
+                scope="Project Scope",
+                discovery_paths=manage_skills.DISCOVERY_PATHS,
+                source_root=self.source.parents[1],
+            )
+
+        self.assertEqual((diagnosis.status, diagnosis.exit_code, diagnosis.findings),
+                         ("NEEDS ATTENTION", 0, ()))
 
     def test_doctor_summary_keeps_same_kind_findings_for_distinct_skills(self) -> None:
         self.write_skill("second-skill", "v1")
@@ -3081,11 +3135,21 @@ Version: {version}
             self.run_user_operation("install", agents=["codex"], apply=True, source=self.source)[0],
             0,
         )
+        self.assertEqual(
+            self.run_config("set-source", source_root=self.source.parents[1], replace=False)[0],
+            0,
+        )
         legacy_file = legacy / "SKILL.md"
         legacy_file.write_text("local modification\n", encoding="utf-8")
         manifest_path = self.user_home / ".devconcord/skills-manifest.json"
         before_manifest = manifest_path.read_bytes()
         before_legacy = legacy_file.read_bytes()
+        diagnosis = manage_skills._diagnose_scope(
+            self.user_home,
+            scope="User Scope",
+            discovery_paths=manage_skills.GLOBAL_DISCOVERY_PATHS,
+            source_root=self.source.parents[1],
+        )
 
         args = SimpleNamespace(command="doctor", target=None)
         stdout = io.StringIO()
@@ -3094,12 +3158,90 @@ Version: {version}
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 result = manage_skills._run(args)
 
+        self.assertEqual((diagnosis.status, diagnosis.exit_code), ("NEEDS ATTENTION", 0))
+        self.assertTrue(any(finding.code == "legacy_hash_mismatch" for finding in diagnosis.findings))
         self.assertEqual((result, stderr.getvalue()), (0, ""))
+        self.assertIn("Status: NEEDS ATTENTION", stdout.getvalue())
+        self.assertIn("Most important issue: A legacy Skill", stdout.getvalue())
         self.assertIn("User Scope migration diagnosis:", stdout.getvalue())
         self.assertIn("local changes or manifest hash mismatch; preserved", stdout.getvalue())
         self.assertIn("Migration status: BLOCKED", stdout.getvalue())
         self.assertEqual(manifest_path.read_bytes(), before_manifest)
         self.assertEqual(legacy_file.read_bytes(), before_legacy)
+
+    @unittest.skipIf(os.name == "nt", "symlink behavior is platform-specific")
+    def test_doctor_reports_symlinked_legacy_skill_as_blocking_without_name_heuristics(self) -> None:
+        legacy = self.prepare_user_migration_source()
+        self.assertEqual(
+            self.run_config("set-source", source_root=self.source.parents[1], replace=False)[0],
+            0,
+        )
+        outside = self.root / "legacy-skill-outside"
+        outside.mkdir()
+        (outside / "SKILL.md").write_text("preserve outside data\n", encoding="utf-8")
+        shutil.rmtree(legacy)
+        legacy.symlink_to(outside, target_is_directory=True)
+        manifest_path = self.user_home / ".devconcord/skills-manifest.json"
+        before_manifest = manifest_path.read_bytes()
+        diagnosis = manage_skills._diagnose_scope(
+            self.user_home,
+            scope="User Scope",
+            discovery_paths=manage_skills.GLOBAL_DISCOVERY_PATHS,
+            source_root=self.source.parents[1],
+        )
+
+        detailed_result = self.run_cli("doctor")
+        summary_result = self.run_cli("doctor", "--summary")
+
+        self.assertEqual((diagnosis.status, diagnosis.exit_code), ("NEEDS ATTENTION", 0))
+        self.assertTrue(any(finding.code == "legacy_unsafe_path" for finding in diagnosis.findings))
+        self.assertEqual((detailed_result.returncode, detailed_result.stderr), (0, ""))
+        self.assertEqual((summary_result.returncode, summary_result.stderr), (0, ""))
+        output = detailed_result.stdout
+        summary_output = summary_result.stdout
+        self.assertIn("Status: NEEDS ATTENTION", output)
+        self.assertIn("Most important issue: A legacy Skill path is unsafe", output)
+        self.assertIn("Migration status: BLOCKED", output)
+        self.assertIn("Status: NEEDS ATTENTION", summary_output)
+        self.assertIn("Most important issue: A legacy Skill path is unsafe", summary_output)
+        self.assertEqual(
+            [line for line in output.splitlines() if "Status:" in line],
+            [line for line in summary_output.splitlines() if "Status:" in line],
+        )
+        self.assertNotIn("Detailed diagnostics", summary_output)
+        self.assertTrue(legacy.is_symlink())
+        self.assertEqual((outside / "SKILL.md").read_text(encoding="utf-8"), "preserve outside data\n")
+        self.assertEqual(manifest_path.read_bytes(), before_manifest)
+
+    def test_doctor_summary_preserves_each_legacy_hash_finding(self) -> None:
+        first = self.prepare_user_migration_source()
+        self.assertEqual(
+            self.run_config("set-source", source_root=self.source.parents[1], replace=False)[0],
+            0,
+        )
+        second = self.user_home / ".agents/skills/devconcord-root-cause-analysis"
+        shutil.copytree(first, second)
+        manifest_path = self.user_home / ".devconcord/skills-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        first_record = manifest["packages"][".agents/skills"]["skills"][first.name]
+        manifest["packages"][".agents/skills"]["skills"][second.name] = dict(first_record)
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        (first / "SKILL.md").write_text("first local edit\n", encoding="utf-8")
+        (second / "SKILL.md").write_text("second local edit\n", encoding="utf-8")
+        before_manifest = manifest_path.read_bytes()
+        before_files = ((first / "SKILL.md").read_bytes(), (second / "SKILL.md").read_bytes())
+
+        result, output, error = self.run_doctor(summary=True)
+
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn("Status: NEEDS ATTENTION", output)
+        self.assertIn(".agents/skills/devconcord-repository-review", output)
+        self.assertIn(".agents/skills/devconcord-root-cause-analysis", output)
+        self.assertEqual(manifest_path.read_bytes(), before_manifest)
+        self.assertEqual(
+            ((first / "SKILL.md").read_bytes(), (second / "SKILL.md").read_bytes()),
+            before_files,
+        )
 
     def test_migration_refuses_local_legacy_edits(self) -> None:
         legacy = self.prepare_migration_source()
@@ -3142,6 +3284,9 @@ Version: {version}
             with contextlib.redirect_stdout(doctor_stdout), contextlib.redirect_stderr(doctor_stderr):
                 doctor_result = manage_skills._run(doctor_args)
         self.assertEqual((doctor_result, doctor_stderr.getvalue()), (0, ""))
+        self.assertIn("Status: NEEDS ATTENTION", doctor_stdout.getvalue())
+        self.assertIn("Project Scope:\n  Target:", doctor_stdout.getvalue())
+        self.assertIn("  Status: NEEDS ATTENTION", doctor_stdout.getvalue())
         self.assertIn("Migration status: RECOVERY REQUIRED", doctor_stdout.getvalue())
         result, _, error = self.run_recovery(apply=True)
         self.assertEqual((result, error), (0, ""))
@@ -3323,6 +3468,9 @@ Version: {version}
         self.assertEqual((result, stderr.getvalue()), (0, ""))
         self.assertIn("Project Scope migration diagnosis", stdout.getvalue())
         self.assertIn("Legacy .agents/skills/devconcord-repository-review", stdout.getvalue())
+        self.assertIn("Project Scope:\n  Target:", stdout.getvalue())
+        self.assertIn("  Status: REVIEW NEEDED", stdout.getvalue())
+        self.assertIn("Status: REVIEW NEEDED", stdout.getvalue())
         self.assertIn("Migration status: PARTIAL", stdout.getvalue())
         self.assertEqual(manifest_path.read_bytes(), before_manifest)
         self.assertEqual((legacy / "SKILL.md").read_bytes(), before_legacy)

@@ -3161,7 +3161,7 @@ def _diagnose_legacy_state(
             elif name == "devconcord":
                 unified_present_paths.add(relative)
 
-    blockers: list[str] = []
+    blocking_findings: list[DoctorFinding] = []
     for relative, package in package_records.items():
         for name in package.get("skills", {}):
             if name.casefold() not in LEGACY_DEVCONCORD_SKILLS:
@@ -3175,7 +3175,13 @@ def _diagnose_legacy_state(
                 f"  Orphan legacy manifest record: {relative}/{name} "
                 "(installed directory missing; record preserved)"
             )
-            blockers.append(f"orphan manifest record {relative}/{name}")
+            blocking_findings.append(DoctorFinding(
+                "orphan_legacy_record",
+                f"Orphan legacy manifest record: {relative}/{name} "
+                "(installed directory missing; record preserved)",
+                100,
+                "Inspect the manifest and preserved state before any migration or repair.",
+            ))
     unified_hashes_valid = True
     for relative in unified_record_paths:
         package_path = target_root / relative / "devconcord"
@@ -3194,7 +3200,12 @@ def _diagnose_legacy_state(
     )
     unified_any = bool(unified_record_paths or unified_present_paths)
     if unified_any and not unified_consistent:
-        blockers.append("unified package/manifest/hash mismatch")
+        blocking_findings.append(DoctorFinding(
+            "unified_package_mismatch",
+            f"{scope} unified Skill package does not match its manifest or discovery paths",
+            90,
+            "Inspect package contents and manifest provenance before syncing.",
+        ))
 
     print(f"{scope} migration diagnosis:")
     print(
@@ -3232,7 +3243,12 @@ def _diagnose_legacy_state(
             record = package_records.get(relative, {}).get("skills", {}).get(path.name)
             if path.is_symlink() or not path.is_dir():
                 state = "unsafe path; preserved"
-                blockers.append(f"{relative}/{path.name}")
+                blocking_findings.append(DoctorFinding(
+                    "legacy_unsafe_path",
+                    f"A legacy Skill path is unsafe and was preserved: {relative}/{path.name}",
+                    100,
+                    "Preserve local data and resolve the path conflict manually before migration.",
+                ))
             elif record is None:
                 state = "unmanaged; preserved"
                 partial.append(f"{relative}/{path.name}")
@@ -3243,7 +3259,12 @@ def _diagnose_legacy_state(
                     installed_digest = ""
                 if installed_digest != record.get("installed_tree_sha256"):
                     state = "local changes or manifest hash mismatch; preserved"
-                    blockers.append(f"{relative}/{path.name}")
+                    blocking_findings.append(DoctorFinding(
+                        "legacy_hash_mismatch",
+                        f"A legacy Skill differs from its recorded manifest hash: {relative}/{path.name}",
+                        95,
+                        "Preserve local data and review the Skill and manifest before migration.",
+                    ))
                 else:
                     source_ok = False
                     if source_root is not None:
@@ -3315,7 +3336,7 @@ def _diagnose_legacy_state(
     for name, paths in stale:
         print(f"  Stale legacy duplicate allowance: {name} ({', '.join(paths)})")
 
-    if blockers:
+    if blocking_findings:
         status = "BLOCKED"
     elif partial:
         status = "PARTIAL"
@@ -3326,34 +3347,7 @@ def _diagnose_legacy_state(
     else:
         status = "NOT MIGRATED / NO LEGACY SKILLS FOUND"
     print(f"  Migration status: {status}")
-    findings: list[DoctorFinding] = []
-    if any("orphan manifest record" in blocker for blocker in blockers):
-        orphan_records = [
-            blocker.removeprefix("orphan manifest record ")
-            for blocker in blockers
-            if "orphan manifest record" in blocker
-        ]
-        findings.append(DoctorFinding(
-            "orphan_legacy_record",
-            "Orphan legacy manifest record: " + ", ".join(orphan_records)
-            + " (installed directory missing; record preserved)",
-            100,
-            "Inspect the manifest and preserved state before any migration or repair.",
-        ))
-    if any("unified package" in blocker for blocker in blockers):
-        findings.append(DoctorFinding(
-            "unified_package_mismatch",
-            "The unified Skill package does not match its manifest or discovery paths",
-            90,
-            "Inspect package contents and manifest provenance before syncing.",
-        ))
-    if any("unsafe" in blocker or "local" in blocker for blocker in blockers):
-        findings.append(DoctorFinding(
-            "legacy_package_conflict",
-            "A legacy Skill path is unsafe or differs from its recorded hash",
-            90,
-            "Preserve local data and resolve the path or hash conflict manually.",
-        ))
+    findings: list[DoctorFinding] = list(blocking_findings)
     if partial:
         findings.append(DoctorFinding(
             "legacy_entries_preserved",
@@ -3370,7 +3364,7 @@ def _diagnose_legacy_state(
         ))
     if stale:
         print("  Next action: review stale allowance records; doctor is read-only.")
-    elif blockers:
+    elif blocking_findings:
         print("  Next action: inspect local contents and manifest provenance; resolve safely before migrate.")
     elif partial:
         print("  Next action: review preserved legacy Skills and provenance; rerun migrate after resolution.")
@@ -3619,6 +3613,8 @@ def _diagnose_scope(
     findings = sorted(unique_findings.values(), key=lambda finding: -finding.priority)
     if any(finding.priority >= 90 for finding in findings):
         status = "NEEDS ATTENTION"
+    elif legacy is not None and legacy.status in {"BLOCKED", "RECOVERY REQUIRED"}:
+        status = "NEEDS ATTENTION"
     elif findings:
         status = "REVIEW NEEDED"
     elif legacy is not None and legacy.status == "PARTIAL":
@@ -3767,6 +3763,8 @@ def _doctor_command(args: argparse.Namespace) -> int:
     requested = next((scope for scope in scopes if scope.scope == requested_scope), None)
     if any(finding.priority >= 90 for finding in all_findings):
         overall = "NEEDS ATTENTION"
+    elif any(scope.status == "NEEDS ATTENTION" for scope in scopes):
+        overall = "NEEDS ATTENTION"
     elif all_findings or any(scope.status == "REVIEW NEEDED" for scope in scopes):
         overall = "REVIEW NEEDED"
     elif requested is not None and requested.status == "NOT INSTALLED":
@@ -3784,7 +3782,7 @@ def _doctor_command(args: argparse.Namespace) -> int:
             print(f"  Target: {scope.target}")
         print(f"  Status: {scope.status}")
     if requested is not None and requested.status == "HEALTHY":
-        print(f"Overall: Requested {requested.scope} is healthy.")
+        print(f"Requested {requested.scope} is healthy.")
     print("Issues:")
     if all_findings:
         print(f"- Most important issue: {all_findings[0].message}")

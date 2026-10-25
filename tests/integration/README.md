@@ -470,6 +470,8 @@ Project ScopeでSkillのファイルが見つかることと、エージェン�
 
 これらは実エージェントによる手動評価シナリオです。文言の静的検査やfixtureは候補規則の存在を確認するだけで、警告の意味判定、修正品質、CI運用の妥当性を証明しません。実行した場合は使用ツール/版、設定、OS/target/feature/build条件、比較基準、実警告、修正と再検証結果を記録します。未実施の場合は未検証と報告します。
 
+限定的な実行では既存の [`devconcord evaluate agent`](../../.agents/skills/devconcord/references/modules/evaluation/devconcord-agent-behavior-evaluation/module.md) workflowを使い、破棄可能なfixtureで「比較可能な基準がない新規/既存判定」「新規警告の同一変更内修正」「既存AGENTS.mdの制約と局所抑制の保護」を含むケースを選びます。Skillとシナリオのrevision、agent/runtime/model、設定と権限、初期状態、入力、実行trace、最終diff、実行検証、禁止した副作用を記録し、Discovery・Selection・Contract compliance・Behavior・Regression・効率/範囲・権限境界を別々に判定します。シナリオの手動読解、規約fixture、実エージェント実行の結果を混ぜず、実行不能ならその理由と未実施範囲を残します。単一実行から一般的なモデル品質や効果を結論しません。
+
 ## 変更影響・テスト設計・実装計画の手動評価シナリオ
 
 以下は [`review repository`](../../.agents/skills/devconcord/references/modules/verification/devconcord-repository-review/module.md) の実装前Change Impact Assessment、[`verify test-design`](../../.agents/skills/devconcord/references/modules/verification/devconcord-test-design/module.md)、[`develop implementation-plan`](../../.agents/skills/devconcord/references/modules/development/devconcord-implementation-planning/module.md)を使う場合の判断契約を確認します。これらは別の成果物を作る任意ワークフローです。静的検証やユニットテストはAIの選択・分析品質を証明しません。
