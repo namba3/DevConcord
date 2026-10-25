@@ -37,19 +37,22 @@ project-specific Definition of Done.
 
 ## 2. Choose work with evidence
 
-Do not sort by priority label alone and do not use a numeric score as an
+Issues may call for design, research, documentation, organization, testing,
+refactoring, implementation, or a combination. Select evidence and deliverables
+from the actual acceptance conditions; a code change is not a default
+requirement. Do not sort by priority label alone and do not use a numeric score as an
 automatic selector. For each candidate, consider:
 
 - stated impact and urgency;
 - blockers and real dependency order;
 - shared causes or components that allow a coherent change;
 - user and quality value;
-- implementation and regression risk;
+- work and regression risk;
 - ability to verify acceptance conditions;
 - locality and reviewability;
 - downstream work that becomes possible.
 
-Explain material tradeoffs. Keep implementation order distinct from the
+Explain material tradeoffs. Keep work order distinct from the
 issue's formal priority. Do not alter priority merely to simplify execution.
 An unresolved blocker prevents implementation unless the issue explicitly
 allows a safe independent slice. Recheck whether a reported issue is already
@@ -76,7 +79,7 @@ matches records containing every requested tag after case normalization.
 Read the canonical issue row to verify its status and readiness. Tags do not
 replace priority, dependencies, risk, authorization, or acceptance
 conditions. Do not infer a dependency from a shared file alone. When a formal
-high-priority issue depends on a lower-priority prerequisite, implement the
+high-priority issue depends on a lower-priority prerequisite, carry out the
 prerequisite first if needed and actionable without changing either issue's
 priority. Prefer work that clears a real blocker or creates a reviewable,
 verifiable slice, but explain tradeoffs among urgency, user value, risk,
@@ -97,19 +100,20 @@ plan in chat is not a register update and is not completed work.
 1. Confirm the specified issue exists, is actionable, and is not blocked by an
    unmet dependency. Do not invent a missing issue ID or scope. If missing
    context materially affects safe implementation, stop and report it.
-2. Derive the smallest implementation slice that can satisfy the issue's
+2. Derive the smallest work slice and deliverables that can satisfy the issue's
    acceptance conditions. Check relevant contracts and impact on persistence,
    UX, performance, robustness, replaceability, security, and documentation as
    applicable. Do not duplicate specialist Skills' detailed workflows.
 3. Add or update focused verification from requirements and contracts. Apply
    TDD when practical and useful; do not force ceremony on every change.
-4. Implement only the authorized issue scope. Avoid unrelated cleanup and
+4. Perform only the authorized issue scope. Avoid unrelated cleanup and
    speculative requirements. Preserve UI requirements and design assets when
    a change affects them; follow the target's UI design guidance.
 5. Run proportionate targeted checks and required regressions. Record each
    check as not run, failed, or passed. Investigate failures and distinguish
    existing failures from regressions where evidence allows.
-6. Inspect relevant compiler, linter, and static-analysis warnings. Treat
+6. When the work affects code, builds, or static analysis, inspect relevant
+   compiler, linter, and static-analysis warnings. Treat
    warnings introduced by this issue's changes as same-unit remediation
    candidates by default. Consider related existing warnings when a safe,
    proportionate fix fits the issue. Use a comparable baseline before labeling
@@ -118,7 +122,7 @@ plan in chat is not a register update and is not completed work.
    For material unresolved warnings, use the existing issue register only if
    authorized and warranted, after checking for duplicates; do not create a
    warning ledger or one issue per warning.
-7. Review the diff against the issue, acceptance conditions, target review
+7. Review changed artifacts against the issue, acceptance conditions, target review
    criteria, and unrelated-change protection. Update only relevant existing
    documentation and the existing issue row/history.
 8. Set the issue to its local lifecycle state that matches the evidence. Use
@@ -143,15 +147,16 @@ score, or expand the authorized scope.
 2. Select only actionable issues whose prerequisites are met. Order by actual
    dependencies and coherent shared causes, considering value, risk, and
    verification. Do not start blocked issues unconditionally.
-3. Batch issues only when they share a demonstrated cause/dependency or a
-   coordinated change avoids an intermediate contract violation. Same-file
-   location alone is not a reason. Before combining, verify that the user
-   authorized the combined scope, each issue still has an independently
-   checkable completion condition, and failure can be isolated and reviewed.
-   Keep unrelated items separate even when they appear next to one another in
-   the register.
+3. Batch may include different work types when the user authorized the bounded
+   set and each issue can be evaluated independently. Order work by actual
+   dependencies and preserve separable deliverables/evidence. A shared cause,
+   dependency, or coordinated change may justify grouping; same-file location
+   alone does not. Before combining, verify that the user authorized the
+   combined scope, each issue still has an independently checkable completion
+   condition, and failure can be isolated and reviewed.
 4. Keep each issue's implementation and evidence separable where possible.
-   Verify and review each change—including relevant warning output and
+   Verify and review each deliverable with applicable checks—including warning
+   output where code/build analysis applies and
    unresolved-warning disposition under §4's same-unit remediation contract—
    before expanding the scope. Stop when the user's boundary is reached, a
    blocker occurs, unrelated concurrent changes appear, or remaining work
@@ -194,10 +199,10 @@ the reason for stopping.
   and meanings of `未評価` and `N/A`. Do not adjust the score to reward fewer
   open issues. Reassess only existing axes materially affected by significant
   evidence; explain the distinct impact and avoid double counting.
-- Do not mark an issue complete because code or a test exists. Record whether
-  tests were added, run, passed, and whether acceptance and review obligations
-  were met. Unrun tests and residual risks remain explicit.
-- For material implementation evidence, record the target commit or worktree
+- Do not mark an issue complete because an artifact or test exists. Record
+  applicable checks as designed, added, run, and passed, and whether acceptance
+  and review obligations were met. Unrun checks and residual risks remain explicit.
+- For material deliverable evidence, record the target commit or worktree
   state and relevant environment/command/result in the existing register or
   point to an existing CI/test/review record. Do not paste long logs into the
   issue. If the code, configuration, fixture, or environment changed after a
@@ -224,7 +229,7 @@ the reason for stopping.
 
 For Single or Batch, report:
 
-- addressed issue IDs and implementation summary;
+- addressed issue IDs and deliverable summary;
 - changed files;
 - checks run and their results, including checks not run;
 - issue-register state/evidence updates;

@@ -35,6 +35,7 @@
 | [単一課題表テンプレート](work-management/templates/issue-register.md) | 小規模プロジェクト向けの従来型単一Markdown課題表 |
 | [メイン課題表テンプレート](work-management/templates/issue-register-main.md) | 連合課題表の完成度評価・共通採番・サブ課題表索引 |
 | [サブ課題表テンプレート](work-management/templates/issue-register-subregister.md) | 連合構成で個別課題の正本を保持する表 |
+| [連合課題表の例示リンク先](work-management/templates/issues/) | メイン課題表テンプレートの相対リンク例を解決する空スケルトン |
 | [リスク管理規約](work-management/risk-management.md) | 将来の不確実性・残余リスクの記録。対応作業は課題表で管理 |
 | [プロジェクト概要テンプレート](work-management/templates/project-overview.md) | 目的、範囲、関係者、制約、成功条件の共有 |
 | [リリースチェックリスト](work-management/templates/release-checklist.md) | リリース前の検証、配布、周知、ロールバック確認 |

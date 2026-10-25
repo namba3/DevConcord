@@ -15,3 +15,11 @@ It is not a runtime implementation or an agent-execution result.
 `ISS-0130` is deliberately untagged and remains a valid issue. The main index
 contains links and the global next ID only; issue status and details are
 canonical in the linked subregisters.
+
+The index includes one important-issue link to a real record heading. The
+deterministic fixture unit tests exercise duplicate IDs across files, a stale
+next counter, a missing index destination, an orphan inside the explicitly managed
+`docs/issues/` directory, stale important-issue references, optional/undefined
+tags, case-normalized duplicates, and five-digit IDs. These are deterministic
+fixture checks; they do not prove historical ID non-use, branch coordination,
+or real-agent search quality.

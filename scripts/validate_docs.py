@@ -21,6 +21,9 @@ ISSUE_MAIN_TEMPLATE = ROOT / "docs/work-management/templates/issue-register-main
 ISSUE_SUBREGISTER_TEMPLATE = (
     ROOT / "docs/work-management/templates/issue-register-subregister.md"
 )
+FEDERATED_ISSUE_FIXTURE = (
+    ROOT / "tests/integration/fixtures/federated-issue-registers/docs/ISSUES.md"
+)
 ADR_GUIDE = ROOT / "docs/common/ai-assisted-development.md"
 ADR_TEMPLATE = ROOT / "docs/application-design/templates/adr.md"
 REQUIREMENTS_TEMPLATE = ROOT / "docs/application-design/templates/requirements.md"
@@ -357,6 +360,164 @@ def check_links(files: list[Path]) -> list[str]:
     return errors
 
 
+def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> list[str]:
+    """Check declared issue records and index integrity in an explicit fixture scope."""
+    errors: list[str] = []
+    try:
+        main_text = main_index.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        return [f"{main_index}: cannot read federated issue index: {error}"]
+
+    main_records = _issue_record_rows(main_text)
+    for issue_id in re.findall(r"^\|\s*(ISS-\d+)\s*\|", main_text, re.MULTILINE):
+        if len(issue_id[4:]) < 4:
+            errors.append(f"{main_index}: malformed issue ID {issue_id}; IDs require at least four digits")
+    records: list[tuple[str, Path, list[str]]] = []
+    indexed: list[Path] = []
+    in_subregister_section = False
+    for line in main_text.splitlines():
+        if re.match(r"^##\s+", line):
+            in_subregister_section = bool(
+                re.match(r"^##\s+(?:Subregisters|サブ課題表)\b", line, re.IGNORECASE)
+            )
+        if not in_subregister_section:
+            continue
+        for destination in re.findall(r"\[[^\]]+\]\(([^)]+)\)", line):
+            path_part = destination.split("#", 1)[0]
+            if not path_part or ":" in path_part:
+                continue
+            path = (main_index.parent / path_part).resolve()
+            if not path.is_relative_to(managed_dir.resolve()):
+                errors.append(f"{main_index}: subregister link escapes managed issue directory: {destination}")
+                continue
+            if path in indexed:
+                errors.append(f"{main_index}: duplicate subregister index link: {destination}")
+                continue
+            indexed.append(path)
+            if not path.is_file():
+                errors.append(f"{main_index}: missing subregister target {destination}")
+                continue
+            try:
+                register_text = path.read_text(encoding="utf-8")
+                records.extend(_issue_record_rows(register_text, path))
+                for issue_id in re.findall(r"^\|\s*(ISS-\d+)\s*\|", register_text, re.MULTILINE):
+                    if len(issue_id[4:]) < 4:
+                        errors.append(f"{path}: malformed issue ID {issue_id}; IDs require at least four digits")
+            except (OSError, UnicodeError) as error:
+                errors.append(f"{path}: cannot read indexed issue register: {error}")
+
+    if main_records:
+        errors.append(f"{main_index}: main index contains issue records; keep canonical records in subregisters")
+    if not indexed:
+        errors.append(f"{main_index}: no subregister links found in the Subregisters section")
+
+    occurrences: dict[str, list[Path]] = {}
+    for issue_id, path, raw_tags in records:
+        occurrences.setdefault(issue_id, []).append(path)
+        tags = [tag.upper() for tag in raw_tags]
+        if len(tags) != len(set(tags)):
+            errors.append(f"{path}: {issue_id} contains duplicate tags after case normalization")
+    for issue_id, paths in occurrences.items():
+        if len(paths) > 1:
+            locations = ", ".join(str(path) for path in paths)
+            errors.append(f"duplicate issue ID {issue_id}: {locations}")
+
+    counters = re.findall(r"Next unused ID:\s*`ISS-(\d{4,})`", main_text)
+    if not counters:
+        errors.append(f"{main_index}: missing a canonical next unused ISS counter")
+    elif len(counters) != 1:
+        errors.append(f"{main_index}: expected exactly one canonical next unused ISS counter")
+    elif records and int(counters[0]) <= max(int(issue_id[4:]) for issue_id, _, _ in records):
+        errors.append(f"{main_index}: next ISS counter must exceed every recorded issue ID")
+
+    indexed_set = set(indexed)
+    if managed_dir.is_dir():
+        for path in sorted(managed_dir.rglob("*.md")):
+            if path.resolve() not in indexed_set:
+                errors.append(f"{main_index}: unindexed issue register in managed directory: {path}")
+
+    in_important_section = False
+    for line in main_text.splitlines():
+        if re.match(r"^##\s+", line):
+            in_important_section = bool(
+                re.match(r"^##\s+(?:Important Issues|重要課題)\b", line, re.IGNORECASE)
+            )
+        if not in_important_section:
+            continue
+        for issue_id, destination in re.findall(
+            r"\[(ISS-\d{4,})\]\(([^)]+)\)", line
+        ):
+            path_part, _, anchor = destination.partition("#")
+            target = (main_index.parent / path_part).resolve()
+            if target not in indexed_set or issue_id not in {
+                record_id for record_id, record_path, _ in records if record_path.resolve() == target
+            }:
+                errors.append(f"{main_index}: important issue link {issue_id} does not resolve to its canonical record")
+            else:
+                anchor_matches_id = (
+                    anchor.casefold() == issue_id.casefold()
+                    or anchor.casefold().startswith(issue_id.casefold() + "-")
+                )
+                if (
+                    not anchor_matches_id
+                    or not target.is_file()
+                    or anchor not in anchors_for_target(target, target.read_text(encoding="utf-8"))
+                ):
+                    errors.append(
+                        f"{main_index}: important issue link {issue_id} has a mismatched anchor"
+                    )
+
+    defined_tags = set(re.findall(r"^\|\s*([A-Z][A-Z0-9]*)\s*\|", main_text, re.MULTILINE))
+    for issue_id, path, raw_tags in records:
+        unknown_tags = set(tag.upper() for tag in raw_tags) - defined_tags
+        if unknown_tags:
+            errors.append(f"{path}: {issue_id} uses undefined tags: {', '.join(sorted(unknown_tags))}")
+    return errors
+
+
+def _issue_record_rows(text: str, path: Path | None = None) -> list[tuple[str, Path, list[str]]]:
+    """Parse issue IDs only from Markdown table rows, preserving every occurrence."""
+    source = path or Path("<main index>")
+    rows: list[tuple[str, Path, list[str]]] = []
+    for line in text.splitlines():
+        match = re.match(r"^\|\s*(ISS-\d{4,})\s*\|(.+)$", line)
+        if not match:
+            continue
+        columns = [column.strip() for column in line.strip().strip("|").split("|")]
+        tags: list[str] = []
+        if len(columns) > 1 and columns[1] not in {"—", "-", ""}:
+            tags = [tag.strip() for tag in columns[1].split(",") if tag.strip()]
+        rows.append((match.group(1), source, tags))
+    return rows
+
+
+def validate_single_issue_register(register: Path) -> list[str]:
+    """Check IDs and the next counter for a concrete, single-register file."""
+    try:
+        text = register.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        return [f"{register}: cannot read issue register: {error}"]
+    errors: list[str] = []
+    records = _issue_record_rows(text, register)
+    for issue_id in re.findall(r"^\|\s*(ISS-\d+)\s*\|", text, re.MULTILINE):
+        if len(issue_id[4:]) < 4:
+            errors.append(f"{register}: malformed issue ID {issue_id}; IDs require at least four digits")
+    occurrences: dict[str, int] = {}
+    for issue_id, _path, _tags in records:
+        occurrences[issue_id] = occurrences.get(issue_id, 0) + 1
+    for issue_id, count in occurrences.items():
+        if count > 1:
+            errors.append(f"{register}: duplicate issue ID {issue_id} appears {count} times")
+    counters = re.findall(r"(?:Next unused ID|次の未割当番号):\s*`?ISS-(\d{4,})`?", text)
+    if not counters:
+        errors.append(f"{register}: missing a canonical next unused ISS counter")
+    elif len(counters) != 1:
+        errors.append(f"{register}: expected exactly one canonical next unused ISS counter")
+    elif records and int(counters[0]) <= max(int(issue_id[4:]) for issue_id, _, _ in records):
+        errors.append(f"{register}: next ISS counter must exceed every recorded issue ID")
+    return errors
+
+
 def check_privacy_hygiene(files: list[Path]) -> list[str]:
     """Report likely sensitive Markdown values without echoing matched content."""
     errors: list[str] = []
@@ -476,7 +637,7 @@ def check_conventions(files: list[Path]) -> list[str]:
     issues_heading = template.find("## 課題一覧")
     if evaluation_heading < 0 or issues_heading < 0 or evaluation_heading > issues_heading:
         errors.append("issue-register.md: completion evaluation must precede the issue list")
-    required_issue_header = "| ID | 分類 | タグ（任意） | 優先度 | 状態 | 課題・影響 | 完了条件 | 根拠・検証 | 更新日 |"
+    required_issue_header = "| ID | 分類 | タグ（任意） | 作業種別（任意） | 優先度 | 状態 | 課題・影響 | 完了条件 | 根拠・検証 | 更新日 |"
     if required_issue_header not in template:
         errors.append("issue-register.md: required issue columns are missing or out of order")
     for value in ["未確定", "暫定総合完成度", "評価済みカバレッジ", "N/A", "未評価"]:
@@ -486,11 +647,25 @@ def check_conventions(files: list[Path]) -> list[str]:
     main_template = (
         read_utf8(ISSUE_MAIN_TEMPLATE, "main issue-register template", errors) or ""
     )
+    main_axes_start = main_template.find("| 評価軸 | 重み | 完成度 |")
+    main_axes_end = main_template.find("**総評:**", main_axes_start)
+    if main_axes_start < 0 or main_axes_end < 0 or evaluation_rows(
+        main_template[main_axes_start:main_axes_end]
+    ) != EVALUATION_AXES:
+        errors.append("issue-register-main.md: completion axes or weights must match the shared ten-axis schema")
+    main_sds_start = main_template.find("### Self-documenting Score（SDS）")
+    main_sds_end = main_template.find("| 評価軸 | 重み | 完成度 |", main_sds_start)
+    if main_sds_start < 0 or main_sds_end < 0 or evaluation_rows(
+        main_template[main_sds_start:main_sds_end]
+    ) != SDS_AXES:
+        errors.append("issue-register-main.md: SDS axes or weights must match the canonical schema")
     for required in ("次の未割当番号", "サブ課題表", "タグ定義", "複製しません"):
         if required not in main_template:
             errors.append(
                 f"issue-register-main.md: missing federated-register contract {required}"
             )
+    fixture_managed_dir = FEDERATED_ISSUE_FIXTURE.parent / "issues"
+    errors.extend(validate_federated_issue_register(FEDERATED_ISSUE_FIXTURE, fixture_managed_dir))
     subregister_template = read_utf8(
         ISSUE_SUBREGISTER_TEMPLATE, "issue subregister template", errors
     ) or ""
@@ -499,6 +674,8 @@ def check_conventions(files: list[Path]) -> list[str]:
             errors.append(
                 f"issue-register-subregister.md: missing subregister contract {required}"
             )
+    if required_issue_header not in subregister_template:
+        errors.append("issue-register-subregister.md: issue columns must match the single-register schema")
 
     status_table_start = rules.find("### 4.4 状態")
     status_table_end = rules.find("### 4.5", status_table_start)

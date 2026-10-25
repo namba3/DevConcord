@@ -3590,6 +3590,7 @@ def _diagnose_scope(
             finding.code in {
                 "missing_or_unsafe_skill", "invalid_skill_package", "unverifiable_skill_hash",
                 "skill_hash_mismatch", "manifest_or_scope_invalid", "unsafe_manifest",
+                "interrupted_transaction",
             }
             for finding in installation_findings
         ):

@@ -3253,6 +3253,13 @@ Version: {version}
         self.assertFalse((self.target / ".agents/skills/devconcord").exists())
 
     def test_migration_transaction_recovers_interrupted_legacy_deletion(self) -> None:
+        self.assertEqual(
+            self.run_user_operation(
+                "install", agents=["codex"], skills=["sample-skill"],
+                apply=True, source=self.source,
+            )[0],
+            0,
+        )
         legacy = self.prepare_migration_source(agents=["codex", "claude", "copilot"])
         manifest_path = self.target / ".devconcord" / "skills-manifest.json"
         original_allowances = json.loads(manifest_path.read_text(encoding="utf-8"))[
@@ -3277,6 +3284,9 @@ Version: {version}
         self.assertIn("Migration operation: RECOVERY REQUIRED", migrate_error)
         self.assertNotIn("Migration status (applied):", migrate_output + migrate_error)
         self.assertIn("recover", migrate_error)
+        valid_manifest = manifest_path.read_bytes()
+        manifest_path.write_text("{broken\n", encoding="utf-8")
+        corrupt_manifest = manifest_path.read_bytes()
         doctor_args = SimpleNamespace(command="doctor", target=self.target)
         doctor_stdout = io.StringIO()
         doctor_stderr = io.StringIO()
@@ -3284,10 +3294,14 @@ Version: {version}
             with contextlib.redirect_stdout(doctor_stdout), contextlib.redirect_stderr(doctor_stderr):
                 doctor_result = manage_skills._run(doctor_args)
         self.assertEqual((doctor_result, doctor_stderr.getvalue()), (0, ""))
+        self.assertIn("User Scope:\n  Status: HEALTHY", doctor_stdout.getvalue())
         self.assertIn("Status: NEEDS ATTENTION", doctor_stdout.getvalue())
         self.assertIn("Project Scope:\n  Target:", doctor_stdout.getvalue())
         self.assertIn("  Status: NEEDS ATTENTION", doctor_stdout.getvalue())
         self.assertIn("Migration status: RECOVERY REQUIRED", doctor_stdout.getvalue())
+        self.assertNotIn("Validated 1 DevConcord-managed Skill package(s) in Project Scope", doctor_stdout.getvalue())
+        self.assertEqual(manifest_path.read_bytes(), corrupt_manifest)
+        manifest_path.write_bytes(valid_manifest)
         result, _, error = self.run_recovery(apply=True)
         self.assertEqual((result, error), (0, ""))
         self.assertTrue(legacy.is_dir())

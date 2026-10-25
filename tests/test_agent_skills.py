@@ -363,6 +363,9 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
             MODULES / "development" / "devconcord-issue-driven-development"
             / "references" / "workflow.md"
         ).read_text(encoding="utf-8")
+        issue_module = (
+            MODULES / "development" / "devconcord-issue-driven-development" / "module.md"
+        ).read_text(encoding="utf-8")
         orchestration = (
             MODULES / "development" / "devconcord-development-orchestration"
             / "references" / "workflow.md"
@@ -399,7 +402,16 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertIn("優先度", guide)
         self.assertIn("完成度10軸", guide)
         self.assertIn("priority", issue_workflow.lower())
+        for phrase in (
+            "a code change is not a default requirement",
+            "design, research, documentation",
+            "Batch may include different work types",
+        ):
+            with self.subTest(issue_workflow=phrase):
+                self.assertIn(phrase.lower(), " ".join(issue_workflow.lower().split()))
+        self.assertIn("Tests and compiler checks apply", issue_module)
         self.assertIn("ten-axis", orchestration.lower())
+        self.assertIn("A work unit may produce design, research, documentation", orchestration)
         for phrase in (
             "任意",
             "タグなし",
@@ -422,6 +434,13 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertIn("optional tags can narrow", review.lower())
         self.assertIn("optional tags may narrow", gap.lower())
         self.assertIn("Federated Issue Register and Multi-Tag", integration)
+        for scenario in (
+            "設計書のみ", "技術調査のみ", "ドキュメント整理のみ",
+            "ディレクトリ整理", "リファクタリング", "異種Batch",
+            "重複ISS", "採番衝突", "索引切れ", "孤立課題表", "Branch統合",
+        ):
+            with self.subTest(issue_scenario=scenario):
+                self.assertIn(scenario, integration)
         for phrase in (
             "大文字小文字を正規化", "両方を持つ", "ISS ID、優先度、状態",
             "10軸", "実エージェント", "未検証",
@@ -435,32 +454,34 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         main_index = (fixture_root / "docs" / "ISSUES.md").read_text(encoding="utf-8")
         self.assertIn("issues/architecture.md", main_index)
         self.assertIn("issues/quality.md", main_index)
-        records: dict[str, set[str]] = {}
-        statuses: dict[str, str] = {}
+        records: list[tuple[str, set[str], str, Path]] = []
         for register in (fixture_root / "docs" / "issues").glob("*.md"):
             for line in register.read_text(encoding="utf-8").splitlines():
                 if not line.startswith("| ISS-"):
                     continue
                 columns = [column.strip() for column in line.strip("|").split("|")]
                 issue_id, raw_tags = columns[0], columns[1]
-                records[issue_id] = {
+                records.append((issue_id, {
                     tag.strip().upper()
                     for tag in raw_tags.split(",")
                     if tag.strip() != "—"
-                }
-                statuses[issue_id] = columns[3]
+                }, columns[3], register))
+        by_id: dict[str, list[Path]] = {}
+        for issue_id, _tags, _status, path in records:
+            by_id.setdefault(issue_id, []).append(path)
+        self.assertTrue(all(len(paths) == 1 for paths in by_id.values()))
         for requested, expected in (
             ({"ARCH", "REL"}, {"ISS-0125"}),
             ({"SEC", "QA"}, {"ISS-0129"}),
             ({"QA", "OPS"}, {"ISS-0127"}),
             ({tag.upper() for tag in ("rel", "ARCH", "ARCH")}, {"ISS-0125"}),
         ):
-            matching = {
-                issue_id for issue_id, tags in records.items() if requested <= tags
-            }
+            matching = {issue_id for issue_id, tags, _status, _path in records if requested <= tags}
             self.assertEqual(matching, expected)
-        self.assertEqual(records["ISS-0130"], set())
-        self.assertEqual(statuses["ISS-0130"], "Open")
+        untagged = [record for record in records if record[0] == "ISS-0130"]
+        self.assertEqual(len(untagged), 1)
+        self.assertEqual(untagged[0][1], set())
+        self.assertEqual(untagged[0][2], "Open")
 
     def test_agent_evaluation_separates_routing_and_specialist_use_effects(self) -> None:
         evaluation = (ROOT / "tests/integration/README.md").read_text(encoding="utf-8")

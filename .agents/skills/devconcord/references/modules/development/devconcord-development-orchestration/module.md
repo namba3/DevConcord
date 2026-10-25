@@ -13,15 +13,15 @@ filters, not readiness or priority decisions.
 
 - **Plan:** Read-only assessment and a bounded iteration plan. Do not edit
   source, tests, settings, design artifacts, issue records, or scores. A plan
-  does not grant implementation permission.
-- **Iterate:** Execute user-authorized implementation, verification, review,
+  does not grant permission to carry out work.
+- **Iterate:** Execute user-authorized work, verification, review,
   integration, and next-step decisions across a finite number of work units.
 - **Stabilize:** Improve existing behavior, verification, and consistency
   without adding features. Prefer defects, regressions, important verification
   gaps, security/reliability risks, and stale design evidence. Avoid broad
   refactoring or architecture changes without clear evidence and authority.
 
-Infer the mode from the request. If implementation authority or scope is
+Infer the mode from the request. If work authority or scope is
 unclear, use Plan. A request for one issue or a small bounded batch normally
 belongs to `develop issue` instead.
 
@@ -29,7 +29,7 @@ belongs to `develop issue` instead.
 
 Follow [`references/workflow.md`](references/workflow.md): establish a fresh
 baseline; select one coherent, verifiable work unit from existing project
-tracking; implement only within scope; verify; review the final diff; update
+tracking; perform only the authorized work; verify; review the final diff; update
 authorized existing records; then decide to continue, repair, reconsider
 design, report blocked, or stop. Use proportionate checks and tie evidence to
 the final changed state. Assess relevant risk before selecting specialist
@@ -38,6 +38,10 @@ and review when evidence changes impact, uncertainty, affected scope, or
 evidence confidence. Follow the canonical principles in
 `docs/common/ai-assisted-development.md` §17.5; they do not add a checklist,
 score, or mandatory Skill gate.
+
+A work unit may produce design, research, documentation, organization, tests,
+or code. Choose deliverables and checks from its acceptance conditions; do not
+assume every unit changes code or needs compiler/test checks.
 
 Use a finite iteration and change budget. Honor user limits; when none are
 specified, begin with at most three work units and at most one focused repair
@@ -63,7 +67,7 @@ issue register as the work source of truth, existing completion axes and
 weights, issue IDs and history, and separate risk records. Add no parallel
 progress ledger or quality score.
 
-Include relevant compiler, linter, and static-analysis warnings in verification
+When a work unit affects code, builds, or static analysis, include relevant compiler, linter, and static-analysis warnings in verification
 and final review. Try to resolve warnings introduced by the current work within
 that work unit; address related existing warnings when the fix is safe and
 proportionate. Compare warning baselines only under sufficiently equivalent
@@ -75,7 +79,7 @@ gates and issue register, within the finite work and repair budget. See
 
 When current evidence reveals a material blocker or unresolved judgment,
 consider `develop unblock` or the matching `decide` command before selecting
-dependent implementation. This is conditional, not a standard loop step or
+dependent work. This is conditional, not a standard loop step or
 quality gate. Keep the existing finite iteration/investigation budget; route
 approval-dependent choices to the authorized decision maker and continue only
 safe independent work.

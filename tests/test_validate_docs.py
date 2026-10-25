@@ -482,5 +482,150 @@ class ConventionValidationTests(unittest.TestCase):
         self.assertTrue(any("SDS axes or weights" in error for error in errors))
 
 
+class FederatedIssueRegisterValidationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        root = Path(self.temp_dir.name)
+        source = Path(__file__).resolve().parent / "integration/fixtures/federated-issue-registers/docs"
+        shutil.copytree(source, root / "docs")
+        self.main = root / "docs/ISSUES.md"
+        self.managed = root / "docs/issues"
+
+    def validate(self) -> list[str]:
+        return validate_docs.validate_federated_issue_register(self.main, self.managed)
+
+    def test_single_register_counter_accepts_five_digits_and_rejects_reuse(self) -> None:
+        register = self.managed.parent / "single.md"
+        register.write_text(
+            "# Issues\n\n## 共通ISS採番\n\n- 次の未割当番号: ISS-10001\n\n"
+            "## 課題一覧\n\n| ID | Tags | Status |\n|---|---|---|\n"
+            "| ISS-10000 | — | Open |\n",
+            encoding="utf-8",
+        )
+        self.assertEqual(validate_docs.validate_single_issue_register(register), [])
+        register.write_text(
+            register.read_text(encoding="utf-8") + "| ISS-10000 | — | Open |\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any(
+            "duplicate issue ID ISS-10000" in error
+            for error in validate_docs.validate_single_issue_register(register)
+        ))
+        register.write_text(
+            register.read_text(encoding="utf-8").replace("ISS-10001", "ISS-10000"),
+            encoding="utf-8",
+        )
+        self.assertTrue(any(
+            "next ISS counter" in error
+            for error in validate_docs.validate_single_issue_register(register)
+        ))
+
+    def test_valid_federation_supports_five_digit_ids_and_optional_tags(self) -> None:
+        text = self.main.read_text(encoding="utf-8").replace("ISS-0131", "ISS-10001")
+        text += "\nThis index also mentions ISS-99999 as an example reference, not a record.\n"
+        self.main.write_text(text, encoding="utf-8")
+        architecture = self.managed / "architecture.md"
+        content = architecture.read_text(encoding="utf-8").replace("ISS-0126", "ISS-10000")
+        architecture.write_text(content, encoding="utf-8")
+
+        self.assertEqual(self.validate(), [])
+
+    def test_stale_important_issue_anchor_is_reported(self) -> None:
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "#iss-0125-storage-responsibilities", "#iss-0125-old-location"
+            ),
+            encoding="utf-8",
+        )
+
+        self.assertTrue(any("mismatched anchor" in error for error in self.validate()))
+
+    def test_duplicate_id_preserves_both_paths_in_diagnostic(self) -> None:
+        quality = self.managed / "quality.md"
+        quality.write_text(
+            quality.read_text(encoding="utf-8").replace("ISS-0127", "ISS-0125"),
+            encoding="utf-8",
+        )
+
+        errors = self.validate()
+
+        duplicate = next(error for error in errors if "duplicate issue ID ISS-0125" in error)
+        self.assertIn("architecture.md", duplicate)
+        self.assertIn("quality.md", duplicate)
+
+    def test_counter_collision_missing_subregister_and_orphan_are_reported(self) -> None:
+        main_text = self.main.read_text(encoding="utf-8")
+        main_text = main_text.replace("ISS-0131", "ISS-0125")
+        main_text = main_text.replace("issues/quality.md", "issues/missing.md")
+        self.main.write_text(main_text, encoding="utf-8")
+        (self.managed / "orphan.md").write_text("# Unindexed\n", encoding="utf-8")
+
+        errors = self.validate()
+
+        self.assertTrue(any("next ISS counter" in error for error in errors))
+        self.assertTrue(any("missing subregister target" in error for error in errors))
+        self.assertTrue(any("orphan.md" in error for error in errors))
+
+    def test_undefined_tag_and_case_normalized_duplicate_are_reported(self) -> None:
+        quality = self.managed / "quality.md"
+        quality.write_text(
+            quality.read_text(encoding="utf-8").replace("DOC |", "DOC, doc |", 1),
+            encoding="utf-8",
+        )
+        architecture = self.managed / "architecture.md"
+        architecture.write_text(
+            architecture.read_text(encoding="utf-8").replace("ARCH, REL", "UNKNOWN, REL", 1),
+            encoding="utf-8",
+        )
+
+        errors = self.validate()
+
+        self.assertTrue(any("duplicate tags after case normalization" in error for error in errors))
+        self.assertTrue(any("uses undefined tags: UNKNOWN" in error for error in errors))
+
+    def test_important_issue_link_must_resolve_to_canonical_record(self) -> None:
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace("ISS-0125](issues/architecture.md", "ISS-0126](issues/quality.md"),
+            encoding="utf-8",
+        )
+
+        self.assertTrue(any("does not resolve to its canonical record" in error for error in self.validate()))
+
+    def test_duplicate_subregister_index_link_is_reported(self) -> None:
+        main = self.main.read_text(encoding="utf-8")
+        main = main.replace(
+            "| Quality and operations | [`quality.md`](issues/quality.md) |",
+            "| Quality and operations | [`quality.md`](issues/quality.md) |\n"
+            "| Quality duplicate | [`quality-again.md`](issues/quality.md) |",
+        )
+        self.main.write_text(main, encoding="utf-8")
+
+        self.assertTrue(any("duplicate subregister index link" in error for error in self.validate()))
+
+    def test_defined_project_specific_tag_is_allowed(self) -> None:
+        main = self.main.read_text(encoding="utf-8").replace(
+            "| DOC | Documentation |", "| DOC | Documentation |\n| DATA | Project data subsystem |"
+        )
+        self.main.write_text(main, encoding="utf-8")
+        quality = self.managed / "quality.md"
+        quality.write_text(
+            quality.read_text(encoding="utf-8").replace("ISS-0128 | DOC |", "ISS-0128 | DOC, DATA |"),
+            encoding="utf-8",
+        )
+
+        self.assertEqual(self.validate(), [])
+
+    def test_issue_reference_in_prose_is_not_a_main_index_record(self) -> None:
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8")
+            + "\nThis prose references ISS-99999 but does not define a task.\n",
+            encoding="utf-8",
+        )
+
+        self.assertFalse(any("main index contains issue records" in error for error in self.validate()))
+
+
+
 if __name__ == "__main__":
     unittest.main()

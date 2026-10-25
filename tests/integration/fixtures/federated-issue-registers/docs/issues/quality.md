@@ -1,5 +1,7 @@
 # Quality and Operations Subregister
 
+## Issues
+
 | ID | Tags | Priority | Status | Issue | Acceptance |
 |---|---|---|---|---|---|
 | ISS-0127 | QA, OPS | P2 | Open | Improve CI validation | CI checks are evidenced |

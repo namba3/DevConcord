@@ -3,6 +3,8 @@
 This internal workflow reference is distributed inside the public `devconcord` package.
 Follow the target repository's contracts, issue lifecycle, verification rules,
 and document ownership. Keep the work bounded and preserve existing user work.
+A work unit may produce design, research, documentation, organization, tests,
+or code; select deliverables and checks from its acceptance conditions.
 
 ## 1. Establish a current baseline
 
@@ -67,19 +69,19 @@ Use Decision Resolution only when it can materially unblock work; do not add a
 per-iteration DEC checklist. An independent safe unit may proceed while a
 decision waits, within existing authorization and budget.
 
-## 3. Implement within the delegated boundary
+## 3. Perform work within the delegated boundary
 
 Make the smallest change that meets the accepted contract. Apply relevant
 Design by Contract, TDD, UX, performance, robustness, replaceability,
 security, observability, and documentation principles in proportion to the
 change. Preserve dependency direction and compatibility where required.
-Update implementation, tests, docs, design assets, or issue records only when
+Update code, tests, docs, design assets, or issue records only when
 that change is within the user's authorization and the repository's rules.
 
 Do not silently change requirements, API/data compatibility, product policy,
-security guarantees, or major architecture. Distinguish an implementation
-defect from a design gap or unresolved requirement. If a consequential design
-decision is needed, stop dependent implementation and provide the evidence,
+security guarantees, or major architecture. Distinguish a delivery defect from
+a design gap or unresolved requirement. If a consequential design decision is
+needed, stop dependent work and provide the evidence,
 impact, alternatives, and approval needed. Safe independent work may continue.
 
 In Stabilize mode, do not add features. Prefer high-impact defects,
@@ -102,8 +104,8 @@ covers the final relevant diff; rerun affected checks after repairs. Static
 validation, fixtures, mocks, browser, native/device behavior, remote CI, and
 real-agent execution are separate evidence categories.
 
-Inspect relevant compiler/linter/static-analysis warnings as part of this
-evidence. Treat warnings introduced by the work as a same-unit remediation
+When the work affects code, builds, or static analysis, inspect relevant
+compiler/linter/static-analysis warnings as part of this evidence. Treat warnings introduced by the work as a same-unit remediation
 candidate by default; reduce related existing warnings when the repair is safe
 and proportionate. Compare before/after output only when tool versions,
 configuration, OS, target, features, and build mode are sufficiently alike.

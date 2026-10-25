@@ -15,11 +15,13 @@ This workflow does not create a parallel task, risk, or quality ledger.
 - **Plan:** The user asks what to do next or requests assessment/planning. Read
   only; do not edit code, settings, documents, or issue records.
 - **Single:** The user names an issue or clearly asks for one issue to be
-  implemented. Work only on that issue and its necessary, authorized scope.
+  carried out. Work only on that issue and its necessary, authorized scope;
+  work may produce code, design, research, documentation, or structural
+  changes, and does not require a code edit by default.
 - **Batch:** The user asks to continue issue-driven development across multiple
   issues. Select a bounded set using dependencies, value, risk, and their
   stated limits. Stop at the requested boundary; do not run indefinitely.
-- If implementation intent or scope is unclear, use Plan and explain the
+- If work intent or scope is unclear, use Plan and explain the
   assumption. Never infer permission to implement, commit, push, reset, or
   rewrite history.
 
@@ -32,8 +34,10 @@ changes. Confirm issue facts against the current repository; do not treat
 stale issue text as proof.
 
 In every mode, distinguish confirmed facts, assumptions, unknowns, and
-verification evidence. Respect dependencies and blockers. Keep implementation
-increments small enough to review and verify. Apply relevant design principles
+verification evidence. Respect dependencies and blockers. Keep work increments
+small enough to review and verify. Choose deliverables and checks that match
+the issue; do not require code changes, compiler checks, or tests when they do
+not apply. Apply relevant design principles
 proportionately; use specialized Skills only when available and useful, without
 assuming automatic handoff. Assess risk from the issue's actual contract,
 impact, uncertainty, affected scope, reversibility, and applicable evidence;
@@ -52,15 +56,18 @@ complete or automatically unblock an issue.
 
 ## Completion contract
 
-Implementation alone does not complete an issue. Distinguish implementation,
-tests added, tests run, tests passed, acceptance conditions met, and review or
-other required confirmation. Update the existing issue register only in Single
+Producing an artifact alone does not complete an issue. Distinguish completed
+deliverables, applicable checks designed/run/passed, acceptance conditions met,
+and review or other required confirmation. Tests and compiler checks apply
+when the issue changes or depends on code; design, research, documentation, and
+organization work use evidence appropriate to those outcomes. Update the existing issue register only in Single
 or Batch mode and only with evidence supported by the work. Preserve IDs,
 history, evaluation axes, weights, and status meanings. Do not change a
 completion score for routine work; reassess only materially affected existing
 axes when evidence warrants it.
 
-Include relevant warnings in verification and completion evidence. Normally
+When relevant to code, builds, or static analysis, include warning disposition
+in verification and completion evidence. Normally
 resolve warnings introduced by the issue's changes in the same work unit; for
 related pre-existing warnings, use impact and safe fix cost to decide whether
 to address them. Record only important unresolved warnings in an existing
