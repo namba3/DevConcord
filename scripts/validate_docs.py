@@ -375,6 +375,24 @@ TAG_HEADERS = {"tag", "tags", "タグ", "課題タグ"}
 COUNTER_HEADINGS = {"共通iss採番", "globalissueallocation", "commonissueallocation"}
 COUNTER_VALUE = re.compile(r"^(?:`(ISS-[0-9]+)`(?:（[^）]*）)?|(ISS-[0-9]+))$")
 ISSUE_ID = re.compile(r"^ISS-([0-9]+)$")
+MAX_ISSUE_DIGITS = 256
+
+
+def _display_issue_id(issue_id: str) -> str:
+    """Bound diagnostics for identifiers from untrusted issue-register input."""
+    match = ISSUE_ID.fullmatch(issue_id)
+    if match and len(match.group(1)) > 64:
+        return f"ISS-{match.group(1)[:24]}… ({len(match.group(1))} digits)"
+    if len(issue_id) > 80:
+        return f"{issue_id[:48]}… ({len(issue_id)} characters)"
+    return issue_id
+
+
+def _compare_issue_numbers(left: str, right: str) -> int:
+    """Compare normalized decimal strings without invoking Python's int parser."""
+    if len(left) != len(right):
+        return 1 if len(left) > len(right) else -1
+    return (left > right) - (left < right)
 
 
 def _stable_read_utf8(path: Path, label: str) -> tuple[str | None, str | None]:
@@ -429,12 +447,15 @@ def _header_key(value: str) -> str:
     return re.sub(r"[\s_`*:-]+", "", value).casefold()
 
 
-def _canonical_id(issue_id: str) -> tuple[int | None, bool]:
+def _canonical_id(issue_id: str) -> tuple[str | None, bool]:
     match = ISSUE_ID.fullmatch(issue_id)
     if not match:
         return None, False
-    number = int(match.group(1))
-    return number, number > 0 and issue_id == f"ISS-{number:04d}"
+    digits = match.group(1)
+    if len(digits) > MAX_ISSUE_DIGITS:
+        return None, False
+    number = digits.lstrip("0") or "0"
+    return number, number != "0" and issue_id == f"ISS-{number.zfill(4)}"
 
 
 def _issue_record_rows(text: str, path: Path | None = None, errors: list[str] | None = None) -> list[IssueRecord]:
@@ -492,9 +513,13 @@ def _issue_record_rows(text: str, path: Path | None = None, errors: list[str] | 
             issue_id = cells[id_column].strip(" `")
             if issue_id.casefold().startswith("iss-") and not ISSUE_ID.fullmatch(issue_id):
                 if errors is not None:
-                    errors.append(f"{source}:{row_index + 1}: malformed issue ID {issue_id}")
+                    errors.append(f"{source}:{row_index + 1}: malformed issue ID {_display_issue_id(issue_id)}")
             if ISSUE_ID.fullmatch(issue_id):
-                if any(marker in cell for cell in cells for marker in ("具体的な問題と影響", "検証可能な条件", "YYYY-MM-DD")):
+                if len(issue_id[4:]) > MAX_ISSUE_DIGITS:
+                    if errors is not None:
+                        errors.append(
+                            f"{source}:{row_index + 1}: issue ID exceeds the supported {MAX_ISSUE_DIGITS}-digit safety limit"
+                        )
                     row_index += 1
                     continue
                 raw_tags = []
@@ -506,15 +531,15 @@ def _issue_record_rows(text: str, path: Path | None = None, errors: list[str] | 
     return records
 
 
-def _issue_counter_values(text: str) -> tuple[list[str], list[str]]:
+def _issue_counter_values(text: str) -> tuple[list[tuple[str, int]], list[tuple[str, int]]]:
     """Return valid and malformed counter declarations inside named allocation sections."""
     active = False
     fenced = False
     fence_char = ""
     fence_len = 0
-    values: list[str] = []
-    malformed: list[str] = []
-    for line in text.splitlines():
+    values: list[tuple[str, int]] = []
+    malformed: list[tuple[str, int]] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
         fence = re.match(r"^\s*(`{3,}|~{3,})", line)
         if fence:
             marker = fence.group(1)
@@ -538,28 +563,43 @@ def _issue_counter_values(text: str) -> tuple[list[str], list[str]]:
             value = label.group(1).strip()
             match = COUNTER_VALUE.fullmatch(value)
             if match:
-                values.append(match.group(1) or match.group(2))
+                counter = match.group(1) or match.group(2)
+                if len(counter[4:]) > MAX_ISSUE_DIGITS:
+                    malformed.append(
+                        (f"counter exceeds the supported {MAX_ISSUE_DIGITS}-digit safety limit", line_number)
+                    )
+                else:
+                    values.append((counter, line_number))
             else:
-                malformed.append(value or "<empty>")
+                malformed.append((_display_issue_id(value) if value else "<empty>", line_number))
     return values, malformed
 
 
-def _validate_records(records: list[IssueRecord], errors: list[str]) -> dict[int, list[IssueRecord]]:
-    by_number: dict[int, list[IssueRecord]] = {}
+def _validate_records(records: list[IssueRecord], errors: list[str]) -> dict[str, list[IssueRecord]]:
+    by_number: dict[str, list[IssueRecord]] = {}
     for record in records:
         number, canonical = _canonical_id(record.issue_id)
         if number is None:
+            errors.append(
+                f"{record.path}:{record.line}: issue ID exceeds the supported {MAX_ISSUE_DIGITS}-digit safety limit"
+            )
             continue
         by_number.setdefault(number, []).append(record)
         if not canonical:
-            errors.append(f"{record.path}:{record.line}: non-canonical issue ID {record.issue_id}; use ISS-{number:04d}")
+            errors.append(
+                f"{record.path}:{record.line}: non-canonical issue ID {_display_issue_id(record.issue_id)}; "
+                f"use ISS-{number.zfill(4)}"
+            )
         normalized = [tag.upper() for tag in record.tags]
         if len(normalized) != len(set(normalized)):
             errors.append(f"{record.path}:{record.line}: {record.issue_id} contains duplicate tags after case normalization")
     for number, found in by_number.items():
         if len(found) > 1:
-            locations = ", ".join(f"{record.path}:{record.line} ({record.issue_id})" for record in found)
-            display_id = found[0].issue_id
+            locations = ", ".join(
+                f"{record.path}:{record.line} ({_display_issue_id(record.issue_id)})"
+                for record in found
+            )
+            display_id = _display_issue_id(found[0].issue_id)
             errors.append(f"duplicate issue ID {display_id} (numeric value {number}): {locations}")
     return by_number
 
@@ -601,21 +641,35 @@ def _defined_issue_tags(text: str) -> set[str]:
 def _validate_counter(text: str, path: Path, records: list[IssueRecord], errors: list[str]) -> None:
     counters, malformed = _issue_counter_values(text)
     if malformed:
-        errors.append(f"{path}: invalid next unused ISS counter: {', '.join(malformed)}")
+        details = ", ".join(f"line {line}: {value}" for value, line in malformed)
+        errors.append(f"{path}: invalid next unused ISS counter: {details}")
     if not counters:
         if not malformed:
             errors.append(f"{path}: missing a next unused ISS counter in the allocation section")
         return
     if len(counters) != 1 or malformed:
-        errors.append(f"{path}: expected exactly one valid next unused ISS counter; found {len(counters)}")
+        locations = ", ".join(f"line {line}" for _value, line in counters)
+        errors.append(
+            f"{path}: expected exactly one valid next unused ISS counter; "
+            f"found {len(counters)} at {locations or 'no valid declaration'}"
+        )
         return
-    number, canonical = _canonical_id(counters[0])
+    counter, counter_line = counters[0]
+    number, canonical = _canonical_id(counter)
+    if number is None:
+        errors.append(
+            f"{path}:{counter_line}: next unused issue ID exceeds the supported {MAX_ISSUE_DIGITS}-digit safety limit"
+        )
+        return
     if not canonical:
-        errors.append(f"{path}: non-canonical next unused issue ID {counters[0]}; use ISS-{number:04d}")
+        errors.append(
+            f"{path}:{counter_line}: non-canonical next unused issue ID {_display_issue_id(counter)}; "
+            f"use ISS-{number.zfill(4)}"
+        )
     record_numbers = [_canonical_id(record.issue_id)[0] for record in records]
     existing = [value for value in record_numbers if value is not None]
-    if existing and number <= max(existing):
-        errors.append(f"{path}: next ISS counter must exceed every recorded issue ID")
+    if existing and _compare_issue_numbers(number, max(existing, key=lambda item: (len(item), item))) <= 0:
+        errors.append(f"{path}:{counter_line}: next ISS counter must exceed every recorded issue ID")
 
 
 def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> list[str]:
@@ -715,7 +769,7 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
 
     in_important_section = False
     fenced = False
-    for line in main_text.splitlines():
+    for line_number, line in enumerate(main_text.splitlines(), start=1):
         fence = re.match(r"^\s*(`{3,}|~{3,})", line)
         if fence:
             fenced = not fenced
@@ -733,26 +787,51 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
         ):
             number, canonical = _canonical_id(issue_id)
             if not canonical:
-                errors.append(f"{main_index}: non-canonical important issue ID {issue_id}")
+                if number is None:
+                    errors.append(
+                        f"{main_index}:{line_number}: important issue ID exceeds the supported {MAX_ISSUE_DIGITS}-digit safety limit"
+                    )
+                else:
+                    errors.append(
+                        f"{main_index}:{line_number}: non-canonical important issue ID {_display_issue_id(issue_id)}"
+                    )
             parsed = urlsplit(destination)
+            if parsed.scheme or parsed.netloc:
+                errors.append(f"{main_index}:{line_number}: important issue link must target a managed subregister")
+                continue
             path_part, anchor = unquote(parsed.path), unquote(parsed.fragment)
-            target = (main_index.parent / path_part).resolve()
-            target_ids = {record_number for record_number, found in by_number.items() if any(record.path.resolve() == target for record in found)}
-            if target not in indexed_set or number not in target_ids:
-                errors.append(f"{main_index}: important issue link {issue_id} does not resolve to its canonical record")
+            try:
+                target = (main_index.parent / path_part).resolve(strict=False)
+            except (OSError, RuntimeError):
+                errors.append(f"{main_index}:{line_number}: cannot resolve important issue link target")
+                continue
+            if not target.is_relative_to(resolved_managed):
+                errors.append(f"{main_index}:{line_number}: important issue link escapes managed issue directory")
+                continue
+            target_records = by_number.get(number, []) if number is not None else []
+            canonical_target = (
+                target in indexed_set
+                and len(target_records) == 1
+                and target_records[0].path == target
+            )
+            if not canonical_target:
+                errors.append(
+                    f"{main_index}:{line_number}: important issue link {_display_issue_id(issue_id)} "
+                    "does not resolve uniquely to its canonical record"
+                )
             else:
                 anchor_matches_id = (
                     anchor.casefold() == issue_id.casefold()
                     or anchor.casefold().startswith(issue_id.casefold() + "-")
                 )
-                if (
+                if anchor and (
                     not anchor_matches_id
                     or not target.is_file()
                     or target not in indexed_text
                     or anchor not in anchors_for_target(target, indexed_text[target])
                 ):
                     errors.append(
-                        f"{main_index}: important issue link {issue_id} has a mismatched anchor"
+                        f"{main_index}:{line_number}: important issue link {_display_issue_id(issue_id)} has a mismatched anchor"
                     )
 
     defined_tags = _defined_issue_tags(main_text)

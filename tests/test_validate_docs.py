@@ -541,6 +541,49 @@ Reference: ISS-8000
         path.write_text(text, encoding="utf-8")
         self.assertEqual(validate_docs.validate_single_issue_register(path), [])
 
+    def test_incomplete_issue_content_is_still_a_record(self) -> None:
+        register = self.managed.parent / "single.md"
+        register.write_text(
+            "# Issues\n## Global issue allocation\n- Next unused ID: ISS-0002\n"
+            "## Issues\n| ID | Tags | Status | Issue | Acceptance | Updated |\n"
+            "|---|---|---|---|---|---|\n"
+            "| ISS-0001 | QA | Open | 具体的な問題と影響 | 検証可能な条件 | YYYY-MM-DD |\n",
+            encoding="utf-8",
+        )
+        records = validate_docs._issue_record_rows(register.read_text(encoding="utf-8"), register)
+        self.assertEqual([record.issue_id for record in records], ["ISS-0001"])
+        self.assertEqual(validate_docs.validate_single_issue_register(register), [])
+
+    def test_incomplete_rows_still_report_duplicates_ids_counter_and_tags(self) -> None:
+        architecture = self.managed / "architecture.md"
+        architecture.write_text(
+            architecture.read_text(encoding="utf-8").replace(
+                "| ISS-0126 | ARCH, CORE | P2 | Open | Clarify domain boundary | Decision is recorded |",
+                "| ISS-00130 | ARCH, arch, UNKNOWN | P2 | Open | 具体的な問題と影響 | YYYY-MM-DD |",
+            ),
+            encoding="utf-8",
+        )
+        quality = self.managed / "quality.md"
+        quality.write_text(
+            quality.read_text(encoding="utf-8").replace(
+                "| ISS-0130 | — | P3 | Open | Existing untagged issue | Existing completion evidence is preserved |",
+                "| ISS-0130 | DOC | P3 | Open | 検証可能な条件 | YYYY-MM-DD |",
+            ),
+            encoding="utf-8",
+        )
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace("ISS-0131", "ISS-00130"),
+            encoding="utf-8",
+        )
+
+        errors = self.validate()
+
+        self.assertTrue(any("non-canonical issue ID ISS-00130" in error for error in errors))
+        self.assertTrue(any("duplicate issue ID ISS-00130" in error for error in errors))
+        self.assertTrue(any("next ISS counter" in error for error in errors))
+        self.assertTrue(any("duplicate tags after case normalization" in error for error in errors))
+        self.assertTrue(any("uses undefined tags: UNKNOWN" in error for error in errors))
+
     def test_legacy_table_without_tag_column_and_counter_variants_are_supported(self) -> None:
         path = self.managed.parent / "single.md"
         path.write_text(
@@ -705,6 +748,128 @@ Reference: ISS-8000
 
         self.assertTrue(any("mismatched anchor" in error for error in self.validate()))
 
+    def test_important_issue_link_accepts_file_only_and_existing_anchor(self) -> None:
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "issues/architecture.md#iss-0125-storage-responsibilities",
+                "issues/architecture.md",
+            ),
+            encoding="utf-8",
+        )
+        self.assertEqual(self.validate(), [])
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "[ISS-0125](issues/architecture.md)",
+                "[ISS-0125](issues/architecture.md#iss-0125-storage-responsibilities)",
+            ),
+            encoding="utf-8",
+        )
+        self.assertEqual(self.validate(), [])
+
+    def test_important_issue_file_link_still_requires_unique_canonical_record(self) -> None:
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "[ISS-0125](issues/architecture.md#iss-0125-storage-responsibilities)",
+                "[ISS-0127](issues/architecture.md)",
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("does not resolve uniquely" in error for error in self.validate()))
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "[ISS-0127](issues/architecture.md)",
+                "[ISS-0128](issues/architecture.md)",
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("does not resolve uniquely" in error for error in self.validate()))
+
+        quality = self.managed / "quality.md"
+        quality.write_text(
+            quality.read_text(encoding="utf-8").replace("ISS-0127", "ISS-0125"),
+            encoding="utf-8",
+        )
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "[ISS-0128](issues/architecture.md)",
+                "[ISS-0125](issues/architecture.md)",
+            ),
+            encoding="utf-8",
+        )
+        errors = self.validate()
+        self.assertTrue(any("duplicate issue ID ISS-0125" in error for error in errors))
+        self.assertTrue(any("ISS-0125" in error and "does not resolve uniquely" in error for error in errors))
+
+    def test_important_issue_file_link_rejects_absent_issue_id(self) -> None:
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "[ISS-0125](issues/architecture.md#iss-0125-storage-responsibilities)",
+                "[ISS-9999](issues/architecture.md)",
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("ISS-9999" in error and "does not resolve uniquely" in error for error in self.validate()))
+
+    def test_important_issue_link_rejects_missing_anchor_and_out_of_scope_target(self) -> None:
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "#iss-0125-storage-responsibilities", "#iss-0125-missing"
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("mismatched anchor" in error for error in self.validate()))
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "#iss-0125-missing", "#iss-0126-other-issue"
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("mismatched anchor" in error for error in self.validate()))
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "issues/architecture.md#iss-0126-other-issue", "../outside.md"
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("escapes managed issue directory" in error for error in self.validate()))
+
+    def test_extremely_long_ids_counters_and_important_links_are_safe(self) -> None:
+        oversized = "9" * 3000
+        register = self.managed.parent / "single.md"
+        register.write_text(
+            f"# Issues\n## Global issue allocation\n- Next unused ID: ISS-{oversized}\n"
+            f"## Issues\n| ID | Tags |\n|---|---|\n| ISS-{oversized} | QA |\n",
+            encoding="utf-8",
+        )
+        errors = validate_docs.validate_single_issue_register(register)
+        self.assertTrue(any("supported 256-digit safety limit" in error for error in errors))
+        self.assertTrue(any("line 3:" in error for error in errors))
+        self.assertTrue(all(len(error) < 500 for error in errors))
+
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8")
+            .replace("ISS-0131", f"ISS-{oversized}")
+            .replace("[ISS-0125](issues/architecture.md#iss-0125-storage-responsibilities)",
+                     f"[ISS-{oversized}](issues/architecture.md)"),
+            encoding="utf-8",
+        )
+        architecture = self.managed / "architecture.md"
+        architecture.write_text(
+            architecture.read_text(encoding="utf-8").replace(
+                "| ISS-0126 | ARCH, CORE | P2 | Open | Clarify domain boundary | Decision is recorded |",
+                f"| ISS-{oversized} | ARCH | P2 | Open | Very long ID | Rejected safely |",
+            ),
+            encoding="utf-8",
+        )
+        with patch("sys.stdout", new_callable=io.StringIO) as output:
+            exit_code = validate_docs.main([
+                "--issue-main", str(self.main), "--managed-dir", str(self.managed)
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertNotIn("Traceback", output.getvalue())
+        self.assertLess(len(output.getvalue()), 2000)
+        self.assertIn(f"{self.main}:19:", output.getvalue())
+
     def test_duplicate_id_preserves_both_paths_in_diagnostic(self) -> None:
         quality = self.managed / "quality.md"
         quality.write_text(
@@ -754,7 +919,7 @@ Reference: ISS-8000
             encoding="utf-8",
         )
 
-        self.assertTrue(any("does not resolve to its canonical record" in error for error in self.validate()))
+        self.assertTrue(any("does not resolve uniquely" in error for error in self.validate()))
 
     def test_duplicate_subregister_index_link_is_reported(self) -> None:
         main = self.main.read_text(encoding="utf-8")
