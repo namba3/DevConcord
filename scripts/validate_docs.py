@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 import re
 import stat
 import sys
+from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -360,22 +362,289 @@ def check_links(files: list[Path]) -> list[str]:
     return errors
 
 
-def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> list[str]:
-    """Check declared issue records and index integrity in an explicit fixture scope."""
-    errors: list[str] = []
-    try:
-        main_text = main_index.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as error:
-        return [f"{main_index}: cannot read federated issue index: {error}"]
+@dataclass(frozen=True)
+class IssueRecord:
+    issue_id: str
+    path: Path
+    line: int
+    tags: tuple[str, ...]
 
-    main_records = _issue_record_rows(main_text)
-    for issue_id in re.findall(r"^\|\s*(ISS-\d+)\s*\|", main_text, re.MULTILINE):
-        if len(issue_id[4:]) < 4:
-            errors.append(f"{main_index}: malformed issue ID {issue_id}; IDs require at least four digits")
-    records: list[tuple[str, Path, list[str]]] = []
+
+ID_HEADERS = {"id", "issueid", "課題id", "課題番号", "課題id番号"}
+TAG_HEADERS = {"tag", "tags", "タグ", "課題タグ"}
+COUNTER_HEADINGS = {"共通iss採番", "globalissueallocation", "commonissueallocation"}
+COUNTER_VALUE = re.compile(r"^(?:`(ISS-[0-9]+)`(?:（[^）]*）)?|(ISS-[0-9]+))$")
+ISSUE_ID = re.compile(r"^ISS-([0-9]+)$")
+
+
+def _stable_read_utf8(path: Path, label: str) -> tuple[str | None, str | None]:
+    """Read one UTF-8 file and reject detectable concurrent replacement/modification."""
+    try:
+        with path.open("rb") as stream:
+            before = os.fstat(stream.fileno())
+            raw = stream.read()
+            after = os.fstat(stream.fileno())
+        current = path.stat()
+        signature = lambda value: (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+        if signature(before) != signature(after) or signature(after) != signature(current):
+            return None, f"{path}: changed while validating {label}"
+        return raw.decode("utf-8"), None
+    except (OSError, UnicodeError) as error:
+        return None, f"{path}: cannot read {label}: {error}"
+
+
+def _markdown_cells(line: str) -> list[str] | None:
+    value = line.strip()
+    if not value.startswith("|"):
+        return None
+    cells: list[str] = []
+    cell: list[str] = []
+    escaped = False
+    code_ticks = 0
+    for char in value[1:]:
+        if escaped:
+            cell.append(char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+            cell.append(char)
+        elif char == "`":
+            code_ticks = 0 if code_ticks else 1
+            cell.append(char)
+        elif char == "|" and not code_ticks:
+            cells.append("".join(cell).strip())
+            cell = []
+        else:
+            cell.append(char)
+    if cell or value.endswith("|"):
+        cells.append("".join(cell).strip())
+    if cells and cells[-1] == "":
+        cells.pop()
+    return cells
+
+
+def _header_key(value: str) -> str:
+    value = re.sub(r"<[^>]+>", "", value)
+    value = re.sub(r"\([^)]*\)|（[^）]*）", "", value)
+    return re.sub(r"[\s_`*:-]+", "", value).casefold()
+
+
+def _canonical_id(issue_id: str) -> tuple[int | None, bool]:
+    match = ISSUE_ID.fullmatch(issue_id)
+    if not match:
+        return None, False
+    number = int(match.group(1))
+    return number, number > 0 and issue_id == f"ISS-{number:04d}"
+
+
+def _issue_record_rows(text: str, path: Path | None = None, errors: list[str] | None = None) -> list[IssueRecord]:
+    """Read records only from Markdown tables whose header identifies an ID column."""
+    source = path or Path("<main index>")
+    lines = text.splitlines()
+    records: list[IssueRecord] = []
+    fenced = False
+    fence_char = ""
+    fence_len = 0
+    for index, line in enumerate(lines):
+        fence = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence:
+            marker = fence.group(1)
+            if not fenced:
+                fenced, fence_char, fence_len = True, marker[0], len(marker)
+            elif marker[0] == fence_char and len(marker) >= fence_len:
+                fenced = False
+            continue
+        if fenced or index + 1 >= len(lines):
+            continue
+        headers = _markdown_cells(line)
+        separators = _markdown_cells(lines[index + 1])
+        if headers is None:
+            continue
+        if separators is None or len(headers) != len(separators):
+            if errors is not None and any(_header_key(header) in ID_HEADERS for header in headers):
+                errors.append(f"{source}:{index + 1}: malformed issue table header or separator")
+            continue
+        if not all(re.fullmatch(r":?-+:?", cell.replace(" ", "")) for cell in separators):
+            if errors is not None and any(_header_key(header) in ID_HEADERS for header in headers):
+                errors.append(f"{source}:{index + 1}: malformed issue table separator")
+            continue
+        keys = [_header_key(header) for header in headers]
+        id_columns = [i for i, key in enumerate(keys) if key in ID_HEADERS]
+        tag_columns = [i for i, key in enumerate(keys) if key in TAG_HEADERS]
+        if len(id_columns) > 1 or len(tag_columns) > 1:
+            if errors is not None:
+                errors.append(f"{source}:{index + 1}: ambiguous issue table header (duplicate ID or tag columns)")
+            continue
+        if not id_columns:
+            continue
+        id_column = id_columns[0]
+        tag_column = tag_columns[0] if tag_columns else None
+        row_index = index + 2
+        while row_index < len(lines):
+            cells = _markdown_cells(lines[row_index])
+            if cells is None:
+                break
+            if len(cells) != len(headers):
+                if errors is not None and any(cell.strip(" `").casefold().startswith("iss-") for cell in cells):
+                    errors.append(f"{source}:{row_index + 1}: issue table row has {len(cells)} cells; expected {len(headers)}")
+                row_index += 1
+                continue
+            issue_id = cells[id_column].strip(" `")
+            if issue_id.casefold().startswith("iss-") and not ISSUE_ID.fullmatch(issue_id):
+                if errors is not None:
+                    errors.append(f"{source}:{row_index + 1}: malformed issue ID {issue_id}")
+            if ISSUE_ID.fullmatch(issue_id):
+                if any(marker in cell for cell in cells for marker in ("具体的な問題と影響", "検証可能な条件", "YYYY-MM-DD")):
+                    row_index += 1
+                    continue
+                raw_tags = []
+                if tag_column is not None:
+                    raw_tags = [tag.strip().strip("`") for tag in cells[tag_column].split(",") if tag.strip() and tag.strip() not in {"—", "-"}]
+                records.append(IssueRecord(issue_id, source, row_index + 1, tuple(raw_tags)))
+            row_index += 1
+        continue
+    return records
+
+
+def _issue_counter_values(text: str) -> tuple[list[str], list[str]]:
+    """Return valid and malformed counter declarations inside named allocation sections."""
+    active = False
+    fenced = False
+    fence_char = ""
+    fence_len = 0
+    values: list[str] = []
+    malformed: list[str] = []
+    for line in text.splitlines():
+        fence = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence:
+            marker = fence.group(1)
+            if not fenced:
+                fenced, fence_char, fence_len = True, marker[0], len(marker)
+            elif marker[0] == fence_char and len(marker) >= fence_len:
+                fenced = False
+            continue
+        if fenced:
+            continue
+        heading = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", line)
+        if heading:
+            active = _header_key(heading.group(1)) in COUNTER_HEADINGS
+            continue
+        if not active:
+            continue
+        candidate = re.sub(r"^\s*[-*+]\s*", "", line).strip()
+        candidate = candidate.replace("**", "").replace("__", "").strip()
+        label = re.match(r"^(?:次の未割当番号|next\s+unused\s+(?:issue\s+)?id)\s*[:：]\s*(.*?)\s*$", candidate, re.I)
+        if label:
+            value = label.group(1).strip()
+            match = COUNTER_VALUE.fullmatch(value)
+            if match:
+                values.append(match.group(1) or match.group(2))
+            else:
+                malformed.append(value or "<empty>")
+    return values, malformed
+
+
+def _validate_records(records: list[IssueRecord], errors: list[str]) -> dict[int, list[IssueRecord]]:
+    by_number: dict[int, list[IssueRecord]] = {}
+    for record in records:
+        number, canonical = _canonical_id(record.issue_id)
+        if number is None:
+            continue
+        by_number.setdefault(number, []).append(record)
+        if not canonical:
+            errors.append(f"{record.path}:{record.line}: non-canonical issue ID {record.issue_id}; use ISS-{number:04d}")
+        normalized = [tag.upper() for tag in record.tags]
+        if len(normalized) != len(set(normalized)):
+            errors.append(f"{record.path}:{record.line}: {record.issue_id} contains duplicate tags after case normalization")
+    for number, found in by_number.items():
+        if len(found) > 1:
+            locations = ", ".join(f"{record.path}:{record.line} ({record.issue_id})" for record in found)
+            display_id = found[0].issue_id
+            errors.append(f"duplicate issue ID {display_id} (numeric value {number}): {locations}")
+    return by_number
+
+
+def _defined_issue_tags(text: str) -> set[str]:
+    lines = text.splitlines()
+    tags: set[str] = set()
+    in_tag_section = False
+    fenced = False
+    for index, line in enumerate(lines):
+        fence = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence:
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        heading = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", line)
+        if heading:
+            in_tag_section = "tag" in _header_key(heading.group(1)) or "タグ" in heading.group(1)
+            continue
+        if not in_tag_section or index + 1 >= len(lines):
+            continue
+        headers = _markdown_cells(line)
+        separators = _markdown_cells(lines[index + 1])
+        if not headers or not separators or len(headers) != len(separators):
+            continue
+        keys = [_header_key(item) for item in headers]
+        if not keys or keys[0] not in TAG_HEADERS or not all(re.fullmatch(r":?-+:?", cell.replace(" ", "")) for cell in separators):
+            continue
+        for row in lines[index + 2:]:
+            cells = _markdown_cells(row)
+            if cells is None:
+                break
+            if cells and re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", cells[0]):
+                tags.add(cells[0].upper())
+    return tags
+
+
+def _validate_counter(text: str, path: Path, records: list[IssueRecord], errors: list[str]) -> None:
+    counters, malformed = _issue_counter_values(text)
+    if malformed:
+        errors.append(f"{path}: invalid next unused ISS counter: {', '.join(malformed)}")
+    if not counters:
+        if not malformed:
+            errors.append(f"{path}: missing a next unused ISS counter in the allocation section")
+        return
+    if len(counters) != 1 or malformed:
+        errors.append(f"{path}: expected exactly one valid next unused ISS counter; found {len(counters)}")
+        return
+    number, canonical = _canonical_id(counters[0])
+    if not canonical:
+        errors.append(f"{path}: non-canonical next unused issue ID {counters[0]}; use ISS-{number:04d}")
+    record_numbers = [_canonical_id(record.issue_id)[0] for record in records]
+    existing = [value for value in record_numbers if value is not None]
+    if existing and number <= max(existing):
+        errors.append(f"{path}: next ISS counter must exceed every recorded issue ID")
+
+
+def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> list[str]:
+    """Validate an explicitly scoped read-only federated issue register."""
+    errors: list[str] = []
+    main_text, read_error = _stable_read_utf8(main_index, "federated issue index")
+    if read_error:
+        return [read_error]
+    assert main_text is not None
+    try:
+        resolved_managed = managed_dir.resolve(strict=True)
+        if not resolved_managed.is_dir():
+            return [f"{main_index}: invalid federated issue scope"]
+    except (OSError, RuntimeError) as error:
+        return [f"{main_index}: cannot resolve federated issue scope: {error}"]
+
+    main_records = _issue_record_rows(main_text, main_index, errors)
+    records: list[IssueRecord] = []
     indexed: list[Path] = []
+    indexed_text: dict[Path, str] = {}
     in_subregister_section = False
+    fenced = False
     for line in main_text.splitlines():
+        fence = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence:
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
         if re.match(r"^##\s+", line):
             in_subregister_section = bool(
                 re.match(r"^##\s+(?:Subregisters|サブ課題表)\b", line, re.IGNORECASE)
@@ -383,11 +652,17 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
         if not in_subregister_section:
             continue
         for destination in re.findall(r"\[[^\]]+\]\(([^)]+)\)", line):
-            path_part = destination.split("#", 1)[0]
-            if not path_part or ":" in path_part:
+            parsed = urlsplit(destination)
+            path_part = unquote(parsed.path)
+            if not path_part or parsed.scheme or parsed.netloc:
                 continue
-            path = (main_index.parent / path_part).resolve()
-            if not path.is_relative_to(managed_dir.resolve()):
+            candidate = main_index.parent / path_part
+            try:
+                path = candidate.resolve(strict=False)
+            except (OSError, RuntimeError):
+                errors.append(f"{main_index}: cannot resolve subregister link: {destination}")
+                continue
+            if not path.is_relative_to(resolved_managed):
                 errors.append(f"{main_index}: subregister link escapes managed issue directory: {destination}")
                 continue
             if path in indexed:
@@ -397,47 +672,56 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
             if not path.is_file():
                 errors.append(f"{main_index}: missing subregister target {destination}")
                 continue
-            try:
-                register_text = path.read_text(encoding="utf-8")
-                records.extend(_issue_record_rows(register_text, path))
-                for issue_id in re.findall(r"^\|\s*(ISS-\d+)\s*\|", register_text, re.MULTILINE):
-                    if len(issue_id[4:]) < 4:
-                        errors.append(f"{path}: malformed issue ID {issue_id}; IDs require at least four digits")
-            except (OSError, UnicodeError) as error:
-                errors.append(f"{path}: cannot read indexed issue register: {error}")
+            register_text, read_error = _stable_read_utf8(path, "indexed issue register")
+            if read_error:
+                errors.append(read_error)
+                continue
+            assert register_text is not None
+            indexed_text[path] = register_text
+            records.extend(_issue_record_rows(register_text, path, errors))
 
     if main_records:
         errors.append(f"{main_index}: main index contains issue records; keep canonical records in subregisters")
     if not indexed:
         errors.append(f"{main_index}: no subregister links found in the Subregisters section")
 
-    occurrences: dict[str, list[Path]] = {}
-    for issue_id, path, raw_tags in records:
-        occurrences.setdefault(issue_id, []).append(path)
-        tags = [tag.upper() for tag in raw_tags]
-        if len(tags) != len(set(tags)):
-            errors.append(f"{path}: {issue_id} contains duplicate tags after case normalization")
-    for issue_id, paths in occurrences.items():
-        if len(paths) > 1:
-            locations = ", ".join(str(path) for path in paths)
-            errors.append(f"duplicate issue ID {issue_id}: {locations}")
-
-    counters = re.findall(r"Next unused ID:\s*`ISS-(\d{4,})`", main_text)
-    if not counters:
-        errors.append(f"{main_index}: missing a canonical next unused ISS counter")
-    elif len(counters) != 1:
-        errors.append(f"{main_index}: expected exactly one canonical next unused ISS counter")
-    elif records and int(counters[0]) <= max(int(issue_id[4:]) for issue_id, _, _ in records):
-        errors.append(f"{main_index}: next ISS counter must exceed every recorded issue ID")
+    by_number = _validate_records(records, errors)
+    _validate_counter(main_text, main_index, records, errors)
 
     indexed_set = set(indexed)
     if managed_dir.is_dir():
-        for path in sorted(managed_dir.rglob("*.md")):
-            if path.resolve() not in indexed_set:
+        def report_walk_error(error: OSError) -> None:
+            errors.append(f"{main_index}: cannot inspect managed issue directory: {error}")
+
+        for parent, directories, files in os.walk(
+            resolved_managed, followlinks=False, onerror=report_walk_error
+        ):
+            for name in directories + files:
+                path = Path(parent) / name
+                if path.is_symlink():
+                    try:
+                        target = path.resolve(strict=False)
+                    except (OSError, RuntimeError):
+                        errors.append(f"{main_index}: cannot resolve managed symlink: {path}")
+                        continue
+                    if not target.is_relative_to(resolved_managed):
+                        errors.append(f"{main_index}: managed symlink escapes issue directory: {path}")
+        for path in sorted(resolved_managed.rglob("*.md")):
+            resolved_path = path.resolve()
+            if not resolved_path.is_relative_to(resolved_managed):
+                errors.append(f"{main_index}: managed issue path escapes managed directory: {path}")
+            elif resolved_path not in indexed_set:
                 errors.append(f"{main_index}: unindexed issue register in managed directory: {path}")
 
     in_important_section = False
+    fenced = False
     for line in main_text.splitlines():
+        fence = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence:
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
         if re.match(r"^##\s+", line):
             in_important_section = bool(
                 re.match(r"^##\s+(?:Important Issues|重要課題)\b", line, re.IGNORECASE)
@@ -445,13 +729,16 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
         if not in_important_section:
             continue
         for issue_id, destination in re.findall(
-            r"\[(ISS-\d{4,})\]\(([^)]+)\)", line
+            r"\[(ISS-[0-9]+)\]\(([^)]+)\)", line
         ):
-            path_part, _, anchor = destination.partition("#")
+            number, canonical = _canonical_id(issue_id)
+            if not canonical:
+                errors.append(f"{main_index}: non-canonical important issue ID {issue_id}")
+            parsed = urlsplit(destination)
+            path_part, anchor = unquote(parsed.path), unquote(parsed.fragment)
             target = (main_index.parent / path_part).resolve()
-            if target not in indexed_set or issue_id not in {
-                record_id for record_id, record_path, _ in records if record_path.resolve() == target
-            }:
+            target_ids = {record_number for record_number, found in by_number.items() if any(record.path.resolve() == target for record in found)}
+            if target not in indexed_set or number not in target_ids:
                 errors.append(f"{main_index}: important issue link {issue_id} does not resolve to its canonical record")
             else:
                 anchor_matches_id = (
@@ -461,60 +748,38 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
                 if (
                     not anchor_matches_id
                     or not target.is_file()
-                    or anchor not in anchors_for_target(target, target.read_text(encoding="utf-8"))
+                    or target not in indexed_text
+                    or anchor not in anchors_for_target(target, indexed_text[target])
                 ):
                     errors.append(
                         f"{main_index}: important issue link {issue_id} has a mismatched anchor"
                     )
 
-    defined_tags = set(re.findall(r"^\|\s*([A-Z][A-Z0-9]*)\s*\|", main_text, re.MULTILINE))
-    for issue_id, path, raw_tags in records:
-        unknown_tags = set(tag.upper() for tag in raw_tags) - defined_tags
-        if unknown_tags:
-            errors.append(f"{path}: {issue_id} uses undefined tags: {', '.join(sorted(unknown_tags))}")
+    defined_tags = _defined_issue_tags(main_text)
+    if defined_tags:
+        for record in records:
+            unknown_tags = set(tag.upper() for tag in record.tags) - defined_tags
+            if unknown_tags:
+                errors.append(f"{record.path}:{record.line}: {record.issue_id} uses undefined tags: {', '.join(sorted(unknown_tags))}")
     return errors
-
-
-def _issue_record_rows(text: str, path: Path | None = None) -> list[tuple[str, Path, list[str]]]:
-    """Parse issue IDs only from Markdown table rows, preserving every occurrence."""
-    source = path or Path("<main index>")
-    rows: list[tuple[str, Path, list[str]]] = []
-    for line in text.splitlines():
-        match = re.match(r"^\|\s*(ISS-\d{4,})\s*\|(.+)$", line)
-        if not match:
-            continue
-        columns = [column.strip() for column in line.strip().strip("|").split("|")]
-        tags: list[str] = []
-        if len(columns) > 1 and columns[1] not in {"—", "-", ""}:
-            tags = [tag.strip() for tag in columns[1].split(",") if tag.strip()]
-        rows.append((match.group(1), source, tags))
-    return rows
 
 
 def validate_single_issue_register(register: Path) -> list[str]:
     """Check IDs and the next counter for a concrete, single-register file."""
-    try:
-        text = register.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as error:
-        return [f"{register}: cannot read issue register: {error}"]
+    text, read_error = _stable_read_utf8(register, "issue register")
+    if read_error:
+        return [read_error]
+    assert text is not None
     errors: list[str] = []
-    records = _issue_record_rows(text, register)
-    for issue_id in re.findall(r"^\|\s*(ISS-\d+)\s*\|", text, re.MULTILINE):
-        if len(issue_id[4:]) < 4:
-            errors.append(f"{register}: malformed issue ID {issue_id}; IDs require at least four digits")
-    occurrences: dict[str, int] = {}
-    for issue_id, _path, _tags in records:
-        occurrences[issue_id] = occurrences.get(issue_id, 0) + 1
-    for issue_id, count in occurrences.items():
-        if count > 1:
-            errors.append(f"{register}: duplicate issue ID {issue_id} appears {count} times")
-    counters = re.findall(r"(?:Next unused ID|次の未割当番号):\s*`?ISS-(\d{4,})`?", text)
-    if not counters:
-        errors.append(f"{register}: missing a canonical next unused ISS counter")
-    elif len(counters) != 1:
-        errors.append(f"{register}: expected exactly one canonical next unused ISS counter")
-    elif records and int(counters[0]) <= max(int(issue_id[4:]) for issue_id, _, _ in records):
-        errors.append(f"{register}: next ISS counter must exceed every recorded issue ID")
+    records = _issue_record_rows(text, register, errors)
+    _validate_records(records, errors)
+    _validate_counter(text, register, records, errors)
+    defined_tags = _defined_issue_tags(text)
+    if defined_tags:
+        for record in records:
+            unknown_tags = set(tag.upper() for tag in record.tags) - defined_tags
+            if unknown_tags:
+                errors.append(f"{register}:{record.line}: {record.issue_id} uses undefined tags: {', '.join(sorted(unknown_tags))}")
     return errors
 
 
@@ -814,7 +1079,33 @@ def check_conventions(files: list[Path]) -> list[str]:
     return errors
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    target = parser.add_mutually_exclusive_group()
+    target.add_argument("--issue-register", type=Path, help="validate one explicitly selected issue register (read-only)")
+    target.add_argument("--issue-main", type=Path, help="validate an explicitly selected federated issue index (read-only)")
+    parser.add_argument("--managed-dir", type=Path, help="explicit directory containing all indexed subregisters")
+    args = parser.parse_args(argv)
+    if args.issue_register or args.issue_main:
+        if args.issue_register and args.managed_dir:
+            parser.error("--managed-dir is only valid with --issue-main")
+        if args.issue_main and not args.managed_dir:
+            parser.error("--issue-main requires --managed-dir")
+        if args.issue_register:
+            errors = validate_single_issue_register(args.issue_register)
+            label = f"single issue register: {args.issue_register}"
+        else:
+            errors = validate_federated_issue_register(args.issue_main, args.managed_dir)
+            label = f"federated issue register: {args.issue_main} (managed: {args.managed_dir})"
+        if errors:
+            print(f"Validation failed for {label}:")
+            for error in errors:
+                print(f"- {error}")
+            return 1
+        print(f"Validation passed for {label}.")
+        return 0
+    if args.managed_dir:
+        parser.error("--managed-dir requires --issue-main")
     errors: list[str] = []
     files = markdown_files(errors)
     errors.extend(check_links(files))

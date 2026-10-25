@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import os
 import shutil
 import tempfile
@@ -494,6 +495,169 @@ class FederatedIssueRegisterValidationTests(unittest.TestCase):
 
     def validate(self) -> list[str]:
         return validate_docs.validate_federated_issue_register(self.main, self.managed)
+
+    def test_official_japanese_columns_and_decorated_counter_validate_cleanly(self) -> None:
+        official_single = validate_docs.ROOT / "docs/work-management/templates/issue-register.md"
+        self.assertEqual(validate_docs.validate_single_issue_register(official_single), [])
+        official_records = validate_docs._issue_record_rows(official_single.read_text(encoding="utf-8"), official_single)
+        self.assertEqual(official_records, [])
+        self.main.write_text(
+            "# 課題索引\n\n## 共通ISS採番\n\n- **次の未割当番号:** `ISS-0003`\n\n"
+            "## サブ課題表\n\n| 領域 | 課題表 |\n|---|---|\n"
+            "| 設計 | [設計](issues/architecture.md) |\n\n"
+            "## タグ定義\n\n| タグ | 意味 |\n|---|---|\n| ARCH | 設計 |\n| REL | 信頼性 |\n",
+            encoding="utf-8",
+        )
+        (self.managed / "architecture.md").write_text(
+            "# 設計課題\n\n## 課題一覧\n\n"
+            "| ID | 分類 | タグ（任意） | 作業種別（任意） | 優先度 | 状態 | 内容 | 完了条件 | 根拠 | 更新日 | 独自列 |\n"
+            "|---|---|---|---|---|---|---|---|---|---|---|\n"
+            "| ISS-0001 | 設計 | ARCH, REL | リファクタリング | P2 | 未着手 | 分割 | テスト | CI | 2026-10-26 | extra |\n",
+            encoding="utf-8",
+        )
+        (self.managed / "quality.md").unlink()
+        errors = self.validate()
+        self.assertEqual(errors, [])
+
+    def test_issue_rows_use_headers_after_reordering_and_ignore_code_examples(self) -> None:
+        text = """# Issues
+
+## Global issue allocation
+- Next unused ID: ISS-0002
+
+## Register
+| Status | Extra | Tags | Issue ID | Priority |
+|---|---|---|---|---|
+| Open | value | QA | ISS-0001 | P2 |
+
+```markdown
+| ID | Tags |
+|---|---|
+| ISS-9000 | INVALID |
+```
+Reference: ISS-8000
+"""
+        path = self.managed.parent / "single.md"
+        path.write_text(text, encoding="utf-8")
+        self.assertEqual(validate_docs.validate_single_issue_register(path), [])
+
+    def test_legacy_table_without_tag_column_and_counter_variants_are_supported(self) -> None:
+        path = self.managed.parent / "single.md"
+        path.write_text(
+            "# Issues\n\n## 共通ISS採番\n- 次の未割当番号: ISS-0002\n\n"
+            "## Issues\n| 状態 | ID | 分類 | 独自 |\n|---|---|---|---|\n"
+            "| Open | ISS-0001 | 設計 | value |\n",
+            encoding="utf-8",
+        )
+        self.assertEqual(validate_docs.validate_single_issue_register(path), [])
+        content = path.read_text(encoding="utf-8").replace(
+            "次の未割当番号: ISS-0002", "**Next unused ID:** `ISS-0002`"
+        )
+        content = content.replace(
+            "**Next unused ID:** `ISS-0002`",
+            "**Next unused ID:** `ISS-0002`\n```markdown\n- Next unused ID: ISS-9999\n```",
+        )
+        path.write_text(content, encoding="utf-8")
+        self.assertEqual(validate_docs.validate_single_issue_register(path), [])
+
+    def test_noncanonical_and_numerically_duplicate_ids_are_reported_with_locations(self) -> None:
+        path = self.managed / "architecture.md"
+        content = path.read_text(encoding="utf-8").replace("ISS-0125", "ISS-00001")
+        content = content.replace("ISS-0126", "ISS-0001")
+        path.write_text(content, encoding="utf-8")
+        quality = self.managed / "quality.md"
+        quality.write_text(quality.read_text(encoding="utf-8").replace("ISS-0127", "ISS-0001"), encoding="utf-8")
+        errors = self.validate()
+        self.assertTrue(any("non-canonical issue ID ISS-00001" in error for error in errors))
+        collision = next(error for error in errors if "duplicate issue ID" in error and "numeric value 1" in error)
+        self.assertIn("architecture.md", collision)
+        self.assertIn("quality.md", collision)
+
+    def test_counter_duplicates_malformed_and_missing_are_distinguished(self) -> None:
+        source = self.main.read_text(encoding="utf-8")
+        self.main.write_text(source.replace("Next unused ID: `ISS-0131`", "Next unused ID: `ISS-0131`\n- 次の未割当番号: ISS-0132"), encoding="utf-8")
+        self.assertTrue(any("exactly one valid next unused ISS counter" in error for error in self.validate()))
+        self.main.write_text(source.replace("ISS-0131", "ISS-ABCD"), encoding="utf-8")
+        self.assertTrue(any("invalid next unused ISS counter" in error for error in self.validate()))
+        self.main.write_text(source.replace("- Next unused ID: `ISS-0131`\n", ""), encoding="utf-8")
+        self.assertTrue(any("missing a next unused ISS counter" in error for error in self.validate()))
+
+    def test_cli_read_only_validation_accepts_explicit_single_path(self) -> None:
+        register = self.managed.parent / "single.md"
+        register.write_text(
+            "# Issues\n## Global issue allocation\n- Next unused ID: `ISS-0002`\n"
+            "## Issues\n| ID | Tags | Status |\n|---|---|---|\n| ISS-0001 | — | Open |\n",
+            encoding="utf-8",
+        )
+        with patch("sys.stdout", new_callable=io.StringIO) as output:
+            self.assertEqual(validate_docs.main(["--issue-register", str(register)]), 0)
+        self.assertIn("Validation passed", output.getvalue())
+
+    def test_cli_validates_explicit_federated_scope_read_only(self) -> None:
+        before = {
+            path: path.read_bytes()
+            for path in (self.main, *self.managed.glob("*.md"))
+        }
+        with patch("sys.stdout", new_callable=io.StringIO) as output:
+            self.assertEqual(
+                validate_docs.main([
+                    "--issue-main", str(self.main), "--managed-dir", str(self.managed)
+                ]),
+                0,
+            )
+        self.assertIn("Validation passed", output.getvalue())
+        self.assertEqual(before, {path: path.read_bytes() for path in before})
+
+    def test_id_width_expands_after_9999_without_reusing_gaps(self) -> None:
+        register = self.managed.parent / "single.md"
+        register.write_text(
+            "# Issues\n## Global issue allocation\n- Next unused ID: ISS-10000\n"
+            "## Issues\n| ID | Status |\n|---|---|\n| ISS-9999 | Open |\n",
+            encoding="utf-8",
+        )
+        self.assertEqual(validate_docs.validate_single_issue_register(register), [])
+
+    def test_invalid_utf8_and_external_symlink_are_reported(self) -> None:
+        quality = self.managed / "quality.md"
+        quality.write_bytes(b"\xff\xfe")
+        errors = self.validate()
+        self.assertTrue(any("cannot read" in error and "quality.md" in error for error in errors))
+
+        outside = Path(self.temp_dir.name) / "outside.md"
+        outside.write_text("# external\n", encoding="utf-8")
+        link = self.managed / "external.md"
+        link.symlink_to(outside)
+        self.main.write_text(
+            self.main.read_text(encoding="utf-8").replace(
+                "| Architecture | [`architecture.md`](issues/architecture.md) |",
+                "| External | [outside](issues/external.md) |",
+            ),
+            encoding="utf-8",
+        )
+        errors = self.validate()
+        self.assertTrue(any("escapes managed issue directory" in error for error in errors))
+
+    def test_malformed_id_and_ambiguous_table_headers_are_reported(self) -> None:
+        path = self.managed.parent / "single.md"
+        path.write_text(
+            "# Issues\n## Global issue allocation\n- Next unused ID: ISS-0002\n"
+            "## Records\n| ID | Issue ID | Tags |\n|---|---|---|\n| ISS-00X1 | ISS-0001 | QA |\n",
+            encoding="utf-8",
+        )
+        errors = validate_docs.validate_single_issue_register(path)
+        self.assertTrue(any("ambiguous issue table header" in error for error in errors))
+        path.write_text(
+            "# Issues\n## Global issue allocation\n- Next unused ID: ISS-0002\n"
+            "## Records\n| ID | Tags |\n|---|---|\n| ISS-00X1 | QA |\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any("malformed issue ID ISS-00X1" in error for error in validate_docs.validate_single_issue_register(path)))
+        path.write_text(
+            "# Issues\n## Global issue allocation\n- Next unused ID: ISS-0002\n"
+            "## Records\n| ID | Tags |\n|---|---|\n| ISS-0001 | QA | Extra |\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any("issue table row has" in error for error in validate_docs.validate_single_issue_register(path)))
 
     def test_single_register_counter_accepts_five_digits_and_rejects_reuse(self) -> None:
         register = self.managed.parent / "single.md"

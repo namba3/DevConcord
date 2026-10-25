@@ -170,6 +170,8 @@ duplicate opt-inは「異なる内容の同名Skill」や、未知の探索挙�
 
 決定的な回帰テストは、`validate_federated_issue_register`で指定fixture内の重複・カウンター・索引・孤立表・重要リンク・タグを検査し、テストが破損ケースの検出と診断元の保持を確認します。これは対象プロジェクトの自動採番、Git履歴による過去IDの完全証明、実エージェントの検索品質を実証しません。
 
+導入先の課題表を確認する場合は、明示的な読み取り専用CLIを使います。単一表には `python3 scripts/validate_docs.py --issue-register <path>`、連合表には `python3 scripts/validate_docs.py --issue-main <index-path> --managed-dir <register-directory>` を指定します。DevConcord自身の標準CIは外部リポジトリを探索せず、実際の導入先検証とfixture回帰テストを別の証拠として扱います。
+
 決定的なユニットテストは規約・テンプレート・fixtureの構造と期待されるタグ積集合を確認します。これは実エージェントの複数ファイル検索、表記正規化、意味的な絞り込みを実証しません。CIで実エージェントを起動しない限り、その振る舞いは未検証として扱います。
 
 ## Development Orchestration workflowの手動E2E評価
