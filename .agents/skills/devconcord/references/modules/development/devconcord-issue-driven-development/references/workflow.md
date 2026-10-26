@@ -43,14 +43,14 @@ or an existing resolution. Record a proposal as an ordinary `ISS-####` only
 when continued tracking has value and register edits are authorized; do not
 register every idea. Proposal disposition (`未判断` / `採用` / `保留` /
 `不採用`) is optional issue detail and must remain distinct from the issue's
-work state. A lightweight idea may need only a summary and expected value;
-explore or compare options only when that evidence can affect the decision.
-Adoption does not grant implementation authority. When authorized and useful,
-create a separate implementation issue linked to the proposal and preserve
-the disposition and rationale. Keep routine disposition in the proposal record;
-use DEC, ADR, or the risk record only for their distinct responsibilities.
-Unadopted proposals alone do not lower completion assessment. See the shared
-issue-tracking guide §4.14.
+work state. Use the shared issue-tracking guide §4.14 for formal-record fields
+and candidate-selection rules; no-ISS ideas need no issue record. Explore or
+compare options only when that evidence can affect the decision.
+Distinguish an authorized evaluation task from implementation of the proposed
+feature. Adoption alone grants neither implementation authority nor priority.
+Use a separate implementation issue only when needed; an existing issue can
+serve if it already states the implementation scope, authority, and acceptance
+conditions. Unadopted proposals alone do not lower completion assessment.
 
 Issues may call for design, research, documentation, organization, testing,
 refactoring, implementation, or a combination. Select evidence and deliverables
@@ -115,6 +115,10 @@ plan in chat is not a register update and is not completed work.
 1. Confirm the specified issue exists, is actionable, and is not blocked by an
    unmet dependency. Do not invent a missing issue ID or scope. If missing
    context materially affects safe implementation, stop and report it.
+   For a proposal record, establish whether the authorized task is proposal
+   evaluation or feature implementation. Do not implement the proposed feature
+   from a proposal-only record; verify the implementation authorization and
+   acceptance conditions using §4.14 before proceeding.
 2. Derive the smallest work slice and deliverables that can satisfy the issue's
    acceptance conditions. Check relevant contracts and impact on persistence,
    UX, performance, robustness, replaceability, security, and documentation as
@@ -162,6 +166,9 @@ score, or expand the authorized scope.
 2. Select only actionable issues whose prerequisites are met. Order by actual
    dependencies and coherent shared causes, considering value, risk, and
    verification. Do not start blocked issues unconditionally.
+   Apply §4.14 to proposal records: a proposal may be selected for an
+   authorized evaluation task, but its disposition or tag alone never makes
+   the proposed feature an actionable implementation issue.
 3. Batch may include different work types when the user authorized the bounded
    set and each issue can be evaluated independently. Order work by actual
    dependencies and preserve separable deliverables/evidence. A shared cause,

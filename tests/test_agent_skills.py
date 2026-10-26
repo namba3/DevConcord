@@ -395,7 +395,8 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
             with self.subTest(contract=contract):
                 self.assertIn(contract, guide)
         for tag in (
-            "ARCH", "CORE", "QA", "OPS", "DOC", "SEC", "PERF", "UX", "REL"
+            "ARCH", "CORE", "QA", "OPS", "DOC", "SEC", "PERF", "UX", "REL",
+            "IDEA", "REQ", "ENH",
         ):
             with self.subTest(tag=tag):
                 self.assertIn(f"| {tag} |", guide)
@@ -508,30 +509,45 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
             "## 5. 課題表の更新手順", 1
         )[0]
         for phrase in (
-            "ISS-####", "専用のID体系や必須台帳は作らない",
+            "既存ISSの必須カラム・ID・状態・履歴・完了条件・根拠",
             "`proposals.md` のような提案用サブ課題表も任意",
-            "未判断 / 採用 / 保留 / 不採用", "作業状態とは別",
-            "採用は実装許可・優先順位確定を意味しない",
-            "保留は通常作業をブロックせず", "不採用は既知の欠陥やリスクを解消しない",
-            "既存課題・提案・要求・DEC・ADR", "全アイデアをISS化してはならない",
-            "完成度の評価軸にしない", "採用率・実装数",
+            "提案の採否 `未判断 / 採用 / 保留 / 不採用` はISSの作業状態",
+            "採否状態・タグ・優先度だけでは着手可否や実装候補を自動決定しない",
+            "ユーザーが提案の評価だけを依頼した場合",
+            "提案ISSから実装ISSへ、実装ISSから提案元へ相互参照を記録する",
+            "未採用・保留・不採用の提案数や、採用率・実装数を完成度の評価軸にしない",
         ):
             with self.subTest(proposal_contract=phrase):
                 self.assertIn(phrase, proposal_rules)
+        main = (work_management / "templates" / "issue-register-main.md").read_text(
+            encoding="utf-8"
+        )
         for doc in (single, subregister):
             with self.subTest(template=doc[:40]):
                 self.assertIn("課題管理規約 §4.14", doc)
-                self.assertNotIn("Proposal status", doc)
-        self.assertIn("proposal disposition", issue_module.lower())
-        self.assertIn("does not authorize implementation", issue_module.lower())
-        self.assertIn("duplicate", issue_workflow.lower())
-        self.assertIn(
-            "adoption does not grant implementation authority", issue_workflow.lower()
-        )
-        self.assertIn("completion assessment", issue_workflow.lower())
+                self.assertIn("Proposalの記録例（任意）", doc)
+        for template in (single, main):
+            for tag in ("IDEA", "REQ", "ENH"):
+                with self.subTest(template=template[:30], tag=tag):
+                    self.assertIn(f"| {tag} |", template)
+        self.assertIn("§4.14", issue_module)
+        self.assertIn("§4.14", issue_workflow)
+        orchestration = (
+            MODULES / "development" / "devconcord-development-orchestration"
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+        implementation_planning = (
+            MODULES / "development" / "devconcord-implementation-planning"
+            / "module.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("status, tag, or priority alone", " ".join(orchestration.lower().split()))
+        self.assertIn("§4.14", implementation_planning)
         self.assertIn("Assess this feature idea", routing)
         self.assertIn("design explore", routing)
-        self.assertIn("implement accepted proposal ISS-####", routing)
+        self.assertIn("implement authorized feature work in iss-####", routing.lower())
+        self.assertIn("linked from accepted proposal iss-####", routing.lower())
+        self.assertIn("Proposalの記録例（任意）", single)
+        self.assertIn("Proposalの記録例（任意）", subregister)
 
     def test_agent_evaluation_separates_routing_and_specialist_use_effects(self) -> None:
         evaluation = (ROOT / "tests/integration/README.md").read_text(encoding="utf-8")

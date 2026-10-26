@@ -541,6 +541,110 @@ Reference: ISS-8000
         path.write_text(text, encoding="utf-8")
         self.assertEqual(validate_docs.validate_single_issue_register(path), [])
 
+    def test_single_register_accepts_proposal_and_implementation_issue(self) -> None:
+        register = self.managed.parent / "single-proposals.md"
+        source = """# Single Issue Register
+
+## Global issue allocation
+- Next unused ID: ISS-0004
+
+## Tag definitions
+| Tag | Meaning |
+|---|---|
+| QA | Test and quality |
+| IDEA | Idea |
+| REQ | Request candidate tag, distinct from REQ-#### IDs |
+| ENH | Existing feature enhancement |
+| CORE | Core functionality |
+
+## Issues
+| ID | Classification | Tags | Work type | Priority | Status | Issue and impact | Acceptance | Evidence | Updated |
+|---|---|---|---|---|---|---|---|---|---|
+| ISS-0001 | Quality | QA | Test | P2 | In Progress | Existing task | Existing acceptance | Existing evidence | 2026-10-26 |
+| ISS-0002 | Feature | IDEA, REQ | Proposal evaluation | P3 | Open | Evaluate the user request | Record value and decision evidence; implementation excluded | User request | 2026-10-26 |
+| ISS-0003 | Feature | CORE | Implementation | P3 | Open | Implement authorized follow-up | Verify agreed feature behavior | Requirement | 2026-10-26 |
+
+## ISS-0002 Proposal details
+- Disposition: 採用
+- Related implementation issue: ISS-0003
+
+## ISS-0003 Implementation details
+- Related proposal: ISS-0002
+"""
+        register.write_text(source, encoding="utf-8")
+        before = register.read_bytes()
+
+        self.assertEqual(validate_docs.validate_single_issue_register(register), [])
+        records = validate_docs._issue_record_rows(source, register)
+        self.assertEqual(
+            [(record.issue_id, record.tags) for record in records],
+            [
+                ("ISS-0001", ("QA",)),
+                ("ISS-0002", ("IDEA", "REQ")),
+                ("ISS-0003", ("CORE",)),
+            ],
+        )
+        proposal_row = next(
+            line for line in source.splitlines() if line.startswith("| ISS-0002 |")
+        )
+        self.assertIn("| Open |", proposal_row)
+        self.assertIn("Disposition: 採用", source)
+        self.assertIn("Related implementation issue: ISS-0003", source)
+        self.assertIn("Related proposal: ISS-0002", source)
+        self.assertEqual(register.read_bytes(), before)
+
+    def test_federated_register_accepts_optional_proposals_subregister(self) -> None:
+        main = self.main.read_text(encoding="utf-8")
+        main = main.replace("ISS-0131", "ISS-0133", 1)
+        main = main.replace(
+            "| REL | Reliability |",
+            "| REL | Reliability |\n"
+            "| IDEA | Idea |\n"
+            "| REQ | Request candidate tag, distinct from REQ-#### IDs |\n"
+            "| ENH | Existing feature enhancement |",
+        )
+        main = main.replace(
+            "| Quality and operations | [`quality.md`](issues/quality.md) |",
+            "| Quality and operations | [`quality.md`](issues/quality.md) |\n"
+            "| Proposals | [`proposals.md`](issues/proposals.md) |",
+        )
+        self.main.write_text(main, encoding="utf-8")
+        proposals = self.managed / "proposals.md"
+        proposals.write_text(
+            "# Optional Proposal Subregister\n\n"
+            "| ID | Tags | Priority | Status | Issue | Acceptance |\n"
+            "|---|---|---|---|---|---|\n"
+            "| ISS-0131 | IDEA, ENH | P3 | Open | Evaluate search refinement | Record evaluation only |\n"
+            "| ISS-0132 | CORE | P3 | Open | Authorized implementation follow-up | Verify accepted behavior |\n\n"
+            "## ISS-0131 Proposal details\n"
+            "Disposition: 採用\n"
+            "Related implementation issue: ISS-0132\n\n"
+            "## ISS-0132 Implementation details\n"
+            "Related proposal: ISS-0131\n",
+            encoding="utf-8",
+        )
+        before_validation = {
+            path: path.read_bytes()
+            for path in (self.main, *self.managed.glob("*.md"))
+        }
+
+        self.assertEqual(self.validate(), [])
+        self.assertEqual(
+            before_validation,
+            {path: path.read_bytes() for path in before_validation},
+        )
+        architecture = (self.managed / "architecture.md").read_text(encoding="utf-8")
+        quality = (self.managed / "quality.md").read_text(encoding="utf-8")
+        proposal_records = validate_docs._issue_record_rows(
+            proposals.read_text(encoding="utf-8"), proposals
+        )
+        self.assertIn("| ISS-0125 | ARCH, REL | P1 | In Progress |", architecture)
+        self.assertIn("| ISS-0130 | — | P3 | Open |", quality)
+        self.assertEqual(
+            [(record.issue_id, record.tags) for record in proposal_records],
+            [("ISS-0131", ("IDEA", "ENH")), ("ISS-0132", ("CORE",))],
+        )
+
     def test_incomplete_issue_content_is_still_a_record(self) -> None:
         register = self.managed.parent / "single.md"
         register.write_text(

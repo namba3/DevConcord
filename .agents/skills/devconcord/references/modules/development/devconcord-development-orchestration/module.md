@@ -8,6 +8,9 @@ reduced material risk—not the number of iterations, edits, or closed issues.
 Work tracking may use one Markdown register or a main index with subregisters;
 use the indexed canonical issue records and treat optional tags as discovery
 filters, not readiness or priority decisions.
+Apply `docs/work-management/issue-tracking.md` §4.14 when a candidate is a
+proposal: distinguish evaluation work from feature implementation, and do not
+select implementation from disposition or tags alone.
 
 ## Choose a mode
 

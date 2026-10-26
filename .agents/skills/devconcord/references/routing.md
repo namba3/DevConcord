@@ -53,7 +53,7 @@ Route by desired outcome, target, expected artifact, and authority, not by a key
 - “How should we proceed with development from here?” → `develop plan` (read-only iteration plan and stop conditions).
 - “How should this feature be divided into implementation steps?” → `develop implementation-plan`.
 - “Assess this feature idea” → `design explore` for read-only, bounded exploration; apply issue-tracking §4.14 if a proposal record is useful. Do not create an ISS or start implementation without the corresponding authority.
-- “Improve this approved/delegated design” → `design evolve`; “implement accepted proposal ISS-####” → `develop issue` within the specified issue and user-authorized scope. Proposal adoption alone is not implementation authority.
+- “Improve this approved/delegated design” → `design evolve`; “implement authorized feature work in ISS-####, linked from accepted proposal ISS-####” → `develop issue` for the implementation ISS. Keep proposal/evaluation and implementation issues distinct when both exist. Adoption alone is not implementation authority.
 - “Implement the next important issues and verify them iteratively” → `develop issue` for issue selection, or `develop iterate` when the user delegates the broader loop.
 - “Resolve what is preventing this work” → inspect the current issue and evidence; use `develop unblock` only for a material verified blocker, otherwise proceed with safe independent work.
 - “Investigate this open decision and recommend a choice” → `decide investigate` and `decide recommend` when the decision is material; inspect existing records first and do not treat a recommendation as approval.

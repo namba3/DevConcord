@@ -13,6 +13,11 @@ or issue records unless the user explicitly includes those changes.
 2. Read relevant requirements and acceptance conditions, ADRs, existing issue
    register entries, architecture and code, tests, CI, and operational
    constraints. Keep each document's existing identifiers and source of truth.
+   For a proposal, distinguish planning its evaluation from planning feature
+   implementation. Disposition alone does not grant implementation
+   authority; plan implementation only when the user's scope or an existing
+   requirement authorizes it and acceptance conditions and prerequisites are
+   clear. See `docs/work-management/issue-tracking.md` §4.14.
 3. Analyze only material change impacts: affected responsibilities and
    boundaries, public contracts and compatibility, persistent data and
    migrations, state/error behavior, dependencies, security, resource use,

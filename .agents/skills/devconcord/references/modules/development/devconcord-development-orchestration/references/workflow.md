@@ -37,6 +37,15 @@ downstream value. Keep formal priority distinct from implementation order;
 resolve actual prerequisites first without rewriting priority. Detect missing
 references or dependency cycles rather than guessing an order.
 
+For proposals, apply the canonical candidate-selection contract in
+`docs/work-management/issue-tracking.md` §4.14. Plan may recommend an
+authorized proposal-evaluation task; it remains read-only. Iterate must not
+choose the proposed feature for implementation from proposal status, tag, or
+priority alone. Proceed only from an authorized implementation scope with
+clear acceptance conditions and verified dependencies/readiness. A held or
+rejected proposal is excluded from normal implementation selection, but does
+not block unrelated work.
+
 Optional tags may help find related or independently actionable records across
 indexed subregisters; a multi-tag filter selects records carrying all requested
 tags. Tags do not determine readiness, priority, dependencies, risk, authority,
