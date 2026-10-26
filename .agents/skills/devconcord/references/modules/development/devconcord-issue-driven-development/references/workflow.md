@@ -37,6 +37,21 @@ project-specific Definition of Done.
 
 ## 2. Choose work with evidence
 
+For a feature request, enhancement, or idea, first search the authoritative
+registers and related requirements, DEC, ADR, and risk records for duplicates
+or an existing resolution. Record a proposal as an ordinary `ISS-####` only
+when continued tracking has value and register edits are authorized; do not
+register every idea. Proposal disposition (`未判断` / `採用` / `保留` /
+`不採用`) is optional issue detail and must remain distinct from the issue's
+work state. A lightweight idea may need only a summary and expected value;
+explore or compare options only when that evidence can affect the decision.
+Adoption does not grant implementation authority. When authorized and useful,
+create a separate implementation issue linked to the proposal and preserve
+the disposition and rationale. Keep routine disposition in the proposal record;
+use DEC, ADR, or the risk record only for their distinct responsibilities.
+Unadopted proposals alone do not lower completion assessment. See the shared
+issue-tracking guide §4.14.
+
 Issues may call for design, research, documentation, organization, testing,
 refactoring, implementation, or a combination. Select evidence and deliverables
 from the actual acceptance conditions; a code change is not a default

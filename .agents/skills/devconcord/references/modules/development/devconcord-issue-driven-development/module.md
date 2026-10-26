@@ -85,6 +85,15 @@ logs or narrate internal workflow selection. Never describe static checks as
 real-agent evaluation. Follow the user's requested work boundary and the
 repository's own commit instructions.
 
+When the request is a feature request, enhancement, or idea, distinguish
+proposal disposition (`未判断` / `採用` / `保留` / `不採用`) from the issue's
+work state. Use the existing issue register and `ISS-####` only when continued
+tracking has value; first check for duplicates. Proposal capture or adoption
+does not authorize implementation. Preserve the proposal rationale and link a
+separate implementation issue when needed and authorized. Do not turn every
+idea into an issue, require a detailed scorecard, or create a proposal ledger.
+See the shared issue-tracking guide §4.14.
+
 ## Related internal workflows
 
 - `devconcord-implementation-planning` plans complex changes; it does not

@@ -483,6 +483,56 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
         self.assertEqual(untagged[0][1], set())
         self.assertEqual(untagged[0][2], "Open")
 
+    def test_optional_proposal_management_contract(self) -> None:
+        work_management = ROOT / "docs" / "work-management"
+        guide = (work_management / "issue-tracking.md").read_text(encoding="utf-8")
+        single = (work_management / "templates" / "issue-register.md").read_text(
+            encoding="utf-8"
+        )
+        subregister = (
+            work_management / "templates" / "issue-register-subregister.md"
+        ).read_text(encoding="utf-8")
+        issue_module = (
+            MODULES / "development" / "devconcord-issue-driven-development"
+            / "module.md"
+        ).read_text(encoding="utf-8")
+        issue_workflow = (
+            MODULES / "development" / "devconcord-issue-driven-development"
+            / "references" / "workflow.md"
+        ).read_text(encoding="utf-8")
+        routing = (
+            ROOT / ".agents" / "skills" / "devconcord" / "references" / "routing.md"
+        ).read_text(encoding="utf-8")
+
+        proposal_rules = guide.split("### 4.14 要望・提案・アイデア", 1)[1].split(
+            "## 5. 課題表の更新手順", 1
+        )[0]
+        for phrase in (
+            "ISS-####", "専用のID体系や必須台帳は作らない",
+            "`proposals.md` のような提案用サブ課題表も任意",
+            "未判断 / 採用 / 保留 / 不採用", "作業状態とは別",
+            "採用は実装許可・優先順位確定を意味しない",
+            "保留は通常作業をブロックせず", "不採用は既知の欠陥やリスクを解消しない",
+            "既存課題・提案・要求・DEC・ADR", "全アイデアをISS化してはならない",
+            "完成度の評価軸にしない", "採用率・実装数",
+        ):
+            with self.subTest(proposal_contract=phrase):
+                self.assertIn(phrase, proposal_rules)
+        for doc in (single, subregister):
+            with self.subTest(template=doc[:40]):
+                self.assertIn("課題管理規約 §4.14", doc)
+                self.assertNotIn("Proposal status", doc)
+        self.assertIn("proposal disposition", issue_module.lower())
+        self.assertIn("does not authorize implementation", issue_module.lower())
+        self.assertIn("duplicate", issue_workflow.lower())
+        self.assertIn(
+            "adoption does not grant implementation authority", issue_workflow.lower()
+        )
+        self.assertIn("completion assessment", issue_workflow.lower())
+        self.assertIn("Assess this feature idea", routing)
+        self.assertIn("design explore", routing)
+        self.assertIn("implement accepted proposal ISS-####", routing)
+
     def test_agent_evaluation_separates_routing_and_specialist_use_effects(self) -> None:
         evaluation = (ROOT / "tests/integration/README.md").read_text(encoding="utf-8")
         self.assertIn("Natural-language routing before/after evaluation", evaluation)
