@@ -70,17 +70,17 @@ class IssueArchiveTest(unittest.TestCase):
 
     def test_crlf_is_preserved_across_archive_and_restore(self):
         # Simulate a Windows checkout even on Linux runners.
-        before = self.active.read_bytes().replace(b"\\r\\n", b"\\n").replace(b"\\n", b"\\r\\n")
+        before = self.active.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
         self.active.write_bytes(before)
         self.assertEqual(self.cli("archive", "--ids", "ISS-0001", "--apply")[0], 0)
         archived = self.active.read_bytes()
-        self.assertIn(b"\\r\\n", archived)
-        self.assertNotIn(b"\\n", archived.replace(b"\\r\\n", b""))
+        self.assertIn(b"\r\n", archived)
+        self.assertNotIn(b"\n", archived.replace(b"\r\n", b""))
         code, _, err = self.cli("restore", "--ids", "ISS-0001", "--reason", "Premature closure", "--apply")
         self.assertEqual(code, 0, err)
         restored = self.active.read_bytes()
-        self.assertIn(b"\\r\\n", restored)
-        self.assertNotIn(b"\\n", restored.replace(b"\\r\\n", b""))
+        self.assertIn(b"\r\n", restored)
+        self.assertNotIn(b"\n", restored.replace(b"\r\n", b""))
         self.assertEqual(validate_docs.validate_single_issue_register(self.active, self.archive), [])
 
     def test_post_apply_validation_failure_rolls_back(self):
