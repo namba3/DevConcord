@@ -93,7 +93,17 @@ def _indexed_archives(main: Path, archive_dir: Path) -> list[Path]:
     if not match:
         return []
     result = []
-    for dest in re.findall(r"(?m)^\s*-\s*\[[^\]]+\]\(([^)]+)\)\s*$", match.group(1)):
+    fenced = False
+    for line in match.group(1).splitlines():
+        if re.match(r"^\s*(`{3,}|~{3,})", line):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        link = re.match(r"^\s*-\s*\[[^\]]+\]\(([^)]+)\)\s*$", line)
+        if not link:
+            continue
+        dest = link.group(1)
         parsed = urlsplit(dest)
         if parsed.scheme or parsed.netloc or not parsed.path:
             raise ArchiveError("invalid archive link")
