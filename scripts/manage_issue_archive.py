@@ -176,8 +176,15 @@ def _archive_block(issue_id: str, source: str, header: str, separator: str, row:
 
 def _replace_index(text: str, main: Path, archive: Path) -> str:
     link = archive.relative_to(main.parent.resolve()).as_posix()
-    if f"]({link})" in text:
-        return text
+    match_section = re.search(r"(?ms)^## 完了課題アーカイブ[^\n]*\n(.*?)(?=^## |\Z)", text)
+    if match_section:
+        fenced = False
+        for line in match_section.group(1).splitlines():
+            if re.match(r"^\s*(`{3,}|~{3,})", line):
+                fenced = not fenced
+                continue
+            if not fenced and re.match(r"^\s*-\s*\[[^\]]+\]\(" + re.escape(link) + r"\)\s*$", line):
+                return text
     new_line = f"- [終端ISS {archive.stem}]({link})\n"
     match = re.search(r"(?m)^## 完了課題アーカイブ[^\n]*\n", text)
     if match:
