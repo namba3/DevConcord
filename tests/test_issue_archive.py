@@ -52,21 +52,36 @@ class IssueArchiveTest(unittest.TestCase):
         year = __import__("datetime").date.today().year
         closed = self.archive / f"closed-{year}.md"
         self.assertTrue(closed.is_file())
-        self.assertNotIn(DONE.strip(), self.active.read_text())
-        self.assertIn(DONE.strip(), closed.read_text())
+        self.assertNotIn(DONE.strip(), self.active.read_text(encoding="utf-8"))
+        self.assertIn(DONE.strip(), closed.read_text(encoding="utf-8"))
         self.assertEqual(validate_docs.validate_single_issue_register(self.active, self.archive), [])
-        self.assertIn("ISS-0002", self.active.read_text())
+        self.assertIn("ISS-0002", self.active.read_text(encoding="utf-8"))
 
         code, output, err = self.cli("restore", "--ids", "ISS-0001", "--reason", "completion was premature", "--apply")
         self.assertEqual((code, err), (0, ""), err)
-        self.assertIn("ISS-0001 | QA | — | P2 | 未着手", self.active.read_text())
-        self.assertIn("completion was premature", self.active.read_text())
-        self.assertNotIn(DONE.strip(), closed.read_text())
+        self.assertIn("ISS-0001 | QA | — | P2 | 未着手", self.active.read_text(encoding="utf-8"))
+        self.assertIn("completion was premature", self.active.read_text(encoding="utf-8"))
+        self.assertNotIn(DONE.strip(), closed.read_text(encoding="utf-8"))
         self.assertEqual(validate_docs.validate_single_issue_register(self.active, self.archive), [])
 
     def test_restore_requires_a_reason(self):
         self.assertEqual(self.cli("archive", "--ids", "ISS-0001", "--apply")[0], 0)
         self.assertEqual(self.cli("restore", "--ids", "ISS-0001", "--apply")[0], 1)
+
+    def test_crlf_is_preserved_across_archive_and_restore(self):
+        # Simulate a Windows checkout even on Linux runners.
+        before = self.active.read_bytes().replace(b"\\r\\n", b"\\n").replace(b"\\n", b"\\r\\n")
+        self.active.write_bytes(before)
+        self.assertEqual(self.cli("archive", "--ids", "ISS-0001", "--apply")[0], 0)
+        archived = self.active.read_bytes()
+        self.assertIn(b"\\r\\n", archived)
+        self.assertNotIn(b"\\n", archived.replace(b"\\r\\n", b""))
+        code, _, err = self.cli("restore", "--ids", "ISS-0001", "--reason", "Premature closure", "--apply")
+        self.assertEqual(code, 0, err)
+        restored = self.active.read_bytes()
+        self.assertIn(b"\\r\\n", restored)
+        self.assertNotIn(b"\\n", restored.replace(b"\\r\\n", b""))
+        self.assertEqual(validate_docs.validate_single_issue_register(self.active, self.archive), [])
 
     def test_post_apply_validation_failure_rolls_back(self):
         original = self.active.read_bytes()
@@ -78,7 +93,7 @@ class IssueArchiveTest(unittest.TestCase):
         self.assertEqual(list(self.archive.glob("*.md")), [])
 
     def test_missing_evidence_is_not_archived(self):
-        self.active.write_text(self.active.read_text().replace("tests passed", "—"), encoding="utf-8")
+        self.active.write_text(self.active.read_text(encoding="utf-8").replace("tests passed", "—"), encoding="utf-8")
         code, _, err = self.cli("archive", "--ids", "ISS-0001", "--apply")
         self.assertEqual(code, 1)
         self.assertIn("completion criteria and evidence", err)
@@ -86,7 +101,7 @@ class IssueArchiveTest(unittest.TestCase):
 
     def test_duplicate_active_archive_id_is_rejected(self):
         self.archive.mkdir(parents=True)
-        old = self.active.read_text()
+        old = self.active.read_text(encoding="utf-8")
         self.active.write_text(old + "\n## 完了課題アーカイブ\n- [closed](issues/archive/closed-2026.md)\n", encoding="utf-8")
         (self.archive / "closed-2026.md").write_text(
             "# Archive\n\n## ISS-0001\n\n" + ROW_HEADERS + ROW_SEPARATOR + DONE, encoding="utf-8"
@@ -105,13 +120,13 @@ class IssueArchiveTest(unittest.TestCase):
         code, _, err = self.cli("archive", "--ids", "ISS-0002")
         self.assertEqual(code, 1)
         self.assertIn("terminal status", err)
-        self.active.write_text(self.active.read_text() + "\n### ISS-0001 details\nhistory\n", encoding="utf-8")
+        self.active.write_text(self.active.read_text(encoding="utf-8") + "\n### ISS-0001 details\nhistory\n", encoding="utf-8")
         code, _, err = self.cli("archive", "--ids", "ISS-0001")
         self.assertEqual(code, 1)
         self.assertIn("detailed heading", err)
 
     def test_linked_issue_requires_manual_review(self):
-        original = self.active.read_text()
+        original = self.active.read_text(encoding="utf-8")
         self.active.write_text(original + "\nSee [ISS-0001](issues.md) for the prior verification.\n", encoding="utf-8")
         code, _, err = self.cli("archive", "--ids", "ISS-0001", "--apply")
         self.assertEqual(code, 1)
@@ -129,7 +144,7 @@ class IssueArchiveTest(unittest.TestCase):
 
     def test_fenced_index_example_does_not_count_as_live_archive(self):
         self.active.write_text(
-            self.active.read_text() +
+            self.active.read_text(encoding="utf-8") +
             "\n## 完了課題アーカイブ\n\n" +
             "```markdown\n- [example](issues/archive/closed-2026.md)\n```\n",
             encoding="utf-8",
@@ -139,11 +154,11 @@ class IssueArchiveTest(unittest.TestCase):
         code, _, error = self.cli("archive", "--ids", "ISS-0001", "--apply")
         self.assertEqual(code, 0, error)
         self.assertEqual(validate_docs.validate_single_issue_register(self.active, self.archive), [])
-        index = self.active.read_text()
+        index = self.active.read_text(encoding="utf-8")
         self.assertIn("- [終端ISS closed-", index)
 
     def test_archive_link_requires_explicit_scope(self):
-        self.active.write_text(self.active.read_text() + "\n## 完了課題アーカイブ\n- [missing](issues/archive/closed-2026.md)\n", encoding="utf-8")
+        self.active.write_text(self.active.read_text(encoding="utf-8") + "\n## 完了課題アーカイブ\n- [missing](issues/archive/closed-2026.md)\n", encoding="utf-8")
         errors = validate_docs.validate_single_issue_register(self.active)
         self.assertTrue(any("require explicit --archive-dir" in e for e in errors), errors)
 
@@ -166,11 +181,11 @@ class IssueArchiveTest(unittest.TestCase):
             ])
         self.assertEqual(code, 0, stderr.getvalue())
         self.assertEqual(validate_docs.validate_federated_issue_register(main, managed, managed / "archive"), [])
-        self.assertNotIn(DONE.strip(), sub.read_text())
+        self.assertNotIn(DONE.strip(), sub.read_text(encoding="utf-8"))
 
     def test_archive_status_and_counter_are_validated(self):
         self.archive.mkdir(parents=True)
-        self.active.write_text(self.active.read_text() + "\n## 完了課題アーカイブ\n- [closed](issues/archive/closed-2026.md)\n", encoding="utf-8")
+        self.active.write_text(self.active.read_text(encoding="utf-8") + "\n## 完了課題アーカイブ\n- [closed](issues/archive/closed-2026.md)\n", encoding="utf-8")
         (self.archive / "closed-2026.md").write_text(
             "# Archive\n\n## 共通ISS採番\n- 次の未割当番号: ISS-9999\n\n"
             + ROW_HEADERS + ROW_SEPARATOR + OPEN.replace("ISS-0002", "ISS-0008"), encoding="utf-8"
