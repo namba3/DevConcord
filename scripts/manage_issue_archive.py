@@ -35,7 +35,8 @@ def _read(path: Path) -> str:
     if path.is_symlink():
         raise ArchiveError(f"symlink is not an editable register: {path}")
     try:
-        return path.read_text(encoding="utf-8")
+        # Preserve original bytes (including CRLF) for exact CAS and rollback.
+        return path.read_bytes().decode("utf-8")
     except (OSError, UnicodeError) as exc:
         raise ArchiveError(f"cannot read {path}: {exc}") from exc
 
@@ -235,8 +236,8 @@ def _write_transaction(changes: dict[Path, tuple[str | None, str | None]]) -> No
             path.parent.mkdir(parents=True, exist_ok=True)
             fd, temp_name = tempfile.mkstemp(prefix=".devconcord-", dir=path.parent)
             try:
-                with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as stream:
-                    stream.write(new)
+                with os.fdopen(fd, "wb") as stream:
+                    stream.write(new.encode("utf-8"))
                     stream.flush()
                     os.fsync(stream.fileno())
                 os.replace(temp_name, path)
@@ -251,7 +252,7 @@ def _write_transaction(changes: dict[Path, tuple[str | None, str | None]]) -> No
                 if old is None:
                     path.unlink(missing_ok=True)
                 else:
-                    path.write_text(old, encoding="utf-8")
+                    path.write_bytes(old.encode("utf-8"))
             except OSError:
                 pass
         raise
@@ -377,6 +378,19 @@ def manage(args: argparse.Namespace) -> list[str]:
                 f"- 元Archive: {path.name}\n"
             )
             texts[path] = texts[path][:match.start()] + texts[path][match.end():]
+    # Keep the newline convention of each existing file. A Windows checkout
+    # can contain CRLF even though generated block text uses LF. Refuse mixed
+    # styles rather than silently rewriting unrelated lines.
+    for path, text in list(texts.items()):
+        previous = original.get(path)
+        if previous == text:
+            continue
+        if previous is not None:
+            without_crlf = previous.replace("\r\n", "")
+            if "\r" in without_crlf or ("\r\n" in previous and "\n" in without_crlf):
+                raise ArchiveError(f"mixed or unsupported line endings require manual review: {path}")
+        canonical_lf = text.replace("\r\n", "\n")
+        texts[path] = canonical_lf.replace("\n", "\r\n") if previous is not None and "\r\n" in previous else canonical_lf
     changed = {p: (original.get(p), text) for p, text in texts.items() if original.get(p) != text}
     if args.apply:
         _write_transaction(changed)
