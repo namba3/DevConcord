@@ -143,6 +143,8 @@ def _safe_scope(main: Path, archive: Path) -> None:
 def _ensure_simple(text: str, path: Path, issue_id: str) -> None:
     if re.search(r"(?m)^#{1,6}\s+" + re.escape(issue_id) + r"(?:\b|$)", text):
         raise ArchiveError(f"{issue_id}: detailed heading requires manual reviewed migration: {path}")
+    if re.search(r"\[" + re.escape(issue_id.casefold()) + r"\]\(", text.casefold()):
+        raise ArchiveError(f"{issue_id}: linked ISS reference requires manual review: {path}")
     if re.search(r"\]\([^)\n]*#" + re.escape(issue_id.casefold()) + r"(?:\b|[-)])", text.casefold()):
         raise ArchiveError(f"{issue_id}: anchored reference requires manual review: {path}")
 
