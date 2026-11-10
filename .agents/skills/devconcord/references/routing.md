@@ -40,6 +40,7 @@ These are logical instructions interpreted by the agent using this Skill. They a
 | `manage adopt` | `management/devconcord-adopt-guidance` | Selective guidance adoption preserving local rules |
 | `manage sync` | `management/devconcord-sync-guidance` | Safe synchronization with per-document baselines |
 | `manage guidance` | `management/devconcord-generate-agent-guidance` | Requested AGENTS.md, REVIEW.md, or both |
+| `manage issue` | `management/devconcord-issue-management` | Issue-management entrypoint; inspect read-only when no operation is specified |
 | `manage issue inspect/archive/restore` | `management/devconcord-issue-management` | Read-only issue audit, bounded terminal-record archiving or authorized restore |
 | `manage reference` | `management/devconcord-reference` | Version-pinned local source material |
 | `evaluate agent` | `evaluation/devconcord-agent-behavior-evaluation` | Scenario-based evaluation with independent evidence |
