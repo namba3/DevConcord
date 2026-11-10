@@ -9,7 +9,7 @@ DevConcord provides evidence-driven, risk-proportional workflows for software de
 
 ## Route the request
 
-Interpret `devconcord <area> <intent>` as a portable instruction to select the matching workflow below. It is not an operating-system command or a vendor-specific slash command. Natural-language requests use the same routing. Normalize clear spelling variants and unambiguous abbreviations; unknown commands should be reported with the nearest supported choices. Ask a concise clarification only when target, desired outcome, or authority materially changes the work. For mixed requests, choose one primary workflow and load only needed specialist modules.
+Interpret `devconcord <area> <intent> [operation]` as a portable instruction to select the matching workflow below. It is not an operating-system command or a vendor-specific slash command. Natural-language requests use the same routing. Normalize clear spelling variants and unambiguous abbreviations; unknown commands should be reported with the nearest supported choices. Ask a concise clarification only when target, desired outcome, or authority materially changes the work. For mixed requests, choose one primary workflow and load only needed specialist modules.
 
 Read [routing.md](references/routing.md) for the complete command map, natural-language routing, and ambiguity rules. Read [shared-contracts.md](references/shared-contracts.md) before material changes or when a shared safety contract is relevant. Then load the selected module at `references/modules/<area>/<legacy-id>/module.md`; legacy IDs here are internal file identifiers, not public Skills.
 
