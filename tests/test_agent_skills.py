@@ -52,6 +52,7 @@ EXPECTED_MODULES = {
         "devconcord-sync-guidance",
         "devconcord-generate-agent-guidance",
         "devconcord-reference",
+        "devconcord-issue-management",
     },
     "evaluation": {"devconcord-agent-behavior-evaluation"},
 }
@@ -247,7 +248,7 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
                     self.assertTrue(text.strip())
                     self.assertFalse(text.startswith("---\n"))
                     self.assertFalse((path.parent / "SKILL.md").exists())
-        self.assertEqual(sum(map(len, discovered.values())), 25)
+        self.assertEqual(sum(map(len, discovered.values())), 26)
 
     def test_router_covers_explicit_commands_and_risk_proportional_selection(self) -> None:
         router = (PACKAGE / "references" / "routing.md").read_text(encoding="utf-8")
@@ -262,7 +263,7 @@ class UnifiedSkillArchitectureTests(unittest.TestCase):
             "quality security", "quality replaceability", "quality observability",
             "quality ux", "quality documentation", "lifecycle compatibility",
             "lifecycle release", "lifecycle dependencies", "manage bootstrap",
-            "manage adopt", "manage sync", "manage guidance", "manage reference", "evaluate agent",
+            "manage adopt", "manage sync", "manage guidance", "manage issue inspect/archive/restore", "manage reference", "evaluate agent",
         ):
             with self.subTest(command=command):
                 self.assertIn(f"`{command}`", router)

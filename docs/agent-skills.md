@@ -17,6 +17,7 @@
 | テスト設計・原因診断 | `devconcord verify test-design`; `devconcord diagnose root-cause` |
 | 品質専門領域 | `devconcord quality performance/robustness/security/replaceability/observability/ux/documentation` |
 | 互換性・リリース・依存 | `devconcord lifecycle compatibility/release/dependencies` |
+| 課題表の監査・アーカイブ・復元 | `devconcord manage issue inspect/archive/restore` |
 | Bootstrap・Adopt・Sync・Guidance・Reference | `devconcord manage bootstrap/adopt/sync/guidance/reference` |
 | エージェント評価 | `devconcord evaluate agent` |
 

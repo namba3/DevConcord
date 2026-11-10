@@ -40,6 +40,8 @@ These are logical instructions interpreted by the agent using this Skill. They a
 | `manage adopt` | `management/devconcord-adopt-guidance` | Selective guidance adoption preserving local rules |
 | `manage sync` | `management/devconcord-sync-guidance` | Safe synchronization with per-document baselines |
 | `manage guidance` | `management/devconcord-generate-agent-guidance` | Requested AGENTS.md, REVIEW.md, or both |
+| `manage issue` | `management/devconcord-issue-management` | Issue-management entrypoint; inspect read-only when no operation is specified |
+| `manage issue inspect/archive/restore` | `management/devconcord-issue-management` | Read-only issue audit, bounded terminal-record archiving or authorized restore |
 | `manage reference` | `management/devconcord-reference` | Version-pinned local source material |
 | `evaluate agent` | `evaluation/devconcord-agent-behavior-evaluation` | Scenario-based evaluation with independent evidence |
 
@@ -65,6 +67,7 @@ Route by desired outcome, target, expected artifact, and authority, not by a key
 - “Find unresolved decisions” → `decide scan` (read-only).
 - “Investigate/compare/recommend/resolve this decision” → the matching `decide` workflow; investigation defaults to read-only, recommendations are not approvals, and `resolve` requires current authority.
 - “Resume this long-running task from its handoff” → the applicable `develop issue` or `develop iterate` workflow; inspect and revalidate the existing handoff before continuing. Do not create a handoff for routine work or treat it as authority.
+- “Inspect issue records / archive finished issues / restore an archived issue” → `manage issue inspect/archive/restore`. Archive and restore require change authorization; inspect remains read-only.
 - “Synchronize adopted DevConcord guidance” → `manage sync`.
 - “Migrate safely from an old persisted format” → `lifecycle compatibility`.
 - A dependency update or security/licensing/supply-chain assessment → `lifecycle dependencies`.

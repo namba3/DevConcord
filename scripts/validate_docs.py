@@ -368,10 +368,13 @@ class IssueRecord:
     path: Path
     line: int
     tags: tuple[str, ...]
+    status: str | None = None
 
 
 ID_HEADERS = {"id", "issueid", "課題id", "課題番号", "課題id番号"}
 TAG_HEADERS = {"tag", "tags", "タグ", "課題タグ"}
+STATUS_HEADERS = {"status", "状態"}
+ARCHIVE_TERMINAL = {"完了", "見送り", "done", "closed", "won\u0027t fix", "wont fix"}
 COUNTER_HEADINGS = {"共通iss採番", "globalissueallocation", "commonissueallocation"}
 COUNTER_VALUE = re.compile(r"^(?:`(ISS-[0-9]+)`(?:（[^）]*）)?|(ISS-[0-9]+))$")
 ISSUE_ID = re.compile(r"^ISS-([0-9]+)$")
@@ -492,7 +495,8 @@ def _issue_record_rows(text: str, path: Path | None = None, errors: list[str] | 
         keys = [_header_key(header) for header in headers]
         id_columns = [i for i, key in enumerate(keys) if key in ID_HEADERS]
         tag_columns = [i for i, key in enumerate(keys) if key in TAG_HEADERS]
-        if len(id_columns) > 1 or len(tag_columns) > 1:
+        status_columns = [i for i, key in enumerate(keys) if key in STATUS_HEADERS]
+        if len(id_columns) > 1 or len(tag_columns) > 1 or len(status_columns) > 1:
             if errors is not None:
                 errors.append(f"{source}:{index + 1}: ambiguous issue table header (duplicate ID or tag columns)")
             continue
@@ -500,6 +504,7 @@ def _issue_record_rows(text: str, path: Path | None = None, errors: list[str] | 
             continue
         id_column = id_columns[0]
         tag_column = tag_columns[0] if tag_columns else None
+        status_column = status_columns[0] if status_columns else None
         row_index = index + 2
         while row_index < len(lines):
             cells = _markdown_cells(lines[row_index])
@@ -525,7 +530,7 @@ def _issue_record_rows(text: str, path: Path | None = None, errors: list[str] | 
                 raw_tags = []
                 if tag_column is not None:
                     raw_tags = [tag.strip().strip("`") for tag in cells[tag_column].split(",") if tag.strip() and tag.strip() not in {"—", "-"}]
-                records.append(IssueRecord(issue_id, source, row_index + 1, tuple(raw_tags)))
+                records.append(IssueRecord(issue_id, source, row_index + 1, tuple(raw_tags), cells[status_column].strip().casefold() if status_column is not None else None))
             row_index += 1
         continue
     return records
@@ -672,7 +677,94 @@ def _validate_counter(text: str, path: Path, records: list[IssueRecord], errors:
         errors.append(f"{path}:{counter_line}: next ISS counter must exceed every recorded issue ID")
 
 
-def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> list[str]:
+
+def _indexed_archive_records(main_index: Path, archive_dir: Path | None, errors: list[str]) -> tuple[list[IssueRecord], set[Path]]:
+    """Load only explicitly indexed Markdown archives and reject unindexed files."""
+    text, read_error = _stable_read_utf8(main_index, "archive index")
+    if read_error:
+        errors.append(read_error)
+        return [], set()
+    assert text is not None
+    lines = text.splitlines()
+    in_section = False
+    fenced = False
+    links: list[str] = []
+    for line in lines:
+        if re.match(r"^\s*(```|~~~)", line):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        heading = re.match(r"^##\s+(.+?)\s*$", line)
+        if heading:
+            in_section = heading.group(1) == "完了課題アーカイブ"
+            continue
+        if in_section:
+            match = re.match(r"^\s*-\s*\[[^\]]+\]\(([^)]+)\)\s*$", line)
+            if match:
+                links.append(match.group(1))
+    if links and archive_dir is None:
+        errors.append(f"{main_index}: archive links require explicit --archive-dir")
+        return [], set()
+    if archive_dir is None:
+        return [], set()
+    try:
+        root = archive_dir.resolve(strict=True)
+        if archive_dir.is_symlink() or not root.is_dir():
+            raise ValueError("archive directory is not an ordinary directory")
+    except (OSError, RuntimeError, ValueError) as exc:
+        errors.append(f"{main_index}: invalid archive directory: {exc}")
+        return [], set()
+
+    records: list[IssueRecord] = []
+    indexed: set[Path] = set()
+    for link in links:
+        parsed = urlsplit(link)
+        if parsed.scheme or parsed.netloc or not parsed.path:
+            errors.append(f"{main_index}: invalid archive link: {link}")
+            continue
+        try:
+            candidate = (main_index.parent / unquote(parsed.path)).resolve(strict=False)
+        except (OSError, RuntimeError):
+            errors.append(f"{main_index}: unresolved archive link: {link}")
+            continue
+        if not candidate.is_relative_to(root):
+            errors.append(f"{main_index}: archive link escapes archive directory: {link}")
+            continue
+        if candidate in indexed:
+            errors.append(f"{main_index}: duplicate archive link: {link}")
+            continue
+        indexed.add(candidate)
+        if not candidate.is_file() or candidate.is_symlink():
+            errors.append(f"{main_index}: missing or unsafe archive file: {link}")
+            continue
+        content, read_error = _stable_read_utf8(candidate, "archive")
+        if read_error:
+            errors.append(read_error)
+            continue
+        assert content is not None
+        current = _issue_record_rows(content, candidate, errors)
+        for record in current:
+            if record.status not in ARCHIVE_TERMINAL:
+                errors.append(f"{record.path}:{record.line}: archived {record.issue_id} must have a terminal status")
+        if _issue_counter_values(content)[0]:
+            errors.append(f"{candidate}: archive must not declare a second ISS counter")
+        records.extend(current)
+    def onerror(err: OSError) -> None:
+        errors.append(f"{main_index}: cannot scan archive directory: {err}")
+    for base, directories, filenames in os.walk(root, followlinks=False, onerror=onerror):
+        for item in directories + filenames:
+            p = Path(base) / item
+            if p.is_symlink():
+                errors.append(f"{main_index}: archive symlink is forbidden: {p}")
+        for filename in filenames:
+            p = Path(base) / filename
+            if p.suffix.casefold() == ".md" and p.resolve() not in indexed:
+                errors.append(f"{main_index}: unindexed archive Markdown: {p}")
+    return records, indexed
+
+
+def validate_federated_issue_register(main_index: Path, managed_dir: Path, archive_dir: Path | None = None) -> list[str]:
     """Validate an explicitly scoped read-only federated issue register."""
     errors: list[str] = []
     main_text, read_error = _stable_read_utf8(main_index, "federated issue index")
@@ -739,6 +831,8 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
     if not indexed:
         errors.append(f"{main_index}: no subregister links found in the Subregisters section")
 
+    archive_records, archive_files = _indexed_archive_records(main_index, archive_dir, errors)
+    records.extend(archive_records)
     by_number = _validate_records(records, errors)
     _validate_counter(main_text, main_index, records, errors)
 
@@ -764,7 +858,7 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
             resolved_path = path.resolve()
             if not resolved_path.is_relative_to(resolved_managed):
                 errors.append(f"{main_index}: managed issue path escapes managed directory: {path}")
-            elif resolved_path not in indexed_set:
+            elif resolved_path not in indexed_set and resolved_path not in archive_files:
                 errors.append(f"{main_index}: unindexed issue register in managed directory: {path}")
 
     in_important_section = False
@@ -843,7 +937,7 @@ def validate_federated_issue_register(main_index: Path, managed_dir: Path) -> li
     return errors
 
 
-def validate_single_issue_register(register: Path) -> list[str]:
+def validate_single_issue_register(register: Path, archive_dir: Path | None = None) -> list[str]:
     """Check IDs and the next counter for a concrete, single-register file."""
     text, read_error = _stable_read_utf8(register, "issue register")
     if read_error:
@@ -851,6 +945,8 @@ def validate_single_issue_register(register: Path) -> list[str]:
     assert text is not None
     errors: list[str] = []
     records = _issue_record_rows(text, register, errors)
+    archive_records, _archive_files = _indexed_archive_records(register, archive_dir, errors)
+    records.extend(archive_records)
     _validate_records(records, errors)
     _validate_counter(text, register, records, errors)
     defined_tags = _defined_issue_tags(text)
@@ -1164,6 +1260,7 @@ def main(argv: list[str] | None = None) -> int:
     target.add_argument("--issue-register", type=Path, help="validate one explicitly selected issue register (read-only)")
     target.add_argument("--issue-main", type=Path, help="validate an explicitly selected federated issue index (read-only)")
     parser.add_argument("--managed-dir", type=Path, help="explicit directory containing all indexed subregisters")
+    parser.add_argument("--archive-dir", type=Path, help="explicit directory containing all indexed terminal ISS archives")
     args = parser.parse_args(argv)
     if args.issue_register or args.issue_main:
         if args.issue_register and args.managed_dir:
@@ -1171,10 +1268,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.issue_main and not args.managed_dir:
             parser.error("--issue-main requires --managed-dir")
         if args.issue_register:
-            errors = validate_single_issue_register(args.issue_register)
+            errors = validate_single_issue_register(args.issue_register, args.archive_dir)
             label = f"single issue register: {args.issue_register}"
         else:
-            errors = validate_federated_issue_register(args.issue_main, args.managed_dir)
+            errors = validate_federated_issue_register(args.issue_main, args.managed_dir, args.archive_dir)
             label = f"federated issue register: {args.issue_main} (managed: {args.managed_dir})"
         if errors:
             print(f"Validation failed for {label}:")
@@ -1185,6 +1282,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.managed_dir:
         parser.error("--managed-dir requires --issue-main")
+    if args.archive_dir:
+        parser.error("--archive-dir requires an explicit issue register or main index")
     errors: list[str] = []
     files = markdown_files(errors)
     errors.extend(check_links(files))
