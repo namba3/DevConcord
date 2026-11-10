@@ -4,6 +4,7 @@ from __future__ import annotations
 from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 import tempfile
 import unittest
 
@@ -56,11 +57,32 @@ class IssueArchiveTest(unittest.TestCase):
         self.assertEqual(validate_docs.validate_single_issue_register(self.active, self.archive), [])
         self.assertIn("ISS-0002", self.active.read_text())
 
-        code, output, err = self.cli("restore", "--ids", "ISS-0001", "--apply")
+        code, output, err = self.cli("restore", "--ids", "ISS-0001", "--reason", "completion was premature", "--apply")
         self.assertEqual((code, err), (0, ""), err)
-        self.assertIn(DONE.strip(), self.active.read_text())
+        self.assertIn("ISS-0001 | QA | — | P2 | 未着手", self.active.read_text())
+        self.assertIn("completion was premature", self.active.read_text())
         self.assertNotIn(DONE.strip(), closed.read_text())
         self.assertEqual(validate_docs.validate_single_issue_register(self.active, self.archive), [])
+
+    def test_restore_requires_a_reason(self):
+        self.assertEqual(self.cli("archive", "--ids", "ISS-0001", "--apply")[0], 0)
+        self.assertEqual(self.cli("restore", "--ids", "ISS-0001", "--apply")[0], 1)
+
+    def test_post_apply_validation_failure_rolls_back(self):
+        original = self.active.read_bytes()
+        with patch.object(archive, "_validate", side_effect=[None, archive.ArchiveError("injected postcheck")]):
+            code, _, err = self.cli("archive", "--ids", "ISS-0001", "--apply")
+        self.assertEqual(code, 1)
+        self.assertIn("original files restored", err)
+        self.assertEqual(self.active.read_bytes(), original)
+        self.assertEqual(list(self.archive.glob("*.md")), [])
+
+    def test_missing_evidence_is_not_archived(self):
+        self.active.write_text(self.active.read_text().replace("tests passed", "—"), encoding="utf-8")
+        code, _, err = self.cli("archive", "--ids", "ISS-0001", "--apply")
+        self.assertEqual(code, 1)
+        self.assertIn("completion criteria and evidence", err)
+        self.assertFalse(self.archive.exists())
 
     def test_duplicate_active_archive_id_is_rejected(self):
         self.archive.mkdir(parents=True)
