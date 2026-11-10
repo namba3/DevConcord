@@ -303,8 +303,12 @@ def manage(args: argparse.Namespace) -> list[str]:
             status_col = next((i for i, key in enumerate(keys) if key in STATUS_HEADERS), None)
             if status_col is None or cells[status_col].strip().casefold() not in TERMINAL:
                 raise ArchiveError(f"{issue_id}: terminal status column required")
-            if not cells or not any(value.strip() for value in cells[1:]):
-                raise ArchiveError(f"{issue_id}: incomplete evidence")
+            acceptance_keys = {"完了条件", "acceptance", "acceptancecriteria"}
+            evidence_keys = {"根拠", "根拠・検証", "根拠・適用する検証", "evidence", "verification"}
+            acceptance = next((cells[i].strip() for i, key in enumerate(keys) if key in acceptance_keys), "")
+            evidence = next((cells[i].strip() for i, key in enumerate(keys) if key in evidence_keys), "")
+            if acceptance in {"", "—", "-"} or evidence in {"", "—", "-"}:
+                raise ArchiveError(f"{issue_id}: completion criteria and evidence are required")
             if issue_id in [r.issue_id for r in validate_docs._issue_record_rows(texts[dest], dest)]:
                 raise ArchiveError(f"{issue_id}: already archived")
             lines = texts[source].splitlines(keepends=True)
