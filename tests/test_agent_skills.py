@@ -52,6 +52,7 @@ EXPECTED_MODULES = {
         "devconcord-sync-guidance",
         "devconcord-generate-agent-guidance",
         "devconcord-reference",
+        "devconcord-issue-management",
     },
     "evaluation": {"devconcord-agent-behavior-evaluation"},
 }
