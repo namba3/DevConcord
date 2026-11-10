@@ -340,8 +340,23 @@ def manage(args: argparse.Namespace) -> list[str]:
             insert_at = header_index + 2
             while insert_at < len(target_lines) and target_lines[insert_at].lstrip().startswith("|"):
                 insert_at += 1
-            target_lines.insert(insert_at, row if row.endswith("\n") else row + "\n")
+            if not args.reason or not args.reason.strip():
+                raise ArchiveError("restore requires --reason")
+            if "\n" in args.reason or "\r" in args.reason:
+                raise ArchiveError("reason must be a single line")
+            status_col = next((i for i, key in enumerate(keys) if key in STATUS_HEADERS), None)
+            if status_col is None:
+                raise ArchiveError("restored issue must have a status column")
+            previous_status = cells[status_col].strip()
+            cells[status_col] = args.reopen_status
+            target_lines.insert(insert_at, "| " + " | ".join(cells) + " |\n")
             texts[source] = "".join(target_lines)
+            texts[source] += (
+                f"\n### {issue_id} 再オープン記録\n"
+                f"- 旧状態: {previous_status}\n"
+                f"- 理由: {args.reason.strip()}\n"
+                f"- 元Archive: {path.name}\n"
+            )
             texts[path] = texts[path][:match.start()] + texts[path][match.end():]
     changed = {p: (original.get(p), text) for p, text in texts.items() if original.get(p) != text}
     if args.apply:
@@ -371,6 +386,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--min-closed-count", type=int, default=50)
     parser.add_argument("--min-age-days", type=int, default=30)
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--reason", help="reopening reason (required for restore)")
+    parser.add_argument("--reopen-status", choices=("未着手", "レビュー待ち"), default="未着手")
     args = parser.parse_args(argv)
     if bool(args.issue_main) != bool(args.managed_dir):
         parser.error("--managed-dir is required only with --issue-main")
