@@ -2,6 +2,7 @@
 
 - リポジトリの目的と入口は `README.md`、資料体系は `docs/README.md` と `docs/agent-skills.md` を確認してください。
 - DDD、SDD、TDD、DbC、Self-documenting Code、UX-Driven Functional Design、Performance / Robustness / Replaceability / Security by Design / Observability & Diagnosability by Design、Documentation by Designの基本原則を維持してください。各原則は変更に関係する範囲で適用し、UI/UXは利用者の目的・タスクから機能を導く人間中心設計の入力として扱います。Doc Comments・Annotation Commentsと、課題表を作業管理の正本とする運用も維持してください。
+- 課題の完了・見送りISSが蓄積する場合は、課題管理規約§2.3の任意Archiveを検討してください。通常はActiveを優先し、ID照合・再発・採番ではArchiveも参照します。移動時の正本一意性と検証根拠を保護してください。
 - 長期・複雑な未完了作業や複数セッションの再開では、既存HANDOFF.mdがあれば補助情報として読み、現在のbranch/worktree・課題表・実装・検証と照合してください。新規作成や許可済みの移設では、HANDOFF.mdを正本の課題表と同じディレクトリに配置します。既存の同等ファイルを複製せず、移設権限を確認してください。HANDOFFは任意の文脈であり証拠・課題状態・権限の正本ではなく、存在しないことだけで開発を停止しません。
 - 既存設計に沿う複数の開発単位で反復・検証・レビューし、続行/停止判断まで委任された場合は、利用可能性を確認して`devconcord develop iterate`を候補にしてください。単一課題や限定Batchには一律に適用せず、自動呼び出しやcommit/pushの許可とみなしません。
 - 資格情報を扱う場合は、長期秘密をアプリが管理する必要を減らせるか、主体IDと権限、ブートストラップ信頼、失効・障害時の条件を変更リスクに応じて確認してください。Secretlessは基盤を含め秘密が存在しない保証ではありません。詳細は[Secrets by Design](docs/application-design/secrets-by-design.md)を参照してください。
