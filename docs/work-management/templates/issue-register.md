@@ -133,4 +133,3 @@ Archiveを作成した場合のみ、実在する相対リンクを登録しま�
 ```markdown
 - [2026年の終端ISS](issues/archive/closed-2026.md)
 ```
-
