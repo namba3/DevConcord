@@ -1,6 +1,6 @@
 # Issue Register Management
 
-The public `devconcord` Skill routes `manage issue inspect`, `manage issue archive`, and `manage issue restore` here. These are logical agent instructions, not native shell commands. Manage records, not feature implementation: use `develop issue` for project work. The active and archived issue records form one logical register with a single ISS allocation scheme.
+The public `devconcord` Skill routes `manage issue` (read-only inspect by default), `manage issue inspect`, `manage issue archive`, and `manage issue restore` here. These are logical agent instructions, not native shell commands. Manage records, not feature implementation: use `develop issue` for project work. The active and archived issue records form one logical register with a single ISS allocation scheme.
 
 ## Authority and prerequisites
 
