@@ -186,7 +186,7 @@ def _archive_block_from_text(text: str, issue_id: str):
     return match, marker.group(1)
 
 
-def _write_transaction(changes: dict[Path, tuple[str | None, str]]) -> None:
+def _write_transaction(changes: dict[Path, tuple[str | None, str | None]]) -> None:
     """Use one advisory lock, CAS-like checks, and best-effort rollback.
 
     Filesystem multi-file atomicity is not guaranteed; check before and after.
@@ -209,6 +209,10 @@ def _write_transaction(changes: dict[Path, tuple[str | None, str]]) -> None:
             if path.is_symlink():
                 raise ArchiveError(f"symlink destination: {path}")
         for path, (_old, new) in changes.items():
+            if new is None:
+                path.unlink(missing_ok=True)
+                completed.append(path)
+                continue
             path.parent.mkdir(parents=True, exist_ok=True)
             fd, temp_name = tempfile.mkstemp(prefix=".devconcord-", dir=path.parent)
             try:
@@ -338,7 +342,15 @@ def manage(args: argparse.Namespace) -> list[str]:
     changed = {p: (original.get(p), text) for p, text in texts.items() if original.get(p) != text}
     if args.apply:
         _write_transaction(changed)
-        _validate(main, managed, archive_dir)
+        try:
+            _validate(main, managed, archive_dir)
+        except Exception as error:
+            reverse = {p: (new, old) for p, (old, new) in changed.items()}
+            try:
+                _write_transaction(reverse)
+            except Exception as rollback_error:
+                raise ArchiveError(f"validation failed and rollback incomplete: {rollback_error}") from rollback_error
+            raise ArchiveError(f"validation failed; original files restored: {error}") from error
     return [f"{'applied' if args.apply else 'dry-run'}: {args.mode}: {', '.join(ids)}", *[f"{p}: {'create' if before is None else 'update'}" for p, (before, _new) in changed.items()]]
 
 
