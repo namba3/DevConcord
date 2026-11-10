@@ -119,6 +119,21 @@ class IssueArchiveTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("dry-run", output)
 
+    def test_fenced_index_example_does_not_count_as_live_archive(self):
+        self.active.write_text(
+            self.active.read_text() +
+            "\n## 完了課題アーカイブ\n\n" +
+            "```markdown\n- [example](issues/archive/closed-2026.md)\n```\n",
+            encoding="utf-8",
+        )
+        code, _, error = self.cli("inspect")
+        self.assertEqual(code, 0, error)
+        code, _, error = self.cli("archive", "--ids", "ISS-0001", "--apply")
+        self.assertEqual(code, 0, error)
+        self.assertEqual(validate_docs.validate_single_issue_register(self.active, self.archive), [])
+        index = self.active.read_text()
+        self.assertIn("- [終端ISS closed-", index)
+
     def test_archive_link_requires_explicit_scope(self):
         self.active.write_text(self.active.read_text() + "\n## 完了課題アーカイブ\n- [missing](issues/archive/closed-2026.md)\n", encoding="utf-8")
         errors = validate_docs.validate_single_issue_register(self.active)
