@@ -110,6 +110,14 @@ class IssueArchiveTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("detailed heading", err)
 
+    def test_linked_issue_requires_manual_review(self):
+        original = self.active.read_text()
+        self.active.write_text(original + "\nSee [ISS-0001](issues.md) for the prior verification.\n", encoding="utf-8")
+        code, _, err = self.cli("archive", "--ids", "ISS-0001", "--apply")
+        self.assertEqual(code, 1)
+        self.assertIn("linked ISS reference", err)
+        self.assertFalse(self.archive.exists())
+
     def test_auto_skips_insufficient_eligible_candidates(self):
         code, output, _ = self.cli("archive", "--auto")
         self.assertEqual(code, 0)
